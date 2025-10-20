@@ -1,0 +1,103 @@
+/*
+file: src/styles/device.css
+author: Jack Ray
+===================================================
+  Individual device information page stylesheet
+*/
+
+.device-shell {
+  width: min(64rem, 100%);
+  border: 0.25rem solid var(--border);
+  border-radius: 0.85rem;
+  background: #ffffff;
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-5);
+  box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.06);
+}
+
+.device-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.device-backBtn {
+  border: 0.125rem solid #d1d5db;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  background: #f9fafb;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.device-backBtn:hover,
+.device-backBtn:focus-visible {
+  border-color: var(--blue);
+  background: #eef3ff;
+  outline: none;
+}
+
+.device-title {
+  margin: 0;
+  font-size: var(--fs-xl);
+}
+
+.device-card {
+  border: 0.2rem solid var(--border);
+  border-radius: 0.75rem;
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+  background: #ffffff;
+}
+
+.device-grid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.device-grid > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.device-grid dt {
+  font-weight: 700;
+  color: #111;
+}
+
+.device-grid dd {
+  margin: 0;
+  color: #1f2937;
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+}
+
+.device-pdfBtn {
+  justify-self: flex-start;
+  cursor: pointer;
+  border: 0.125rem solid var(--red-border);
+  border-radius: 0.6rem;
+  background: var(--red-bg);
+  color: var(--red);
+  font-weight: 700;
+  padding: var(--space-2) var(--space-4);
+}
+
+.device-pdfBtn:hover,
+.device-pdfBtn:focus-visible {
+  filter: brightness(0.96);
+  outline: none;
+}
+
+.device-empty {
+  margin: 0;
+  font-style: italic;
+  color: #555;
+}

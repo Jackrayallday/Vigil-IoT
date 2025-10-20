@@ -1,0 +1,85 @@
+/*
+file: src/styles/history.css
+author: Jack Ray
+===================================================
+  Styles for the previous scans page
+
+*/
+.history-panel {
+  width: min(72rem, 100%);
+  margin-inline: auto;
+  justify-self: center;
+  border: 0.25rem solid var(--border);
+  border-radius: 0.75rem;
+  background: #ffffff;
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+  box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.08);
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.history-back {
+  border: 0.125rem solid var(--blue);
+  cursor: pointer;
+  background: #eef3ff;
+  color: var(--blue);
+  padding: var(--space-2) var(--space-3);
+  border-radius: 0.5rem;
+  font-weight: 700;
+}
+
+.history-back:hover,
+.history-back:focus-visible {
+  filter: brightness(0.97);
+  outline: none;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.history-item button {
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  border: 0.125rem solid #e5e7eb;
+  border-radius: 0.6rem;
+  padding: var(--space-3) var(--space-4);
+  background: #f9fafb;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.history-item button:hover,
+.history-item button:focus-visible {
+  border-color: var(--blue);
+  background: #eef3ff;
+  outline: none;
+}
+
+.history-itemName {
+  font-weight: 700;
+  color: #111;
+}
+
+.history-itemMeta {
+  font-size: var(--fs-sm);
+  color: #555;
+}
+
+.history-empty {
+  margin: 0;
+  font-style: italic;
+  color: #555;
+}

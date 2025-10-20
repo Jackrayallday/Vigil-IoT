@@ -1,0 +1,113 @@
+/*
+file: src/styles/theme-dark.css
+author: Jack Ray
+===================================================
+  Dark theme overrides for the dashboard application. Maybe we throw this out since it doesn't look great. Or i can fix idk
+*/
+
+.theme-dark body {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.theme-dark .frame {
+  border-color: #1e293b;
+}
+
+.theme-dark .results-shell,
+.theme-dark .device-shell,
+.theme-dark .history-panel,
+.theme-dark .modal-sheet,
+.theme-dark .login-sheet,
+.theme-dark .settings-sheet {
+  background: #1f2937;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.theme-dark .results-table thead {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.theme-dark .results-table tbody tr:nth-child(odd) {
+  background: #1e293b;
+}
+
+.theme-dark .results-table tbody tr {
+  color: #e2e8f0;
+}
+
+.theme-dark .login-field input,
+.theme-dark .settings-row input,
+.theme-dark .settings-row select {
+  background: #0f172a;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+.theme-dark .settings-checkbox input {
+  accent-color: #60a5fa;
+}
+
+.theme-dark .login-forgot,
+.theme-dark .settings-checkbox span {
+  color: #cbd5f5;
+}
+
+.theme-dark .settings-section h3 {
+  color: #a5b4fc;
+}
+
+.theme-dark .settings-save {
+  border-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.15);
+  color: #bfdbfe;
+}
+
+.theme-dark .settings-cancel {
+  border-color: #475569;
+  background: #1f2937;
+  color: #e2e8f0;
+}
+
+.theme-dark .prev-scans {
+  background: rgba(253, 186, 116, 0.15);
+  color: #fcd34d;
+  border-color: #fbbf24;
+}
+
+.theme-dark .history-back,
+.theme-dark .results-backBtn,
+.theme-dark .results-pdfBtn,
+.theme-dark .device-backBtn,
+.theme-dark .device-pdfBtn,
+.theme-dark .login-submit {
+  border-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  color: #bfdbfe;
+}
+
+.theme-dark .settings-btn {
+  border-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  color: #bfdbfe;
+}
+
+.theme-dark .login-btn {
+  border-color: #f87171;
+  background: rgba(248, 113, 113, 0.12);
+  color: #fecaca;
+}
+
+.theme-dark .footer {
+  border-top-color: #334155;
+}
+
+.theme-dark .legal {
+  color: #a5b4fc;
+}
+
+.theme-dark .intro {
+  color: #e2e8f0;
+}

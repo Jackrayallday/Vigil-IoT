@@ -1,0 +1,41 @@
+/*
+file: src/styles/new-scan-wizard.css
+author: Jack Ray
+===================================================
+CSS styles for the New Scan Wizard component.
+*/
+
+.nsw-form { max-width: 720px; margin: 0 auto; padding: 1rem; }
+.nsw-title { margin: 0 0 16px; font-size: 22px; font-weight: 800; }
+
+.nsw-group { margin-bottom: 16px; }
+.nsw-label { display: block; font-weight: 600; margin-bottom: 6px; }
+.nsw-input { width: 100%; padding: 8px 10px; }
+.nsw-textarea { width: 100%; padding: 8px 10px; font-family: monospace; }
+
+.nsw-help { color: #6b7280; font-size: 12px; margin-top: 6px; }
+.nsw-note { font-size: 12px; color: #6b7280; margin-left: 6px; }
+.nsw-error { color: #b91c1c; font-size: 12px; margin-top: 6px; }
+
+.nsw-fieldset { border: 1px solid #ddd; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+.nsw-legend { padding: 0 6px; font-weight: 600; }
+
+.nsw-checkboxRow { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+
+.nsw-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 12px; }
+.nsw-btn { padding: 8px 14px; border-radius: 6px; border: 1px solid #ccc; cursor: pointer; font-weight: 600; }
+.nsw-btnPrimary { background: #2563eb; color: #fff; border-color: #2563eb; }
+.nsw-btnGhost { background: #fff; color: #111; border-color: #d1d5db; }
+.nsw-btnDisabled { background: #e5e7eb; color: #6b7280; border-color: #e5e7eb; cursor: not-allowed; }
+
+.nsw-errorBox { margin-top: 8px; background: #fee2e2; color: #991b1b; padding: 8px 10px; border-radius: 6px; border: 1px solid #fecaca; }
+
+.nsw-loadingWrap { display: inline-flex; align-items: center; gap: 8px; }
+
+/* I found this spinner animation thing online so i am not sure if it works. I havent tested it yet since it doesnt ever actually load */
+.nsw-spinner {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #fff; border-top-color: transparent;
+  display: inline-block; animation: nsw-spin 0.9s linear infinite;
+}
+@keyframes nsw-spin { to { transform: rotate(360deg); } }

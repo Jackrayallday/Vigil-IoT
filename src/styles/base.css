@@ -1,0 +1,50 @@
+/*
+file: src/styles/base.css
+author: Jack Ray
+===================================================
+  Use this file for global styles that are put in place before anything loads and CSS variables. 
+ */
+ 
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  --border: #111;
+  --blue: #2458ff;
+
+  --red: #b91c1c;
+  --red-border: #ef4444;
+  --red-bg: #ffecec;
+
+  --settings-text: #1e3a8a;
+  --settings-border: #1d4ed8;
+  --settings-bg: #e0ecff;
+
+  --teal: #2e7d6b;
+  --teal-bg: #e6fff5;
+
+  --orange: #fb923c;
+  --orange-text: #9a3412;
+
+  --fs-sm: clamp(0.9rem, 0.8rem + 0.3vw, 1rem);
+  --fs-base: clamp(1rem, 0.95rem + 0.5vw, 1.125rem);
+  --fs-lg: clamp(1.125rem, 1rem + 1vw, 1.375rem);
+  --fs-xl: clamp(1.5rem, 1.1rem + 2.5vw, 2.25rem);
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: var(--fs-base);
+  line-height: 1.4;
+}

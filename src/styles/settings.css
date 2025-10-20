@@ -1,0 +1,107 @@
+/*
+file: src/styles/settings.css
+author: Jack Ray
+===================================================
+  Styles for the settings modal sheet.
+*/
+
+.settings-sheet {
+  width: min(34rem, 100%);
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-5);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-title {
+  margin: 0;
+  font-size: var(--fs-lg);
+}
+
+.settings-form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.settings-section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.settings-section h3 {
+  margin: 0;
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #555;
+}
+
+.settings-options {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.settings-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+}
+
+.settings-checkbox input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--fs-sm);
+}
+
+.settings-row input,
+.settings-row select {
+  border: 0.125rem solid #d1d5db;
+  border-radius: 0.5rem;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-sm);
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.settings-cancel {
+  border: 0.125rem solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+}
+
+.settings-save {
+  border: 0.125rem solid var(--blue);
+  border-radius: 0.6rem;
+  background: var(--settings-bg);
+  color: var(--settings-text);
+  font-weight: 700;
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+}
+
+.settings-save:hover,
+.settings-save:focus-visible,
+.settings-cancel:hover,
+.settings-cancel:focus-visible {
+  filter: brightness(0.97);
+  outline: none;
+}

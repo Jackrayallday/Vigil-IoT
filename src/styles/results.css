@@ -1,0 +1,214 @@
+/*
+file: src/styles/results.css
+author: Jack Ray
+===================================================
+  Styles for the ScanResults.jsx page. Pretty large file because of the table.
+*/
+
+.results-shell {
+  width: min(72rem, 100%);
+  border: 0.25rem solid var(--border);
+  border-radius: 0.85rem;
+  background: #ffffff;
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-5);
+  box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.08);
+}
+
+.results-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.results-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1 1 26rem;
+}
+
+.results-metaTop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.results-title {
+  margin: 0;
+  font-size: var(--fs-xl);
+}
+
+.results-subtitle {
+  margin: 0;
+  color: #374151;
+  font-size: var(--fs-sm);
+  line-height: 1;
+}
+
+.results-summary {
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.results-summary div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.results-summary dt {
+  font-weight: 700;
+  color: #111;
+}
+
+.results-summary dd {
+  margin: 0;
+  color: #1f2937;
+  font-size: var(--fs-sm);
+  line-height: 1;
+}
+
+.results-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  row-gap: var(--space-2);
+}
+
+.results-backBtn,
+.results-pdfBtn,
+.results-sort select,
+.results-switcher select {
+  border: 0.125rem solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #f9fafb;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-sm);
+  line-height: 1;
+}
+
+.results-backBtn,
+.results-pdfBtn {
+  cursor: pointer;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+}
+
+.results-sort select,
+.results-switcher select {
+  height: 2.5rem;
+}
+
+.results-backBtn:hover,
+.results-backBtn:focus-visible,
+.results-pdfBtn:hover,
+.results-pdfBtn:focus-visible {
+  border-color: var(--blue);
+  background: #eef3ff;
+  outline: none;
+}
+
+.results-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+}
+
+.results-switcherLabel,
+.results-sortLabel {
+  font-weight: 700;
+}
+
+.results-sort {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.results-tableWrap {
+  border: 0.2rem solid var(--border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 48rem;
+}
+
+.results-table thead {
+  background: #eef3ff;
+  color: #111;
+}
+
+.results-table th,
+.results-table td {
+  padding: var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+  font-size: var(--fs-sm);
+  line-height: 1;
+}
+
+.results-table tbody tr:nth-child(odd) {
+  background: #f9fafb;
+}
+
+.results-table tbody tr:hover {
+  background: #eef3ff;
+}
+
+.results-colIndex {
+  width: 3rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--blue);
+}
+
+.results-item {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.results-itemName {
+  font-weight: 700;
+}
+
+.results-itemNotes {
+  font-size: 0.85em;
+  color: #555;
+}
+
+.results-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-sm);
+  color: #555;
+}
+
+.results-footer span:last-child {
+  text-align: right;
+}
+
+.results-table tbody tr[role="button"] {
+  cursor: pointer;
+}
+
+.results-table tbody tr[role="button"]:focus-visible {
+  outline: 0.2rem solid var(--blue);
+  outline-offset: -0.1rem;
+}

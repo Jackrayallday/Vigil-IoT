@@ -1,0 +1,86 @@
+/*
+file: src/styles/login.css
+author: Jack Ray
+===================================================
+  Styles for the login page
+*/
+
+.login-sheet {
+  width: min(28rem, 100%);
+  padding: var(--space-5);
+}
+
+.login-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.login-logo {
+  display: block;
+  block-size: 5rem;
+  inline-size: auto;
+  max-inline-size: 100%;
+  object-fit: contain;
+}
+
+.login-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.login-field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.login-field label {
+  font-weight: 700;
+  font-size: var(--fs-sm);
+}
+
+.login-field input {
+  border: 0.125rem solid #d1d5db;
+  border-radius: 0.5rem;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-sm);
+}
+
+.login-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.login-forgot {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: var(--fs-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.login-forgot:hover,
+.login-forgot:focus-visible {
+  color: var(--blue);
+  outline: none;
+}
+
+.login-submit {
+  border: 0.125rem solid var(--red-border);
+  border-radius: 0.6rem;
+  background: var(--red-bg);
+  color: var(--red);
+  font-weight: 700;
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+}
+
+.login-submit:hover,
+.login-submit:focus-visible {
+  filter: brightness(0.96);
+  outline: none;
+}
