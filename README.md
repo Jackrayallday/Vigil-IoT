@@ -1,4 +1,4 @@
-# Virgil IoT
+# Vigil IoT
 
 Vite + React UI for exploring discovered IoT devices, their services, and associated risks.
 
@@ -6,8 +6,8 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
 
 1. **Clone the repository**
    ```bash
-   git clone <GitHub URL>
-   cd virgil-iot
+   git clone https://github.com/Jackrayallday/Vigil-IoT.git
+   cd vigil-iot
    ```
 2. **Open the project in your editor.**
 3. **Install dependencies**  
