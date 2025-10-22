@@ -29,3 +29,54 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
 - All scan data is stored locally.
 - Many files in this repo come from Electron/React boilerplate, so you don't need to worry about cleaning them up right now.
 - I used Vite to generate the format of this file structure
+
+Running Kevin's updated version with MySQL server (only login functionallity works so far)
+1. Clone the repo from KevinBranch:
+    git clone --branch KevinBranch --single-branch https://github.com/Jackrayallday/Vigil-IoT.git
+
+2. cd cd vigil-iot
+
+3. Install dependancies for both frontend and backend:
+    npm install
+    cd backend
+    npm install
+
+4. Install MySQL if you don't have it and create the database:
+    CREATE DATABASE vigil_iot;
+    USE vigil_iot;
+
+    CREATE TABLE users (
+        user_id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE scan_reports (
+        report_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        scan_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        device_info TEXT,
+        vulnerabilities TEXT,
+        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    );
+
+    INSERT INTO users (username, password_hash)
+    VALUES ('test_user', 'hashed_password_123');
+
+5. Edit MySQL credentials in backend/server.js to match your own:
+   const db = mysql.createConnection({
+       host: 'localhost',
+       user: 'your_mysql_user',
+       password: 'your_mysql_password',
+       database: 'vigil_iot'
+   });
+
+6. Run backend:
+       cd backend
+       node server.js
+
+7. Run frontend:
+    npm run dev:electron
+
+8. Test login with test user you created in step 4
