@@ -6,7 +6,7 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
 
 1. **Clone the repository.**
    ```bash
-   git clone --branch Backend-Initialized --single-branch https://github.com/Jackrayallday/Vigil-IoT.git
+   git clone --branch main --single-branch https://github.com/Jackrayallday/Vigil-IoT.git
    cd vigil-iot
    ```
 2. **Replace the MySQL credentials with your own in the following section of server.js:**
