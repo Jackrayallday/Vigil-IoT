@@ -4,16 +4,34 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
 
 ## Getting Started
 
-1. **Clone the repository**
+1. **Clone the repository.**
    ```bash
-   git clone https://github.com/Jackrayallday/Vigil-IoT.git
+   git clone --branch Backend-Initialized --single-branch https://github.com/Jackrayallday/Vigil-IoT.git
    cd vigil-iot
    ```
-2. **Open the project in your editor.**
-3. **Install dependencies**  
-   `npm install` (npm may warn about peer dependencies; that's expected. If this doesn't work, confirm Node is installed with `node --version`.)
-4. **Run the Electron app**
+2. **Replace the MySQL credentials with your own in the following section of server.js:**
    ```bash
+   const MYSQL_CONFIG = {
+       host: 'localhost',
+       user: 'root',
+       password: 'passowrd' 
+   };
+   ```
+3. **Open the project in your editor.**
+4. **Install dependencies on both frontend and backend.**  
+   a. `npm install` (npm may warn about peer dependencies; that's expected. If this doesn't work, confirm Node is installed with `node --version`.)
+   b. switch to the backend directory and do the same on there.
+   ```bash
+   cd backend
+   npm install
+   ```
+5. **Run the backend server app.**
+   ```bash
+   node server.js
+   ```
+6. **Run the frontend Electron app.**
+   ```bash
+   cd ..
    npm run dev:electron
    ```
    - For browser-only development, use:
