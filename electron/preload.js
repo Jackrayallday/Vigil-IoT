@@ -1,6 +1,6 @@
 /*
 file: electron/preload.js
-author: Jack Ray
+programmer: Jack Ray
 ===========================================
 This file is loaded before other scripts in the renderer process.
 It has access to Node.js and Electron APIs, but runs in an isolated context.

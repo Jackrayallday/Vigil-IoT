@@ -1,6 +1,6 @@
 /*
 file: src/SettingsModal.jsx
-author: Jack Ray
+programmer: Jack Ray
 ===================================================
 Component for the settings/preferences modal dialog.
 */

@@ -1,6 +1,6 @@
 /*
 file: electron/main.js
-author: Jack Ray
+programmer: Jack Ray
 --------------------------------------------------------
 This file can be ignored unless you are interested in the Electron main process code or changing how the Electron app starts up.
 

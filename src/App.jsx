@@ -1,6 +1,6 @@
 /**
  * file: src/App.jsx
- * author: Jack Ray
+ * programmer: Jack Ray
  * ===================================================
  * 
  * App.jsx is the main backbone of the dashboard. It does the following:
@@ -14,6 +14,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 import "./styles/base.css";
 import "./styles/app-shell.css";
 import "./styles/modal.css";
@@ -299,6 +300,8 @@ export default function App() {
   // --- UI state toggles ---
   const [showWizard, setShowWizard] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [user, setUser] = useState(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   // --- Persisted data ---
   const [settings, setSettings] = useState(initialSettings);
@@ -307,6 +310,7 @@ export default function App() {
   const [selectedScanId, setSelectedScanId] = useState(initialScans[0]?.id ?? null);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [view, setView] = useState(VIEW_HOME);
+  const userMenuRef = useRef(null);
 
   // On first render, apply the stored theme so the UI does not flash light/dark.
   useEffect(() => {
@@ -340,6 +344,29 @@ export default function App() {
     [scans, selectedScanId],
   );
 
+//this is how we close the menu for logoutside clicks or escape key
+
+  useEffect(() => {
+    if (!showUserMenu) return;
+
+    function handleClickOutside(event) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target))
+        setShowUserMenu(false);
+    }
+
+    function handleKeydown(event) {
+      if (event.key === "Escape")
+        setShowUserMenu(false);
+    }
+
+    window.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("keydown", handleKeydown);
+    return () => {
+      window.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("keydown", handleKeydown);
+    };
+  }, [showUserMenu]);
+
   // Modal open/close helpers keep those booleans in place.
   function openWizard(e) {
     e.preventDefault();
@@ -349,9 +376,10 @@ export default function App() {
   }
 
   function openLogin(e) {
-    e.preventDefault();
+    if(e) e.preventDefault();
     setShowSettings(false);
     setShowWizard(false);
+    setShowUserMenu(false);
     setShowLogin(true);
   }
 
@@ -368,6 +396,7 @@ export default function App() {
 
   function closeLogin() {
     setShowLogin(false);
+    setShowUserMenu(false);
   }
 
   function closeSettings() {
@@ -379,6 +408,27 @@ export default function App() {
     setSelectedDevice(null);
     setShowLogin(false);
     setShowSettings(false);
+    setShowUserMenu(false);
+  }
+
+  function handleLoginSuccess(userInfo) {
+    setUser(userInfo);
+    setShowLogin(false);
+  }
+
+  async function handleLogout() {
+    try {
+      await axios.post("http://localhost:3001/logout");
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      setUser(null);
+      setShowUserMenu(false);
+    }
+  }
+
+  function toggleUserMenu() {
+    setShowUserMenu((prev) => !prev);
   }
 
   // Navigation helpers wire the buttons to their views.
@@ -450,7 +500,28 @@ export default function App() {
 
         <nav className="top-actions" aria-label="Primary">
           <button type="button" className="settings-btn" onClick={openSettings}>Settings</button>
-          <button type="button" className="login-btn" onClick={openLogin}>Log in</button>
+          {user ? (
+            <div className="user-menu" ref={userMenuRef}>
+              <button
+                type="button"
+                className="user-btn"
+                onClick={toggleUserMenu}
+                aria-haspopup="true"
+                aria-expanded={showUserMenu}
+              >
+                {user.username}
+              </button>
+              {showUserMenu && (
+                <div className="user-dropdown" role="menu">
+                  <button type="button" className="user-dropdownItem" onClick={handleLogout}>
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button type="button" className="login-btn" onClick={openLogin}>Log in</button>
+          )}
         </nav>
       </header>
 
@@ -555,7 +626,12 @@ export default function App() {
         />
       )}
 
-      {showLogin && <LoginModal onClose={closeLogin} />}
+      {showLogin && (
+        <LoginModal
+          onClose={closeLogin}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
 
       <footer className="footer">
         <a href="/legal" className="legal">LEGAL</a>

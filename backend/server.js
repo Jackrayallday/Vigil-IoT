@@ -33,8 +33,8 @@ app.use(session//configure the session management
 const MYSQL_CONFIG =
 {//specify the MySQL connection configuration (replace the user and password values with your own)
     host: "localhost",//specify the host
-    user: "root",//set the username
-    password: "password"//set the password
+    user: "jackray1",//set the username
+    password: "donthack"//set the password
 };
 
 async function initDatabase()//function to initialize the database

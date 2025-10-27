@@ -1,6 +1,6 @@
 /*
 file: src/styles/app-shell.css
-author: Jack Ray
+programmer: Jack Ray
 ===================================================
   Styles for the app shell layout: header, main content area, and footer.
   This is the meat and potatoes of the app's structure and primary UI elements.
@@ -84,6 +84,62 @@ author: Jack Ray
 .login-btn:hover,
 .login-btn:focus-visible {
   filter: brightness(0.97);
+  outline: none;
+}
+
+.user-menu {
+  position: relative;
+}
+
+.user-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 800;
+  font-size: var(--fs-sm);
+  line-height: 1;
+  border: 0.125rem solid #0b4acb;
+  background: #1877f2;
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.user-btn:hover,
+.user-btn:focus-visible {
+  background: #166fe5;
+  outline: none;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  min-inline-size: 10rem;
+  border: 0.125rem solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.6rem;
+  background: #ffffff;
+  box-shadow: 0 0.75rem 1.75rem rgba(15, 23, 42, 0.18);
+  padding: var(--space-2);
+  z-index: 10000;
+}
+
+.user-dropdownItem {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.user-dropdownItem:hover,
+.user-dropdownItem:focus-visible {
+  background: rgba(24, 119, 242, 0.12);
   outline: none;
 }
 

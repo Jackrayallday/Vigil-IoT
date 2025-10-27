@@ -1,6 +1,0 @@
-Add your name below in your own custom branch, then delete that branch once succesffuly merged to main
-1. Jack Ray
-2. 
-3. 
-4. 
-5. 
