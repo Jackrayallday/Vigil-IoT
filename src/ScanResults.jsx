@@ -1,7 +1,7 @@
 
 /*
 file: src/ScanResults.jsx
-author: Jack Ray
+programmer: Jack Ray
 ===================================================
 Component to display the results of a completed scan. Based on the mockup
 */

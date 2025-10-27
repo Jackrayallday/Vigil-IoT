@@ -1,6 +1,6 @@
 /*
 file: src/NewScanWizard.jsx
-author: Jack Ray
+programmer: Jack Ray
 ===================================================
 Component for the new scan wizard modal dialog. Collects scan name, targets, exclusions, and options.
 */

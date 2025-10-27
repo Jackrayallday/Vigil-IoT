@@ -1,6 +1,6 @@
 /**
  * file: src/constants.js
- * author: Jack Ray
+ * programmer: Jack Ray
  * ===================================================
  * 
   These constants group the scanning options so the UI and settings pages can stay in sync. Reduces code duplication.

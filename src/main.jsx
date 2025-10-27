@@ -1,6 +1,6 @@
 /*
 file: src/main.jsx
-author: Jack Ray
+programmer: Jack Ray
 ===================================================
 The main entry point for the React application. This file renders the root App component into the HTML.
 */

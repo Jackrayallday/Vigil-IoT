@@ -1,6 +1,6 @@
 /*
 file: src/styles/login.css
-author: Jack Ray
+programmer: Jack Ray
 ===================================================
   Styles for the login page
 */
@@ -47,20 +47,67 @@ author: Jack Ray
   font-size: var(--fs-sm);
 }
 
-.login-actions {
+.password-input-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 2.75rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.6rem;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+  border-radius: 999px;
+  transition: color 0.15s ease;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  color: #2563eb;
+  outline: none;
+}
+
+.password-toggle:active {
+  color: #1d4ed8;
+}
+
+.password-toggle svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: currentColor;
+  pointer-events: none;
+}
+
+.login-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
 }
 
 .login-forgot {
   background: none;
   border: none;
-  padding: 0;
+  padding: var(--space-1) 0;
   font-size: var(--fs-sm);
   text-decoration: underline;
   cursor: pointer;
+  align-self: center;
+  color: var(--blue);
 }
 
 .login-forgot:hover,
@@ -70,17 +117,80 @@ author: Jack Ray
 }
 
 .login-submit {
-  border: 0.125rem solid var(--red-border);
+  border: 0.125rem solid #1451c8;
   border-radius: 0.6rem;
-  background: var(--red-bg);
-  color: var(--red);
+  background: #1877f2;
+  color: #ffffff;
   font-weight: 700;
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-3) 0;
   cursor: pointer;
+  width: 100%;
+  font-size: var(--fs-md);
 }
 
 .login-submit:hover,
 .login-submit:focus-visible {
-  filter: brightness(0.96);
+  background: #166fe5;
   outline: none;
+}
+
+.login-error {
+  color: #b91c1c;
+  font-size: var(--fs-sm);
+}
+
+.login-info {
+  margin-top: var(--space-2);
+  font-size: var(--fs-sm);
+  text-align: center;
+  color: #1877f2;
+}
+
+.login-create {
+  margin: var(--space-4) auto 0;
+  border: 0.125rem solid #2e8c20;
+  border-radius: 0.6rem;
+  background: #42b72a;
+  color: #ffffff;
+  font-weight: 600;
+  padding: var(--space-2) var(--space-6);
+  cursor: pointer;
+  align-self: center;
+  font-size: var(--fs-sm);
+}
+
+.login-create:hover,
+.login-create:focus-visible {
+  background: #36a420;
+  outline: none;
+}
+
+.login-actions.is-register {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.login-switch {
+  border: 0.125rem solid rgba(37, 99, 235, 0.2);
+  border-radius: 0.6rem;
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+
+.login-switch:hover,
+.login-switch:focus-visible {
+  background: rgba(59, 130, 246, 0.18);
+  outline: none;
+}
+
+.login-actions.is-register .login-submit {
+  width: auto;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--fs-sm);
 }
