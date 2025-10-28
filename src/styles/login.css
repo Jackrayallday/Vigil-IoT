@@ -165,7 +165,8 @@ programmer: Jack Ray
   outline: none;
 }
 
-.login-actions.is-register {
+.login-actions.is-register,
+.login-actions.is-forgot {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
@@ -189,7 +190,8 @@ programmer: Jack Ray
   outline: none;
 }
 
-.login-actions.is-register .login-submit {
+.login-actions.is-register .login-submit,
+.login-actions.is-forgot .login-submit {
   width: auto;
   padding: var(--space-2) var(--space-4);
   font-size: var(--fs-sm);

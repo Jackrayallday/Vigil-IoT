@@ -4,7 +4,7 @@ programmer: Jack Ray (edited by Kevin Volkov)
 ===================================================
 Component for user login modal dialog. 
 TODO: Hook into real authentication system.
-TODO: Implement forgot password button.
+Includes placeholder flows for register + forgot password.
 */
 import React, { useState } from "react"; //import React from "react"; KV edit
 import axios from "axios"; //KV add
@@ -12,10 +12,15 @@ import "./styles/modal.css";
 import "./styles/login.css";
 import logoImage from "./assets/logo.png";
 import RegisterForm from "./RegisterForm";
+import ForgotPasswordForm from "./ForgotPasswordForm";
 import PasswordField from "./PasswordField";
 
+const VIEW_LOGIN = "login";
+const VIEW_REGISTER = "register";
+const VIEW_FORGOT = "forgot";
+
 export default function LoginModal({ onClose, onLoginSuccess }) {
-  const [showRegister, setShowRegister] = useState(false);
+  const [activeView, setActiveView] = useState(VIEW_LOGIN);
   const [username, setUsername] = useState(""); //KV add
   const [password, setPassword] = useState(""); //KV add
   const [error, setError] = useState(""); //KV add
@@ -29,20 +34,32 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
   }
 
   function handleShowRegister() {
-    setShowRegister(true);
+    setActiveView(VIEW_REGISTER);
     setError("");
     setInfoMessage("");
   }
 
   function handleBackToLogin() {
-    setShowRegister(false);
+    setActiveView(VIEW_LOGIN);
     resetLoginState();
   }
 
   function handleRegisterPlaceholder() {
     resetLoginState();
-    setShowRegister(false);
+    setActiveView(VIEW_LOGIN);
     setInfoMessage("Registration coming soon. Please check back later!");
+  }
+
+  function handleShowForgotPassword() {
+    setActiveView(VIEW_FORGOT);
+    setError("");
+    setInfoMessage("");
+  }
+
+  function handleForgotPlaceholder() {
+    resetLoginState();
+    setActiveView(VIEW_LOGIN);
+    setInfoMessage("Check your email for the reset link once it is available.");
   }
 
   async function handleSubmit(e) { //function handleSubmit(e) { KV edit
@@ -82,10 +99,15 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
             X
           </button>
         </header>
-        {showRegister ? (
+        {activeView === VIEW_REGISTER ? (
           <RegisterForm
             onBack={handleBackToLogin}
             onRegister={handleRegisterPlaceholder}
+          />
+        ) : activeView === VIEW_FORGOT ? (
+          <ForgotPasswordForm
+            onBack={handleBackToLogin}
+            onRequestReset={handleForgotPlaceholder}
           />
         ) : (
           <form className="login-form" onSubmit={handleSubmit}>
@@ -113,7 +135,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
             {error && <div className="login-error">{error}</div> /* KV add */}
             {infoMessage && <div className="login-info">{infoMessage}</div>}
             <div className="login-actions">
-              <button type="button" className="login-forgot">
+              <button type="button" className="login-forgot" onClick={handleShowForgotPassword}>
                 Forgot password?
               </button>
               <button type="submit" className="login-submit">Log in</button>
