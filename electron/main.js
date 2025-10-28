@@ -9,7 +9,7 @@ handle application lifecycle events such as closing the window or starting the p
 on how we start our project (npm run x:electron).
 */
 
-import { app, BrowserWindow } from 'electron'; // Main Electron modules import
+import { app, BrowserWindow, screen } from 'electron'; // Main Electron modules import
 import { fileURLToPath } from 'node:url'; // Utility to convert file URL to path
 import path from 'node:path';
 
@@ -23,9 +23,12 @@ const distPath = path.join(__dirname, '..', 'dist');
 
 // Function to create the main application window
 async function createWindow() {
+  const { workArea } = screen.getPrimaryDisplay();
   const win = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    x: workArea?.x ?? undefined,
+    y: workArea?.y ?? undefined,
+    width: workArea?.width ?? 1280,
+    height: workArea?.height ?? 800,
     minWidth: 960,
     minHeight: 600,
     show: false,
