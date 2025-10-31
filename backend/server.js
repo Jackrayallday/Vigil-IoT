@@ -33,8 +33,8 @@ app.use(session//configure the session management
 const MYSQL_CONFIG =
 {//specify the MySQL connection configuration (replace the user and password values with your own)
     host: "localhost",//specify the host
-    user: "jackray1",//set the username
-    password: "donthack"//set the password
+    user: "root",//set the username
+    password: "password"//set the password
 };
 
 async function initDatabase()//function to initialize the database
@@ -94,8 +94,7 @@ async function initDatabase()//function to initialize the database
                     return res.send({success: false, message: "Username already taken"});
 
                 //if here, username not taken: proceed with registration
-                const salt = await bycrypt.genSalt(10);//generate the salt
-                const hashedPassword = await bcrypt.hash(password, salt);//hash password with salt
+                const hashedPassword = await bcrypt.hash(password, 10);//hash the password
 
                 await db.query//query database to insert new user
                 (
@@ -111,30 +110,34 @@ async function initDatabase()//function to initialize the database
                 return res.status(500).send("Server error");//indicate error to frontend
             }
         });
-        app.post("/login", async (req, res) =>
-        {//if here, user entered login credentials: validate them
-            const {username, password} = req.body;//get the credentials from request body
-            //encrypt password before checking it in database
-            //wait for registration functionallity to be finished first
+        app.post("/login", async (req, res) => {
+            const { username, password } = req.body;
+
             try
-            {
-                const [results] = await db.query//find credentials in database
-                (//below is the SQL query to do this
-                    "SELECT * FROM users WHERE username = ? AND password_hash = ?",
-                    [username, password]
-                );
-                if(results.length > 0)
-                {
-                    req.session.user = { username };// Store user info in session
-                    return res.send({success: true});//credentials exist: return true
-                }
-                else
-                    return res.send({success: false});//credentials invalid: return false
-            } 
-            catch (err) 
-            {//if here, error in MySQL server
-                console.error("Login query error:", err);//log the errir to the console
-                return res.status(500).send("Server error");//indicate error to frontend
+            {   //find username in database
+                const [results] = await db.query("SELECT * FROM users WHERE username = ?",[username]);
+
+                if(results.length === 0)//username not found: return false
+                    return res.send({ success: false, message: "Invalid credentials" });
+
+                const user = results[0];//save the username
+
+                //Compare entered password with stored hash
+                const passwordMatch = await bcrypt.compare(password, user.password_hash);
+
+                if(passwordMatch) 
+                {//passwords match: return true and create session
+                    req.session.user = { username };
+                    return res.send({ success: true });
+                } 
+                else//passwords don't match: return false
+                    return res.send({ success: false, message: "Invalid credentials" });
+    
+            }
+            catch (err)
+            {//if here, database error
+                console.error("Login query error:", err);//log the error
+                return res.status(500).send("Server error");//return status 500 to client
             }
         });
         app.post("/logout", (req, res) =>
