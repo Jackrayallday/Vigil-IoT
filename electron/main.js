@@ -32,6 +32,7 @@ async function createWindow() {
     minWidth: 960,
     minHeight: 600,
     show: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

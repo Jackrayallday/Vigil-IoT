@@ -26,6 +26,8 @@ import LoginModal from "./LoginModal.jsx";
 import SettingsModal from "./SettingsModal.jsx";
 import DeviceDetails from "./DeviceDetails.jsx";
 import logoImage from "./assets/logo.png";
+import routerIllustration from "./assets/router.svg";
+import powerPlugIllustration from "./assets/power-plug.svg";
 
 
 const VIEW_HOME = "home";
@@ -301,7 +303,6 @@ export default function App() {
   const [showWizard, setShowWizard] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   // --- Persisted data ---
   const [settings, setSettings] = useState(initialSettings);
@@ -310,7 +311,7 @@ export default function App() {
   const [selectedScanId, setSelectedScanId] = useState(initialScans[0]?.id ?? null);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [view, setView] = useState(VIEW_HOME);
-  const userMenuRef = useRef(null);
+  const wizardBackdropPointerDownRef = useRef(false); // Prevents dismiss when dragging selections outside the modal.
 
   // On first render, apply the stored theme so the UI does not flash light/dark.
   useEffect(() => {
@@ -344,29 +345,6 @@ export default function App() {
     [scans, selectedScanId],
   );
 
-//this is how we close the menu for logoutside clicks or escape key
-
-  useEffect(() => {
-    if (!showUserMenu) return;
-
-    function handleClickOutside(event) {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target))
-        setShowUserMenu(false);
-    }
-
-    function handleKeydown(event) {
-      if (event.key === "Escape")
-        setShowUserMenu(false);
-    }
-
-    window.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("keydown", handleKeydown);
-    return () => {
-      window.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("keydown", handleKeydown);
-    };
-  }, [showUserMenu]);
-
   // Modal open/close helpers keep those booleans in place.
   function openWizard(e) {
     e.preventDefault();
@@ -379,7 +357,6 @@ export default function App() {
     if(e) e.preventDefault();
     setShowSettings(false);
     setShowWizard(false);
-    setShowUserMenu(false);
     setShowLogin(true);
   }
 
@@ -394,9 +371,23 @@ export default function App() {
     setShowWizard(false);
   }
 
+  function handleWizardBackdropPointerDown(event) {
+    wizardBackdropPointerDownRef.current = event.target === event.currentTarget;
+  }
+
+  function handleWizardBackdropPointerUp(event) {
+    if (wizardBackdropPointerDownRef.current && event.target === event.currentTarget) {
+      closeWizard();
+    }
+    wizardBackdropPointerDownRef.current = false;
+  }
+
+  function resetWizardBackdropPointerFlag() {
+    wizardBackdropPointerDownRef.current = false;
+  }
+
   function closeLogin() {
     setShowLogin(false);
-    setShowUserMenu(false);
   }
 
   function closeSettings() {
@@ -408,7 +399,6 @@ export default function App() {
     setSelectedDevice(null);
     setShowLogin(false);
     setShowSettings(false);
-    setShowUserMenu(false);
   }
 
   function handleLoginSuccess(userInfo) {
@@ -423,12 +413,7 @@ export default function App() {
       console.error("Logout failed:", err);
     } finally {
       setUser(null);
-      setShowUserMenu(false);
     }
-  }
-
-  function toggleUserMenu() {
-    setShowUserMenu((prev) => !prev);
   }
 
   // Navigation helpers wire the buttons to their views.
@@ -495,62 +480,63 @@ export default function App() {
     <div className="frame">
       <header className="header">
         <a className="logo" href="/" aria-label="Home" onClick={(e) => { e.preventDefault(); goHome(); }}>
-          <img className="logo-img" src={logoImage} alt="Dashboard logo" />
+          <img className="logo-img" src={logoImage} alt="Vigil IoT logo" />
         </a>
 
         <nav className="top-actions" aria-label="Primary">
           <button type="button" className="settings-btn" onClick={openSettings}>Settings</button>
           {user ? (
-            <div className="user-menu" ref={userMenuRef}>
-              <button
-                type="button"
-                className="user-btn"
-                onClick={toggleUserMenu}
-                aria-haspopup="true"
-                aria-expanded={showUserMenu}
-              >
-                {user.username}
-              </button>
-              {showUserMenu && (
-                <div className="user-dropdown" role="menu">
-                  <button type="button" className="user-dropdownItem" onClick={handleLogout}>
-                    Log out
-                  </button>
-                </div>
-              )}
-            </div>
+            <button type="button" className="user-btn" onClick={handleLogout}>
+              Log out
+            </button>
           ) : (
             <button type="button" className="login-btn" onClick={openLogin}>Log in</button>
           )}
         </nav>
       </header>
 
-      <main className={`main ${view !== VIEW_HOME ? "main--fill" : ""}`}>
-        {/* Home view: big start button plus optional shortcut to history. */}
-        {view === VIEW_HOME && (
-          <>
-            <a
-              href="/scan/new"
-              className="start-circle"
-              aria-label="Start Scan"
-              onClick={openWizard}
-            >
-              <span className="start-text">Start{"\n"}Scan</span>
-            </a>
+        <main className={`main ${view === VIEW_HOME ? "main--home" : "main--fill"}`}>
+          {/* Home view redesigned to feature the start panel artwork flanking the primary call to action. */}
+          {view === VIEW_HOME && (
+          <section className="home-start-panel" aria-label="Start scan panel">
+            <img
+              src={routerIllustration}
+              alt="Stylized wireless router illustration"
+              className="home-start-panel__illustration home-start-panel__illustration--router"
+              draggable="false"
+            />
 
-            {hasScans && (
-              <button
-                type="button"
-                className="prev-scans"
-                onClick={() => {
-                  setSelectedDevice(null);
-                  setView(VIEW_HISTORY);
-                }}
+            <div className="home-start-panel__center">
+              <a
+                href="/scan/new"
+                className="start-circle home-start-panel__start"
+                aria-label="Start Scan"
+                onClick={openWizard}
               >
-                Previous Scans
-              </button>
-            )}
-          </>
+                <span className="start-text">Start{"\n"}Scan</span>
+              </a>
+
+              {hasScans && (
+                <button
+                  type="button"
+                  className="prev-scans home-start-panel__history"
+                  onClick={() => {
+                    setSelectedDevice(null);
+                    setView(VIEW_HISTORY);
+                  }}
+                >
+                  Previous Scans
+                </button>
+              )}
+            </div>
+
+            <img
+              src={powerPlugIllustration}
+              alt="Stylized power plug illustration"
+              className="home-start-panel__illustration home-start-panel__illustration--plug"
+              draggable="false"
+            />
+          </section>
         )}
 
         {/* History view: list each previous scan for quick access. */}
@@ -605,7 +591,15 @@ export default function App() {
 
       {/* Modals live at the bottom so they overlay the main content when toggled on. */}
       {showWizard && (
-        <div role="dialog" aria-modal="true" className="modal-backdrop" onClick={closeWizard}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onPointerDown={handleWizardBackdropPointerDown}
+          onPointerUp={handleWizardBackdropPointerUp}
+          onPointerLeave={resetWizardBackdropPointerFlag}
+          onPointerCancel={resetWizardBackdropPointerFlag}
+        >
           <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="modal-title">New Scan</h2>

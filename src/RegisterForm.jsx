@@ -68,12 +68,12 @@ export default function RegisterForm({ onBack }) {//KV edit //export default fun
   return (
     <form className="login-form" onSubmit={handleSubmit}>
       <div className="login-field">
-        <label htmlFor="register-username">Username</label>
+        <label htmlFor="register-username">Email</label>
         <input
           id="register-username"
           name="username"
-          type="text"
-          autoComplete="username"
+          type="email"
+          autoComplete="email"
           value={username}
           onChange={(e) => {
             setUsername(e.target.value);
