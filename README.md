@@ -55,6 +55,10 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
      ```
    - To stop use 'control c' - > 'Y' -> 'Enter Key'
 
+## Testing
+
+Unit tests use [Vitest](https://vitest.dev/). Run `npm run test` from the project root to execute the suite once, or `npx vitest --watch` while iterating on components and helpers.
+
 ## Notes
 
 - Please add your name at the top of any file you edit where a contributor list is expected.

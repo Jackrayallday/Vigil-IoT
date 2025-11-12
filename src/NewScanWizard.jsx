@@ -199,17 +199,17 @@ function Checkbox({ label, checked, onChange }) {
 }
 
 // Helper utilities keep the main component focused on UI concerns.
-function defaultScanName() {
+export function defaultScanName() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, "0");
   return `Scan ${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function tokenize(input) {
+export function tokenize(input) {
   return input.split(/[\n,\s]+/g).map((s) => s.trim()).filter(Boolean);
 }
 
-function isValidIPv4OrCidr(s) {
+export function isValidIPv4OrCidr(s) {
   const seg = "(?:25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)";
   const ipv4 = `(?:${seg}\\.){3}${seg}`;
   const cidr = "(?:\\/(?:[0-9]|[1-2][0-9]|3[0-2]))?";
