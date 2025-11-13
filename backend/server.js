@@ -25,7 +25,7 @@ app.use(session//configure the session management
     cookie:
     {
         maxAge: 1000 * 60 * 60, //1 hour
-        httpOnly: true,//https may be used too
+        httpOnly: true,//https may not be used yet
         secure: false //Set to true if using HTTPS
     }
 }));
@@ -33,8 +33,8 @@ app.use(session//configure the session management
 const MYSQL_CONFIG =
 {//specify the MySQL connection configuration (replace the user and password values with your own)
     host: "localhost",//specify the host
-    user: "root",//set the username
-    password: "password"//set the password
+    user: "root",//set the email
+    password: "comp440"//set the password
 };
 
 async function initDatabase()//function to initialize the database
@@ -48,7 +48,7 @@ async function initDatabase()//function to initialize the database
     await connection.query(`CREATE TABLE IF NOT EXISTS users
     (
         user_id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(50) UNIQUE NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
@@ -83,23 +83,23 @@ async function initDatabase()//function to initialize the database
         });
         app.post("/register", async (req, res) =>
         {//if here, user wants to register: validate credentials.
-            const {username, password} = req.body;//get credentials from request body
+            const {email, password} = req.body;//get credentials from request body
 
             try
             {
-                //check if entered username already exists in database
+                //check if entered email already exists in database
                 const [existingUsers] =
-                    await db.query("SELECT * FROM users WHERE username = ?", [username]);
-                if(existingUsers.length > 0)//if username taken, return false
-                    return res.send({success: false, message: "Username already taken"});
+                    await db.query("SELECT * FROM users WHERE email = ?", [email]);
+                if(existingUsers.length > 0)//if email taken, return false
+                    return res.send({success: false, message: "email already taken"});
 
-                //if here, username not taken: proceed with registration
+                //if here, email not taken: proceed with registration
                 const hashedPassword = await bcrypt.hash(password, 10);//hash the password
 
                 await db.query//query database to insert new user
                 (
-                    "INSERT INTO users (username, password_hash) VALUES (?, ?)",
-                    [username, hashedPassword]
+                    "INSERT INTO users (email, password_hash) VALUES (?, ?)",
+                    [email, hashedPassword]
                 );
 
                 return res.send({ success: true });//indicate successful registration to client
@@ -111,23 +111,23 @@ async function initDatabase()//function to initialize the database
             }
         });
         app.post("/login", async (req, res) => {
-            const { username, password } = req.body;
+            const { email, password } = req.body;
 
             try
-            {   //find username in database
-                const [results] = await db.query("SELECT * FROM users WHERE username = ?",[username]);
+            {   //find email in database
+                const [results] = await db.query("SELECT * FROM users WHERE email = ?",[email]);
 
-                if(results.length === 0)//username not found: return false
+                if(results.length === 0)//email not found: return false
                     return res.send({ success: false, message: "Invalid credentials" });
 
-                const user = results[0];//save the username
+                const user = results[0];//save the email
 
                 //Compare entered password with stored hash
                 const passwordMatch = await bcrypt.compare(password, user.password_hash);
 
                 if(passwordMatch) 
                 {//passwords match: return true and create session
-                    req.session.user = { username };
+                    req.session.user = { email };
                     return res.send({ success: true });
                 } 
                 else//passwords don't match: return false
