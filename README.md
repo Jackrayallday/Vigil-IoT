@@ -42,7 +42,7 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
    ```
 6. **Run the backend server app.**
    ```bash
-   node server.js
+   node vigil_iot_server.js
    ```
 7. **Run the frontend Electron app.**
    ```bash
