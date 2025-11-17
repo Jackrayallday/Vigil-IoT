@@ -4,7 +4,7 @@ programmer: Jack Ray
 ===================================================
 Component for the settings/preferences modal dialog.
 */
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import "./styles/modal.css";
 import "./styles/settings.css";
 
@@ -29,6 +29,7 @@ const OPTION_FIELDS = [
 
 export default function SettingsModal({ settings, onClose, onSave }) {
   // Local copies of the incoming settings keep the form snappy and easy to reset.
+  const backdropPointerDownRef = useRef(false); // Track if pointer press began outside the sheet.
   const [theme, setTheme] = useState(settings?.theme || "light");
   const [retentionDays, setRetentionDays] = useState(String(settings?.retentionDays ?? 30));
   const [defaultOptions, setDefaultOptions] = useState({
@@ -57,8 +58,31 @@ export default function SettingsModal({ settings, onClose, onSave }) {
     });
   }
 
+  function handleBackdropPointerDown(event) {
+    backdropPointerDownRef.current = event.target === event.currentTarget;
+  }
+
+  function handleBackdropPointerUp(event) {
+    if (backdropPointerDownRef.current && event.target === event.currentTarget) {
+      onClose();
+    }
+    backdropPointerDownRef.current = false;
+  }
+
+  function resetBackdropPointerFlag() {
+    backdropPointerDownRef.current = false;
+  }
+
   return (
-    <div role="dialog" aria-modal="true" className="modal-backdrop" onClick={onClose}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="modal-backdrop"
+      onPointerDown={handleBackdropPointerDown}
+      onPointerUp={handleBackdropPointerUp}
+      onPointerLeave={resetBackdropPointerFlag}
+      onPointerCancel={resetBackdropPointerFlag}
+    >
       <div className="modal-sheet settings-sheet" onClick={(e) => e.stopPropagation()}>
         <header className="settings-header">
           <h2 className="settings-title">Settings</h2>

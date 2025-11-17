@@ -6,7 +6,7 @@ Component for user login modal dialog.
 TODO: Hook into real authentication system.
 Includes placeholder flows for register + forgot password.
 */
-import React, { useState } from "react"; //import React from "react"; KV edit
+import React, { useRef, useState } from "react"; //import React from "react"; KV edit
 import axios from "axios"; //KV add
 import "./styles/modal.css";
 import "./styles/login.css";
@@ -20,6 +20,7 @@ const VIEW_REGISTER = "register";
 const VIEW_FORGOT = "forgot";
 
 export default function LoginModal({ onClose, onLoginSuccess }) {
+  const backdropPointerDownRef = useRef(false); // Track if pointer press started on the backdrop.
   const [activeView, setActiveView] = useState(VIEW_LOGIN);
   const [username, setUsername] = useState(""); //KV add
   const [password, setPassword] = useState(""); //KV add
@@ -81,7 +82,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
           onClose();
         return;
       } else {
-        setError("Invalid username or password.");
+        setError("Invalid email or password.");
       }
     } catch (err) {
       console.error(err);
@@ -90,8 +91,31 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
     //---------------------------------------------------------------
   }
 
+  function handleBackdropPointerDown(event) {
+    backdropPointerDownRef.current = event.target === event.currentTarget;
+  }
+
+  function handleBackdropPointerUp(event) {
+    if (backdropPointerDownRef.current && event.target === event.currentTarget) {
+      onClose();
+    }
+    backdropPointerDownRef.current = false;
+  }
+
+  function resetBackdropPointerFlag() {
+    backdropPointerDownRef.current = false;
+  }
+
   return (
-    <div role="dialog" aria-modal="true" className="modal-backdrop" onClick={onClose}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="modal-backdrop"
+      onPointerDown={handleBackdropPointerDown}
+      onPointerUp={handleBackdropPointerUp}
+      onPointerLeave={resetBackdropPointerFlag}
+      onPointerCancel={resetBackdropPointerFlag}
+    >
       <div className="modal-sheet login-sheet" onClick={(e) => e.stopPropagation()}>
         <header className="login-header">
           <img className="login-logo" src={logoImage} alt="Dashboard logo" />
@@ -112,12 +136,12 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
         ) : (
           <form className="login-form" onSubmit={handleSubmit}>
             <div className="login-field">
-              <label htmlFor="login-username">Username</label>
+              <label htmlFor="login-username">Email</label>
               <input 
                 id="login-username"
                 name="username"
-                type="text"
-                autoComplete="username" 
+                type="email"
+                autoComplete="email" 
                 value={username} //Kv add
                 onChange={(e) => setUsername(e.target.value)} //KV add
                 required //KV add
