@@ -1,6 +1,6 @@
 /*
 file: src/LoginModal.jsx
-programmer: Jack Ray (edited by Kevin Volkov)
+programmer: Jack Ray (edited by Kevin Volkov to add functionallity)
 ===================================================
 Component for user login modal dialog. 
 TODO: Hook into real authentication system.
@@ -22,13 +22,13 @@ const VIEW_FORGOT = "forgot";
 export default function LoginModal({ onClose, onLoginSuccess }) {
   const backdropPointerDownRef = useRef(false); // Track if pointer press started on the backdrop.
   const [activeView, setActiveView] = useState(VIEW_LOGIN);
-  const [username, setUsername] = useState(""); //KV add
+  const [email, setEmail] = useState(""); //KV add
   const [password, setPassword] = useState(""); //KV add
   const [error, setError] = useState(""); //KV add
   const [infoMessage, setInfoMessage] = useState("");
 
   function resetLoginState() {
-    setUsername("");
+    setEmail("");
     setPassword("");
     setError("");
     setInfoMessage("");
@@ -69,12 +69,12 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
     //KV add --------------------------------------------------------
     try {
       const res = await axios.post("http://localhost:3001/login", {
-        username,
+        email,
         password,
       });
 
       if (res.data.success) {
-        const userInfo = res?.data?.user ?? { username };
+        const userInfo = res?.data?.user ?? { email };
         resetLoginState();
         if (typeof onLoginSuccess === "function")
           onLoginSuccess(userInfo);
@@ -136,14 +136,14 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
         ) : (
           <form className="login-form" onSubmit={handleSubmit}>
             <div className="login-field">
-              <label htmlFor="login-username">Email</label>
+              <label htmlFor="login-email">Email</label>
               <input 
-                id="login-username"
-                name="username"
+                id="login-email"
+                name="email"
                 type="email"
                 autoComplete="email" 
-                value={username} //Kv add
-                onChange={(e) => setUsername(e.target.value)} //KV add
+                value={email} //Kv add
+                onChange={(e) => setEmail(e.target.value)} //KV add
                 required //KV add
               />
             </div>
