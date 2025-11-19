@@ -15,7 +15,10 @@ const bcrypt = require("bcrypt");//to store passwords as salted hashes
 const app = express();//create Express app instance defining routes, middleware, server behavior
 
 //configure the middleware
-app.use(cors());//tell express to allow cross-origin requests
+app.use(cors({
+    origin: true,//reflect the request origin for dev servers
+    credentials: true//allow session cookies cross-origin
+}));//tell express to allow cross-origin requests
 app.use(bodyParser.json());//tell express to parse JSON requests through req.body
 app.use(session//configure the session management
 ({
@@ -33,8 +36,8 @@ app.use(session//configure the session management
 const MYSQL_CONFIG = //specify the MySQL connection configuration (replace the user and password
 {                    //values with your own)
     host: "localhost",//specify the host
-    user: "root",//set the username
-    password: "comp440"//set the password
+    user: "jackray1",//set the username
+    password: "donthack"//set the password
 };
 
 async function initDatabase()//function to initialize the database
@@ -191,8 +194,9 @@ async function initDatabase()//function to initialize the database
 
                 if(passwordMatch) 
                 {//passwords match: return true and create session
-                    req.session.user = { email };
-                    return res.send({ success: true });
+                    const sessionUser = { user_id: user.user_id, email: user.email };
+                    req.session.user = sessionUser;
+                    return res.send({ success: true, user: sessionUser });
                 } 
                 else//passwords don't match: return false
                     return res.send({ success: false, message: "Invalid credentials" });
@@ -215,10 +219,20 @@ async function initDatabase()//function to initialize the database
         });
         app.post("/save-scan", async (req, res) =>
 		{//if here, user wants to save scan report
-            const {user_id,title,scanned_at,targets,exclusions,detection_options,devices} = req.body;
+            const sessionUserId = req.session?.user?.user_id || null;
+            const {
+                user_id: userIdFromBody,
+                title,
+                scanned_at,
+                targets,
+                exclusions,
+                detection_options,
+                devices
+            } = req.body;
+            const user_id = userIdFromBody || sessionUserId;
 
             if(!user_id || !title || !scanned_at || !targets)//check required fields  
-		    return res.status(400).send({success: false, message: "Missing required fields!"});
+		        return res.status(400).send({success: false, message: "Missing required fields!"});
     
             try
 			{
