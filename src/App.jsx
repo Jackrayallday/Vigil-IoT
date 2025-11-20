@@ -633,7 +633,13 @@ export default function App() {
   return (
     <div className="frame">
       <header className="header">
-        <a className="logo" href="/" aria-label="Home" onClick={(e) => { e.preventDefault(); goHome(); }}>
+        <a
+          className="logo"
+          href="/"
+          aria-label="Home"
+          tabIndex="-1"
+          onClick={(e) => { e.preventDefault(); goHome(); }}
+        >
           <img className="logo-img" src={logoImage} alt="Vigil IoT logo" />
         </a>
 

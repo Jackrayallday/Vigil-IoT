@@ -41,6 +41,7 @@ async function createWindow() {
   });
 // Show window when ready and open dev tools if in development mode
   win.on('ready-to-show', () => {
+    win.maximize(); // start maximized so the window fills the screen
     win.show();
     if (isDev) {
       win.webContents.openDevTools({ mode: 'detach' });

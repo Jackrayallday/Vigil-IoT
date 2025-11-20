@@ -108,6 +108,10 @@
   margin-bottom: 10px;
 }
 
+.nsw-refreshSlot {
+  display: inline-flex;
+}
+
 .nsw-card__title {
   font-weight: 700;
   display: inline-flex;
@@ -150,6 +154,19 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.nsw-wifiSpinner {
+  width: 60px;
+  height: 60px;
+}
+
+.nsw-wifiSpinner--large {
+  width: 90px;
+  height: 90px;
+  margin-bottom: 6px;
 }
 
 .nsw-manualRow {
@@ -281,4 +298,56 @@
 
 @keyframes nsw-spin {
   to { transform: rotate(360deg); }
+}
+
+.nsw-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--nsw-border);
+  background: #fff;
+  box-shadow: var(--nsw-shadow-soft);
+  cursor: default;
+}
+
+.nsw-refresh__icon {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--nsw-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.nsw-refresh--spinning .nsw-refresh__icon {
+  animation: nsw-spin 0.9s linear infinite;
+}
+
+.nsw-refresh--static {
+  cursor: pointer;
+}
+
+.nsw-refresh--static .nsw-refresh__icon {
+  animation: none;
+}
+
+.nsw-refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--nsw-border);
+  border-radius: 20px;
+  background: #fff;
+  color: var(--nsw-text);
+  cursor: pointer;
+  box-shadow: var(--nsw-shadow-soft);
+}
+
+.nsw-refreshBtn__text {
+  font-size: 12px;
+  font-weight: 600;
 }

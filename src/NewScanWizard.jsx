@@ -4,7 +4,7 @@ programmer: Jack Ray
 ===================================================
 Component for the new scan wizard modal dialog. Collects scan name, targets, and options.
 */
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import "./styles/new-scan-wizard.css";
 
 const DEFAULT_OPTIONS = {
@@ -30,6 +30,8 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
   const [errorMsg, setErrorMsg] = useState("");
   const [targetError, setTargetError] = useState("");
   const [showValidation, setShowValidation] = useState(false);
+  const [indicatorState, setIndicatorState] = useState("center"); // center | corner | stalled
+  const idleTimerRef = useRef(null);
 
   useEffect(() => {
     setOptions(initialOptions);
@@ -45,6 +47,25 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
   const areTargetsMissing = targets.length === 0;
 
   const isFormValid = !isNameMissing && !areTargetsMissing && !targetError;
+
+  // Move indicator between center/corner depending on targets present.
+  useEffect(() => {
+    if (targetEntries.length === 0 && indicatorState === "corner") {
+      setIndicatorState("center");
+    }
+    if (targetEntries.length > 0 && indicatorState === "center") {
+      setIndicatorState("corner");
+    }
+  }, [targetEntries.length, indicatorState]);
+
+  // Idle timer: after 10s in center or corner, pause the indicator (stalled).
+  useEffect(() => {
+    clearIdleTimer(idleTimerRef);
+    if (indicatorState === "center" || indicatorState === "corner") {
+      idleTimerRef.current = window.setTimeout(() => setIndicatorState("stalled"), 10_000);
+    }
+    return () => clearIdleTimer(idleTimerRef);
+  }, [indicatorState]);
 
   function toggleOption(key) {
     setOptions((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -108,6 +129,8 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
       return [...prev, ...next];
     });
     setManualTargetInput("");
+    const willHaveTargets = targetEntries.length + tokens.length > 0;
+    setIndicatorState(willHaveTargets ? "corner" : "center");
   }
 
   function handleManualInputKeyDown(event) {
@@ -150,13 +173,29 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
               <span>Targets</span>
               <span className="nsw-note">(required)</span>
             </div>
+            {indicatorState === "corner" && (
+              <div className="nsw-refreshSlot" aria-live="polite">
+                <WifiSpinner variant="small" />
+              </div>
+            )}
+            {indicatorState === "stalled" && (
+              <button
+                type="button"
+                className="nsw-refreshBtn"
+                onClick={() => setIndicatorState("center")}
+                aria-label="Scan more"
+              >
+                <WifiSpinner variant="small" animated={false} />
+                <span className="nsw-refreshBtn__text">Scan more</span>
+              </button>
+            )}
           </header>
 
           <div className="nsw-targetList" aria-label="Discovered targets">
             {targetEntries.length === 0 ? (
               <div className="nsw-targetEmpty">
-                <p>Waiting for targets...</p>
-                <p className="nsw-note">Add targets manually to get started.</p>
+                {indicatorState === "center" && <WifiSpinner variant="large" />}
+                {indicatorState === "center" && <p>Scanning for targets...</p>}
               </div>
             ) : (
               <ul>
@@ -273,4 +312,60 @@ function createLocalId(prefix = "item") {
     return `${prefix}-${crypto.randomUUID()}`;
   }
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10_000)}`;
+}
+
+function WifiSpinner({ variant = "small", animated = true }) {
+  return (
+    <svg
+      className={`nsw-wifiSpinner ${variant === "large" ? "nsw-wifiSpinner--large" : ""}`}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 100 100"
+      role="img"
+      aria-label="Scanning for targets"
+    >
+      <circle fill="#e63946" r="11" cy="75" cx="28">
+        {animated && (
+          <animate
+            begin="0s"
+            keyTimes="0;0.2;1"
+            values="0;1;1"
+            dur="2.8s"
+            repeatCount="indefinite"
+            attributeName="fill-opacity"
+          />
+        )}
+      </circle>
+      <path strokeWidth="10" stroke="#d9a829" fill="none" d="M28 47A28 28 0 0 1 56 75">
+        {animated && (
+          <animate
+            begin="0.28s"
+            keyTimes="0;0.2;1"
+            values="0;1;1"
+            dur="2.8s"
+            repeatCount="indefinite"
+            attributeName="stroke-opacity"
+          />
+        )}
+      </path>
+      <path strokeWidth="10" stroke="#16b19a" fill="none" d="M28 25A50 50 0 0 1 78 75">
+        {animated && (
+          <animate
+            begin="0.56s"
+            keyTimes="0;0.2;1"
+            values="0;1;1"
+            dur="2.8s"
+            repeatCount="indefinite"
+            attributeName="stroke-opacity"
+          />
+        )}
+      </path>
+    </svg>
+  );
+}
+
+function clearIdleTimer(ref) {
+  if (ref.current) {
+    window.clearTimeout(ref.current);
+    ref.current = null;
+  }
 }
