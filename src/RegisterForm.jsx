@@ -8,14 +8,14 @@ import React, { useState } from "react";
 import PasswordField from "./PasswordField"; // Shared press-to-reveal password input
 
 export default function RegisterForm({ onBack }) {//KV edit //export default function RegisterForm({ onBack, onRegister }) {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");//KV add
 
   function resetForm() {
-    setUsername("");
+    setEmail("");
     setPassword("");
     setConfirmPassword("");
   }
@@ -31,7 +31,7 @@ export default function RegisterForm({ onBack }) {//KV edit //export default fun
 
     /*setFormError("");
     if(typeof onRegister === "function")
-      onRegister({username, password});
+      onRegister({email, password});
 
     resetForm();*///KV remove
 
@@ -42,7 +42,7 @@ export default function RegisterForm({ onBack }) {//KV edit //export default fun
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ email, password })
         });
 
         const result = await response.json();
@@ -68,15 +68,15 @@ export default function RegisterForm({ onBack }) {//KV edit //export default fun
   return (
     <form className="login-form" onSubmit={handleSubmit}>
       <div className="login-field">
-        <label htmlFor="register-username">Username</label>
+        <label htmlFor="register-email">Email</label>
         <input
-          id="register-username"
-          name="username"
-          type="text"
-          autoComplete="username"
-          value={username}
+          id="register-email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          value={email}
           onChange={(e) => {
-            setUsername(e.target.value);
+            setEmail(e.target.value);
             setFormError("");
             setFormSuccess("");//KV add
           }}

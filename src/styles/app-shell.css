@@ -3,8 +3,6 @@ file: src/styles/app-shell.css
 programmer: Jack Ray
 ===================================================
   Styles for the app shell layout: header, main content area, and footer.
-  This is the meat and potatoes of the app's structure and primary UI elements.
-  We also set up a CSS container for responsive design.
 */
 
 .frame {
@@ -12,46 +10,49 @@ programmer: Jack Ray
   min-height: 100svh;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  border: 0.5rem solid var(--border);
+  background: var(--canvas-bg);
+  padding-block-start: clamp(var(--space-4), 4vw, var(--space-7));
 }
 
 .header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: var(--space-4) var(--space-5);
+  padding-inline: clamp(var(--space-4), 6vw, var(--space-8));
+  padding-bottom: clamp(var(--space-4), 4vw, var(--space-6));
   gap: var(--space-4);
 }
 
 .logo {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   text-decoration: none;
   padding: 0;
-  align-self: flex-start;
+  color: inherit;
 }
 
 .logo-img {
-  block-size: 10rem;
-  inline-size: auto;
+  inline-size: clamp(5.5rem, 11vw, 8rem);
+  block-size: auto;
   max-inline-size: 100%;
   object-fit: contain;
-  margin-top: -1rem;
+  filter: drop-shadow(0 0.75rem 1.5rem rgba(217, 168, 41, 0.18));
 }
 
 .top-actions {
-  display: flex;
+  display: inline-flex;
   gap: var(--space-3);
-  align-items: center;
   flex-wrap: wrap;
-  align-self: flex-start;
+  justify-content: flex-end;
+  margin-block-start: clamp(var(--space-2), 2vw, var(--space-4));
 }
 
 .settings-btn,
-.login-btn {
-  padding: 0.5rem 0.9rem;
-  border-radius: 0.5rem;
+.login-btn,
+.user-btn {
+  padding: 0.65rem 1.35rem;
+  border-radius: 0.85rem;
   text-decoration: none;
   font-weight: 800;
   font-size: var(--fs-sm);
@@ -60,100 +61,165 @@ programmer: Jack Ray
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  height: 2.5rem;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
 }
 
 .settings-btn {
   border: 0.125rem solid var(--settings-border);
   background: var(--settings-bg);
   color: var(--settings-text);
-}
-
-.settings-btn:hover,
-.settings-btn:focus-visible {
-  filter: brightness(0.97);
-  outline: none;
+  box-shadow: 0 0.45rem 0.9rem rgba(35, 40, 135, 0.18);
 }
 
 .login-btn {
   border: 0.125rem solid var(--red-border);
   background: var(--red-bg);
   color: var(--red);
-}
-
-.login-btn:hover,
-.login-btn:focus-visible {
-  filter: brightness(0.97);
-  outline: none;
-}
-
-.user-menu {
-  position: relative;
+  box-shadow: 0 0.45rem 0.9rem rgba(217, 35, 50, 0.18);
 }
 
 .user-btn {
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  font-weight: 800;
-  font-size: var(--fs-sm);
-  line-height: 1;
-  border: 0.125rem solid #0b4acb;
-  background: #1877f2;
-  color: #ffffff;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
+  border: 0.125rem solid var(--settings-border);
+  background: var(--settings-bg);
+  color: var(--settings-text);
+  box-shadow: 0 0.45rem 0.9rem rgba(35, 40, 135, 0.18);
 }
 
+.settings-btn:hover,
+.settings-btn:focus-visible,
+.login-btn:hover,
+.login-btn:focus-visible,
 .user-btn:hover,
 .user-btn:focus-visible {
-  background: #166fe5;
-  outline: none;
-}
-
-.user-dropdown {
-  position: absolute;
-  top: calc(100% + var(--space-2));
-  right: 0;
-  min-inline-size: 10rem;
-  border: 0.125rem solid rgba(0, 0, 0, 0.08);
-  border-radius: 0.6rem;
-  background: #ffffff;
-  box-shadow: 0 0.75rem 1.75rem rgba(15, 23, 42, 0.18);
-  padding: var(--space-2);
-  z-index: 10000;
-}
-
-.user-dropdownItem {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  background: none;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-}
-
-.user-dropdownItem:hover,
-.user-dropdownItem:focus-visible {
-  background: rgba(24, 119, 242, 0.12);
+  transform: translateY(-1px);
+  filter: brightness(1.02);
   outline: none;
 }
 
 .main {
   display: grid;
   place-items: center;
-  gap: var(--space-5);
-  padding: var(--space-6);
+  gap: clamp(var(--space-5), 6vw, var(--space-8));
+  padding-inline: clamp(var(--space-4), 8vw, 6rem);
+  padding-bottom: clamp(var(--space-5), 8vw, 6rem);
   container-type: inline-size;
 }
 
 .main--fill {
   place-items: stretch;
   align-items: start;
+}
+
+.main--home {
+  align-content: center;
+}
+
+.home-start-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: clamp(1.5rem, 6vw, 5rem);
+  align-items: end;
+  width: min(81rem, 100%);
+}
+
+.home-start-panel__illustration {
+  display: block;
+  inline-size: clamp(7.2rem, 15vw, 11.5rem);
+  max-inline-size: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0.75rem 1.5rem rgba(0, 0, 0, 0.08));
+  user-select: none;
+  align-self: center;
+}
+
+.home-start-panel__illustration--router {
+  justify-self: start;
+  align-self: start;
+  transform: translate(-48%, -24%);
+  /* opacity: 0.7; */
+}
+
+.home-start-panel__illustration--plug {
+  justify-self: end;
+  align-self: end;
+  transform: translate(48%, 18%);
+  opacity: 0.7;
+}
+
+.home-start-panel__center {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: center;
+  text-align: center;
+  align-self: center;
+}
+
+.home-start-panel__history {
+  padding-inline: clamp(var(--space-5), 6vw, 3.5rem);
+  margin-block-start: clamp(4rem, 10vw, 7rem);
+}
+
+.start-circle {
+  inline-size: clamp(17rem, 48vw, 25.5rem);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 0.35rem solid var(--teal-border);
+  background: var(--teal-fill);
+  box-shadow: 0 1.25rem 2.5rem rgba(12, 143, 118, 0.22);
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  user-select: none;
+}
+
+.start-circle:hover,
+.start-circle:focus-visible {
+  transform: translateY(-0.25rem);
+  box-shadow: 0 1.6rem 3rem rgba(12, 143, 118, 0.28);
+  outline: none;
+}
+
+.start-text {
+  color: var(--teal);
+  font-weight: 800;
+  line-height: 1.08;
+  text-align: center;
+  white-space: pre-line;
+  font-size: clamp(2.3rem, 1.9rem + 3.8vw, 3.5rem);
+  letter-spacing: 0.02em;
+}
+
+.prev-scans {
+  min-inline-size: clamp(11.5rem, 35vw, 15rem);
+  block-size: clamp(3.6rem, 2.6rem + 1.2vw, 4.1rem);
+  padding-inline: clamp(var(--space-5), 6vw, 4rem);
+  padding-block: clamp(0.75rem, 0.6rem + 0.3vw, 1rem);
+  border: 0.22rem solid var(--orange);
+  border-radius: 0.75rem;
+  background: var(--orange-bg);
+  color: var(--orange-text);
+  font-weight: 800;
+  font-size: clamp(1.15rem, 0.95rem + 0.7vw, 1.35rem);
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  text-align: center;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 0.8rem 1.6rem rgba(249, 115, 22, 0.14);
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.prev-scans:hover,
+.prev-scans:focus-visible {
+  transform: translateY(-0.2rem);
+  box-shadow: 0 1.1rem 2.1rem rgba(249, 115, 22, 0.2);
+  outline: none;
 }
 
 .results-host,
@@ -168,82 +234,99 @@ programmer: Jack Ray
   width: 100%;
 }
 
-.start-circle {
-  inline-size: clamp(12rem, 28vw, 18rem);
-  aspect-ratio: 1 / 1;
-  border-radius: 50%;
-  border: 0.25rem solid var(--teal);
-  background: var(--teal-bg);
-  box-shadow: 0 0.375rem 1.125rem rgba(0, 0, 0, 0.08);
-  display: grid;
-  place-items: center;
-  text-decoration: none;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-  user-select: none;
-}
-
-.start-circle:hover,
-.start-circle:focus-visible {
-  transform: scale(1.02);
-  box-shadow: 0 0.625rem 1.375rem rgba(0, 0, 0, 0.12);
-  outline: none;
-}
-
-.start-text {
-  color: var(--teal);
-  font-weight: 800;
-  line-height: 1.1;
-  text-align: center;
-  white-space: pre-line;
-  font-size: clamp(1.6rem, 1.2rem + 3vw, 2.4rem);
-}
-
-.prev-scans {
-  min-inline-size: clamp(10rem, 30vw, 12.5rem);
-  block-size: 2.75rem;
-  padding-inline: var(--space-4);
-  padding-block: var(--space-2);
-  border: 0.2rem solid var(--orange);
-  border-radius: 0.6rem;
-  background: #fff7ed;
-  color: var(--orange-text);
-  font-weight: 800;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  text-align: center;
-  line-height: 1;
-  cursor: pointer;
-}
-
 .footer {
-  border-top: 0.25rem solid var(--blue);
+  background: var(--footer-bg);
+  color: var(--footer-text);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3) var(--space-5);
+  justify-content: center;
+  position: relative;
+  min-block-size: clamp(4.5rem, 6vw, 6rem);
+  padding-block: clamp(1.5rem, 1.2rem + 0.6vw, 2.1rem);
+  padding-inline: clamp(var(--space-4), 6vw, var(--space-8));
   gap: var(--space-3);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+}
+
+.footer a {
+  color: inherit;
+  text-decoration: none;
 }
 
 .legal {
-  color: var(--blue);
-  text-decoration: none;
   font-weight: 900;
-  letter-spacing: 0.08em;
-  font-size: var(--fs-sm);
+  letter-spacing: 0.12em;
+  font-size: clamp(1.1rem, 0.95rem + 0.6vw, 1.4rem);
+  flex: 0 0 auto;
+  text-align: center;
 }
 
 .intro {
-  color: #111;
-  text-decoration: none;
-  font-style: italic;
   font-size: var(--fs-sm);
+  font-weight: 600;
+  opacity: 0.85;
+  position: absolute;
+  right: clamp(var(--space-4), 6vw, var(--space-8));
+  top: 50%;
+  transform: translateY(-50%);
 }
 
-@media (min-width: 56rem) {
+.footer a:hover,
+.footer a:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
+@media (max-width: 56rem) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .top-actions {
+    justify-content: center;
+  }
+
   .main {
-    gap: var(--space-8);
+    padding-inline: clamp(var(--space-4), 8vw, var(--space-6));
+  }
+
+  .home-start-panel {
+    grid-template-columns: 1fr;
+    align-items: center;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .home-start-panel__illustration--router,
+  .home-start-panel__illustration--plug {
+    justify-self: center;
+    transform: none;
+  }
+
+  .home-start-panel__illustration {
+    inline-size: clamp(6.5rem, 40vw, 10rem);
+    transform: none;
+    align-self: center;
+  }
+
+  .footer {
+    flex-direction: column;
+    padding-inline: var(--space-4);
+    gap: var(--space-2);
+  }
+
+  .legal,
+  .intro {
+    flex: none;
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .intro {
+    position: static;
+    transform: none;
+    margin-top: var(--space-1);
   }
 }

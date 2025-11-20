@@ -1,12 +1,12 @@
 /*
 file: src/LoginModal.jsx
-programmer: Jack Ray (edited by Kevin Volkov)
+programmer: Jack Ray (edited by Kevin Volkov to add functionallity)
 ===================================================
 Component for user login modal dialog. 
 TODO: Hook into real authentication system.
 Includes placeholder flows for register + forgot password.
 */
-import React, { useState } from "react"; //import React from "react"; KV edit
+import React, { useRef, useState } from "react"; //import React from "react"; KV edit
 import axios from "axios"; //KV add
 import "./styles/modal.css";
 import "./styles/login.css";
@@ -20,14 +20,15 @@ const VIEW_REGISTER = "register";
 const VIEW_FORGOT = "forgot";
 
 export default function LoginModal({ onClose, onLoginSuccess }) {
+  const backdropPointerDownRef = useRef(false); // Track if pointer press started on the backdrop.
   const [activeView, setActiveView] = useState(VIEW_LOGIN);
-  const [username, setUsername] = useState(""); //KV add
+  const [email, setEmail] = useState(""); //KV add
   const [password, setPassword] = useState(""); //KV add
   const [error, setError] = useState(""); //KV add
   const [infoMessage, setInfoMessage] = useState("");
 
   function resetLoginState() {
-    setUsername("");
+    setEmail("");
     setPassword("");
     setError("");
     setInfoMessage("");
@@ -68,12 +69,12 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
     //KV add --------------------------------------------------------
     try {
       const res = await axios.post("http://localhost:3001/login", {
-        username,
+        email,
         password,
       });
 
       if (res.data.success) {
-        const userInfo = res?.data?.user ?? { username };
+        const userInfo = res?.data?.user ?? { email };
         resetLoginState();
         if (typeof onLoginSuccess === "function")
           onLoginSuccess(userInfo);
@@ -81,7 +82,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
           onClose();
         return;
       } else {
-        setError("Invalid username or password.");
+        setError("Invalid email or password.");
       }
     } catch (err) {
       console.error(err);
@@ -90,8 +91,31 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
     //---------------------------------------------------------------
   }
 
+  function handleBackdropPointerDown(event) {
+    backdropPointerDownRef.current = event.target === event.currentTarget;
+  }
+
+  function handleBackdropPointerUp(event) {
+    if (backdropPointerDownRef.current && event.target === event.currentTarget) {
+      onClose();
+    }
+    backdropPointerDownRef.current = false;
+  }
+
+  function resetBackdropPointerFlag() {
+    backdropPointerDownRef.current = false;
+  }
+
   return (
-    <div role="dialog" aria-modal="true" className="modal-backdrop" onClick={onClose}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="modal-backdrop"
+      onPointerDown={handleBackdropPointerDown}
+      onPointerUp={handleBackdropPointerUp}
+      onPointerLeave={resetBackdropPointerFlag}
+      onPointerCancel={resetBackdropPointerFlag}
+    >
       <div className="modal-sheet login-sheet" onClick={(e) => e.stopPropagation()}>
         <header className="login-header">
           <img className="login-logo" src={logoImage} alt="Dashboard logo" />
@@ -112,14 +136,14 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
         ) : (
           <form className="login-form" onSubmit={handleSubmit}>
             <div className="login-field">
-              <label htmlFor="login-username">Username</label>
+              <label htmlFor="login-email">Email</label>
               <input 
-                id="login-username"
-                name="username"
-                type="text"
-                autoComplete="username" 
-                value={username} //Kv add
-                onChange={(e) => setUsername(e.target.value)} //KV add
+                id="login-email"
+                name="email"
+                type="email"
+                autoComplete="email" 
+                value={email} //Kv add
+                onChange={(e) => setEmail(e.target.value)} //KV add
                 required //KV add
               />
             </div>
