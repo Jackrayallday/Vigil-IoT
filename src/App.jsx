@@ -756,10 +756,6 @@ export default function App() {
           onPointerCancel={resetWizardBackdropPointerFlag}
         >
           <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title">New Scan</h2>
-              <button onClick={closeWizard} className="modal-closeBtn" aria-label="Close">X</button>
-            </div>
             <div className="modal-body">
               <NewScanWizard onCreate={handleCreateScan} onClose={closeWizard} defaultOptions={settings.defaultOptions} />
             </div>

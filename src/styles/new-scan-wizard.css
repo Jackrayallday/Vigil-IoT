@@ -1,41 +1,284 @@
-/*
-file: src/styles/new-scan-wizard.css
-programmer: Jack Ray
-===================================================
-CSS styles for the New Scan Wizard component.
-*/
+/* file: src/styles/new-scan-wizard.css */
 
-.nsw-form { max-width: 720px; margin: 0 auto; padding: 1rem; }
-.nsw-title { margin: 0 0 16px; font-size: 22px; font-weight: 800; }
-
-.nsw-group { margin-bottom: 16px; }
-.nsw-label { display: block; font-weight: 600; margin-bottom: 6px; }
-.nsw-input { width: 100%; padding: 8px 10px; }
-.nsw-textarea { width: 100%; padding: 8px 10px; font-family: monospace; }
-
-.nsw-help { color: #6b7280; font-size: 12px; margin-top: 6px; }
-.nsw-note { font-size: 12px; color: #6b7280; margin-left: 6px; }
-.nsw-error { color: #b91c1c; font-size: 12px; margin-top: 6px; }
-
-.nsw-fieldset { border: 1px solid #ddd; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
-.nsw-legend { padding: 0 6px; font-weight: 600; }
-
-.nsw-checkboxRow { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
-
-.nsw-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 12px; }
-.nsw-btn { padding: 8px 14px; border-radius: 6px; border: 1px solid #ccc; cursor: pointer; font-weight: 600; }
-.nsw-btnPrimary { background: #2563eb; color: #fff; border-color: #2563eb; }
-.nsw-btnGhost { background: #fff; color: #111; border-color: #d1d5db; }
-.nsw-btnDisabled { background: #e5e7eb; color: #6b7280; border-color: #e5e7eb; cursor: not-allowed; }
-
-.nsw-errorBox { margin-top: 8px; background: #fee2e2; color: #991b1b; padding: 8px 10px; border-radius: 6px; border: 1px solid #fecaca; }
-
-.nsw-loadingWrap { display: inline-flex; align-items: center; gap: 8px; }
-
-/* I found this spinner animation thing online so i am not sure if it works. I havent tested it yet since it doesnt ever actually load */
-.nsw-spinner {
-  width: 14px; height: 14px; border-radius: 50%;
-  border: 2px solid #fff; border-top-color: transparent;
-  display: inline-block; animation: nsw-spin 0.9s linear infinite;
+/* Palette aligned with base.css */
+:root {
+  --nsw-bg: var(--canvas-bg, #fdf5eb);
+  --nsw-surface: #fff;
+  --nsw-border: var(--border, #f3dac2);
+  --nsw-text: var(--ink, #2d1c0f);
+  --nsw-subtle: #6b7280;
+  --nsw-primary: var(--blue, #2f3bc6);
+  --nsw-primary-contrast: #fff;
+  --nsw-positive: var(--teal-fill, #16b19a);
+  --nsw-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
-@keyframes nsw-spin { to { transform: rotate(360deg); } }
+
+.nsw-shell {
+  position: relative;
+}
+
+.nsw-form {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--nsw-text);
+}
+
+.nsw-headingBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.nsw-closeBtn {
+  border: 1px solid var(--nsw-border);
+  background: #fff;
+  color: var(--nsw-text);
+  border-radius: 999px;
+  width: 34px;
+  height: 34px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.nsw-closeBtn:hover {
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.nsw-closeBtn--outer {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.nsw-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--nsw-border);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--nsw-surface);
+  color: var(--nsw-text);
+  transition: outline 0.15s ease, border-color 0.15s ease;
+}
+
+.nsw-input:focus {
+  outline: 2px solid rgba(47, 59, 198, 0.18);
+  outline-offset: 1px;
+  border-color: var(--nsw-primary);
+}
+
+.nsw-input--title {
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  color: #6b7280;
+  border: 1px solid var(--nsw-border);
+  background: #f7f4ef;
+  flex: 1;
+  box-shadow: var(--nsw-shadow-soft);
+}
+
+.nsw-input--manual {
+  flex: 1;
+}
+
+.nsw-input--invalid {
+  border-color: #d92332;
+}
+
+.nsw-card {
+  border: 1px solid var(--nsw-border);
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--nsw-surface);
+  box-shadow: var(--nsw-shadow-soft);
+}
+
+.nsw-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.nsw-card__title {
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nsw-targetList {
+  border: 1px solid var(--nsw-border);
+  border-radius: 10px;
+  padding: 12px;
+  min-height: 180px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: #fbf7f2;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.nsw-targetRow {
+  list-style: none;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--nsw-border);
+}
+
+.nsw-targetRow:last-child {
+  border-bottom: none;
+}
+
+.nsw-targetRow label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.nsw-targetEmpty {
+  text-align: center;
+  color: var(--nsw-subtle);
+  padding: 28px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nsw-manualRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.nsw-btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--nsw-border);
+  cursor: pointer;
+  font-weight: 600;
+  background: #fff;
+  color: var(--nsw-text);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.nsw-btn:hover:not(:disabled) {
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.nsw-btnPrimary {
+  background: var(--nsw-primary);
+  color: var(--nsw-primary-contrast);
+  border-color: var(--nsw-primary);
+}
+
+.nsw-btnGhost {
+  background: #fff;
+  color: var(--nsw-text);
+}
+
+.nsw-btnDisabled {
+  background: #e5e7eb;
+  color: #6b7280;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+}
+
+.nsw-btnSquare {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nsw-btnReady {
+  background: var(--nsw-positive);
+  border-color: var(--nsw-positive);
+  color: #fff;
+}
+
+.nsw-help {
+  color: var(--nsw-subtle);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.nsw-note {
+  font-size: 12px;
+  color: var(--nsw-subtle);
+}
+
+.nsw-error {
+  color: #b91c1c;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.nsw-warning {
+  color: #b45309;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.nsw-checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.nsw-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 6px 12px;
+}
+
+.nsw-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.nsw-errorBox {
+  margin-top: 8px;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+.nsw-loadingWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nsw-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  border-top-color: transparent;
+  display: inline-block;
+  animation: nsw-spin 0.9s linear infinite;
+}
+
+@keyframes nsw-spin {
+  to { transform: rotate(360deg); }
+}
