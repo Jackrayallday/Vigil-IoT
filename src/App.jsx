@@ -707,7 +707,8 @@ export default function App() {
         targets: JSON.stringify(scanData.targets || []),
         exclusions: JSON.stringify(scanData.exclusions || []),
         detection_options: scanData.moduleSummary,
-        devices: JSON.stringify(scanData.findings || []),
+        //devices: JSON.stringify(scanData.findings || []),//KV: backend takes array, not string
+        devices: scanData.findings || [],//KV add: send as array, not string
       };
       await axios.post("http://localhost:3001/save-scan", payload);
       const savedScan = snapshotScan(scanData);
