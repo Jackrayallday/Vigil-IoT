@@ -36,8 +36,8 @@ app.use(session//configure the session management
 const MYSQL_CONFIG = //specify the MySQL connection configuration (replace the user and password
 {                    //values with your own)
     host: "localhost",//specify the host
-    user: "jackray1",//set the username
-    password: "donthack"//set the password
+    user: "root",//set the username
+    password: "comp440"//set the password
 };
 
 async function initDatabase()//function to initialize the database
@@ -250,7 +250,7 @@ async function initDatabase()//function to initialize the database
 		        {
                     for (const device of devices)
 			        {
-                        const {device_name,ip_address,services,protocol_warnings,notes,remediation_tips} = device;
+                        const {deviceName,ipAddress,services,protocolWarnings,notes,remediationTips} = device;
 
                         await db.query
 				        (
@@ -259,12 +259,12 @@ async function initDatabase()//function to initialize the database
                             VALUES (?, ?, ?, ?, ?, ?, ?)`,
                             [
                                 report_id,
-                                device_name || null,
-                                ip_address || null,
+                                deviceName || null,
+                                ipAddress || null,
                                 services || null,
-                                protocol_warnings || null,
+                                protocolWarnings || null,
                                 notes || null,
-                                remediation_tips || null
+                                remediationTips || null
                             ]
                         );
                     }
