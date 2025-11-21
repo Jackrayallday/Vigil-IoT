@@ -32,6 +32,12 @@ programmer: Jack Ray
   color: inherit;
 }
 
+.logo:focus,
+.logo:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .logo-img {
   inline-size: clamp(5.5rem, 11vw, 8rem);
   block-size: auto;
