@@ -1,12 +1,14 @@
 """
 Windows-specific device discovery adapter.
-Uses ARP scanning, mDNS, and network interface detection.
+Uses ARP scanning, SSDP (M-SEARCH), mDNS, and network interface detection.
 Note: Windows requires Npcap to be installed for Scapy to work.
 """
 import subprocess
 import socket
 import re
+import struct
 from typing import List, Dict, Optional
+from urllib.parse import urlparse
 try:
     from scapy.all import ARP, Ether, srp, conf
     SCAPY_AVAILABLE = True
@@ -352,6 +354,35 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
             for device in devices:
                 all_devices[device.ip_address] = device
         
+        # Discover SSDP devices (UPnP/DLNA devices)
+        print("\nDiscovering SSDP services (M-SEARCH broadcast)...")
+        try:
+            ssdp_devices = self._discover_ssdp_services(timeout=3)
+            print(f"  Found {len(ssdp_devices)} device(s) via SSDP")
+            for device in ssdp_devices:
+                if device.ip_address not in all_devices:
+                    all_devices[device.ip_address] = device
+                else:
+                    # Merge SSDP information into existing device
+                    existing = all_devices[device.ip_address]
+                    # Merge hostname
+                    if device.hostname and not existing.hostname:
+                        existing.hostname = device.hostname
+                    # Merge vendor info (SSDP server field often has better vendor info)
+                    if device.vendor and (not existing.vendor or len(device.vendor) > len(existing.vendor)):
+                        existing.vendor = device.vendor
+                    # Merge services (avoid duplicates)
+                    if device.services:
+                        if not existing.services:
+                            existing.services = []
+                        for service in device.services:
+                            if service not in existing.services:
+                                existing.services.append(service)
+        except Exception as e:
+            print(f"  Error during SSDP discovery: {e}")
+            import traceback
+            traceback.print_exc()
+        
         # Discover mDNS services if available
         if self.zeroconf:
             print("\nDiscovering mDNS/Bonjour services...")
@@ -432,6 +463,157 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
             return str(oui.registration().org) if oui.registration() else None
         except Exception:
             return None
+    
+    def _discover_ssdp_services(self, timeout: int = 3) -> List[Device]:
+        """
+        Discover devices using SSDP M-SEARCH broadcast.
+        SSDP (Simple Service Discovery Protocol) is used by UPnP/DLNA devices.
+        """
+        devices = []
+        ssdp_multicast = "239.255.255.250"
+        ssdp_port = 1900
+        
+        # M-SEARCH request message
+        msearch_message = (
+            "M-SEARCH * HTTP/1.1\r\n"
+            "HOST: 239.255.255.250:1900\r\n"
+            "MAN: \"ssdp:discover\"\r\n"
+            "ST: ssdp:all\r\n"
+            "MX: 3\r\n"
+            "\r\n"
+        ).encode('utf-8')
+        
+        try:
+            # Create UDP socket for SSDP
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+            sock.settimeout(timeout)
+            
+            # Send M-SEARCH broadcast
+            print(f"  Sending SSDP M-SEARCH broadcast to {ssdp_multicast}:{ssdp_port}")
+            sock.sendto(msearch_message, (ssdp_multicast, ssdp_port))
+            
+            # Collect responses
+            responses = {}
+            import time
+            start_time = time.time()
+            
+            try:
+                while (time.time() - start_time) < timeout:
+                    try:
+                        sock.settimeout(timeout - (time.time() - start_time))
+                        data, addr = sock.recvfrom(4096)
+                        ip_address = addr[0]
+                        
+                        # Parse SSDP response
+                        response_text = data.decode('utf-8', errors='ignore')
+                        device_info = self._parse_ssdp_response(response_text, ip_address)
+                        
+                        if device_info:
+                            # Use IP as key to avoid duplicates
+                            # If we already have this IP, merge the device info
+                            if ip_address not in responses:
+                                responses[ip_address] = device_info
+                                server_info = device_info.get('server', 'Unknown')
+                                print(f"    Found SSDP device: {ip_address} - {server_info}")
+                            else:
+                                # Merge additional info from this response
+                                existing_info = responses[ip_address]
+                                # Update with better server info if available
+                                if device_info.get('server') and (not existing_info.get('server') or len(device_info.get('server', '')) > len(existing_info.get('server', ''))):
+                                    existing_info['server'] = device_info.get('server')
+                                # Merge ST (service type) if different
+                                if device_info.get('st') and device_info.get('st') != existing_info.get('st'):
+                                    # Store multiple STs if needed
+                                    if 'st_list' not in existing_info:
+                                        existing_info['st_list'] = [existing_info.get('st')] if existing_info.get('st') else []
+                                    if device_info.get('st') not in existing_info['st_list']:
+                                        existing_info['st_list'].append(device_info.get('st'))
+                    except socket.timeout:
+                        break
+                    except Exception as e:
+                        # Continue listening for more responses
+                        if (time.time() - start_time) < timeout:
+                            continue
+                        else:
+                            break
+            finally:
+                sock.close()
+            
+            # Convert responses to Device objects
+            # Group by IP to handle multiple SSDP responses from same device
+            device_info_by_ip = {}
+            for ip, info in responses.items():
+                if ip not in device_info_by_ip:
+                    device_info_by_ip[ip] = {
+                        'services': set(),  # Use set to avoid duplicate services
+                        'hostname': info.get('server') or info.get('location_hostname'),
+                        'vendor': info.get('server')
+                    }
+                
+                # Add services from this response
+                if info.get('st'):
+                    device_info_by_ip[ip]['services'].add(f"SSDP:{info['st']}")
+                # Also check for st_list if multiple service types were found
+                if info.get('st_list'):
+                    for st in info['st_list']:
+                        device_info_by_ip[ip]['services'].add(f"SSDP:{st}")
+                if info.get('usn'):
+                    device_info_by_ip[ip]['services'].add(f"USN:{info['usn']}")
+                
+                # Update hostname/vendor if we have better info
+                if info.get('server') and (not device_info_by_ip[ip]['hostname'] or len(info.get('server', '')) > len(device_info_by_ip[ip]['hostname'] or '')):
+                    device_info_by_ip[ip]['hostname'] = info.get('server')
+                    device_info_by_ip[ip]['vendor'] = info.get('server')
+            
+            # Create Device objects (one per IP)
+            for ip, device_info in device_info_by_ip.items():
+                services_list = list(device_info['services']) if device_info['services'] else None
+                device = Device(
+                    ip_address=ip,
+                    hostname=device_info['hostname'],
+                    vendor=device_info['vendor'],
+                    services=services_list
+                )
+                devices.append(device)
+        
+        except Exception as e:
+            print(f"  Error during SSDP discovery: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        return devices
+    
+    def _parse_ssdp_response(self, response_text: str, ip_address: str) -> Optional[Dict[str, str]]:
+        """Parse SSDP response headers."""
+        info = {}
+        lines = response_text.split('\r\n')
+        
+        for line in lines:
+            if ':' in line:
+                key, value = line.split(':', 1)
+                key = key.strip().lower()
+                value = value.strip()
+                
+                if key == 'server':
+                    info['server'] = value
+                elif key == 'st' or key == 'nt':  # Search Target or Notification Type
+                    info['st'] = value
+                elif key == 'usn':  # Unique Service Name
+                    info['usn'] = value
+                elif key == 'location':
+                    # Parse location URL to extract hostname
+                    try:
+                        parsed = urlparse(value)
+                        info['location'] = value
+                        info['location_hostname'] = parsed.hostname or ip_address
+                    except Exception:
+                        info['location'] = value
+                elif key == 'cache-control':
+                    info['cache_control'] = value
+        
+        return info if info else None
     
     def _discover_mdns_services(self) -> List[Device]:
         """Discover devices via mDNS."""
