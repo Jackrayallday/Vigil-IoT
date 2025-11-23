@@ -23,13 +23,13 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
    - Enter:
          Hostname: localhost
          Port: 3306 (default)
-         Username: the password you set when installing MySQL
+        Username: the password you set when installing MySQL
          Password: click “Store in Vault” and enter it
    Then click Test Connection — it should say “Connection successful.”
 4. **Open your connection, select "vigil_iot" in schemas sidebar, and run the following query:**
    ```bash
-   INSERT INTO users (username, password_hash)
-   VALUES ('example_user', 'example_password');
+  INSERT INTO users (username, password_hash)
+  VALUES ('example_user', 'example_password');
    ```
    (You can replace 'example_user' and 'example_password' with any credentials you want)
    This will manually insert a user account with which you can test the login functionallity.
@@ -42,7 +42,7 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
    ```
 6. **Run the backend server app.**
    ```bash
-   node server.js
+   node vigil_iot_server.js
    ```
 7. **Run the frontend Electron app.**
    ```bash

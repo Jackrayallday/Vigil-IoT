@@ -49,23 +49,32 @@ programmer: Jack Ray
   gap: var(--space-3);
 }
 
-.history-item button {
+.history-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 0.125rem solid #e5e7eb;
+  border-radius: 0.6rem;
+  background: #f9fafb;
+  padding: var(--space-2) var(--space-3);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.history-card:hover,
+.history-card:focus-within {
+  border-color: var(--blue);
+  background: #eef3ff;
+}
+
+.history-cardMain {
   width: 100%;
   cursor: pointer;
   text-align: left;
-  border: 0.125rem solid #e5e7eb;
-  border-radius: 0.6rem;
-  padding: var(--space-3) var(--space-4);
-  background: #f9fafb;
+  border: none;
+  background: transparent;
+  padding: var(--space-1) var(--space-1);
   display: grid;
   gap: var(--space-1);
-}
-
-.history-item button:hover,
-.history-item button:focus-visible {
-  border-color: var(--blue);
-  background: #eef3ff;
-  outline: none;
 }
 
 .history-itemName {
@@ -78,8 +87,44 @@ programmer: Jack Ray
   color: #555;
 }
 
+.history-deleteBtn {
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+.history-deleteBtn:hover,
+.history-deleteBtn:focus-visible {
+  transform: scale(1.25);
+}
+
+.history-deleteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.history-deleteIcon {
+  width: 2.7rem;
+  height: 2.7rem;
+  display: block;
+}
+
 .history-empty {
   margin: 0;
   font-style: italic;
   color: #555;
+}
+
+.history-feedback {
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+
+.history-feedback--error {
+  color: #b42318;
 }

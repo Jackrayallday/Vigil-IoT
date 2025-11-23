@@ -18,7 +18,17 @@ const SORT_CHOICES = [
   { value: "item-desc", label: "Item Z-A" },
 ];
 
-export default function ScanResults({ scan, allScans = [], onSelectScan, onSelectDevice, onBackToHome }) {
+export default function ScanResults({
+  scan,
+  allScans = [],
+  onSelectScan,
+  onSelectDevice,
+  onBackToHome,
+  showSaveButton = false,
+  onSaveScan,
+  isSavingScan = false,
+  saveFeedback = null,
+}) {
   const [sortChoice, setSortChoice] = useState("input");
 
   // Sort entirely on the client so we can flip between input order and alphabetical views.
@@ -128,7 +138,26 @@ export default function ScanResults({ scan, allScans = [], onSelectScan, onSelec
           >
             Convert to PDF
           </button>
+          {showSaveButton && (
+            <button
+              type="button"
+              className="results-saveBtn"
+              onClick={onSaveScan}
+              disabled={isSavingScan}
+            >
+              {isSavingScan ? "Saving..." : "Save Scan Report"}
+            </button>
+          )}
         </div>
+        {saveFeedback && (
+          <p
+            className={`results-saveFeedback results-saveFeedback--${
+              saveFeedback.type === "error" ? "error" : "success"
+            }`}
+          >
+            {saveFeedback.message}
+          </p>
+        )}
       </header>
 
       <div className="results-tableWrap">

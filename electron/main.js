@@ -32,6 +32,7 @@ async function createWindow() {
     minWidth: 960,
     minHeight: 600,
     show: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -40,6 +41,7 @@ async function createWindow() {
   });
 // Show window when ready and open dev tools if in development mode
   win.on('ready-to-show', () => {
+    win.maximize(); // start maximized so the window fills the screen
     win.show();
     if (isDev) {
       win.webContents.openDevTools({ mode: 'detach' });

@@ -18,22 +18,32 @@ programmer: Jack Ray
   --space-6: 1.5rem;
   --space-8: 2rem;
 
-  --border: #111;
-  --blue: #2458ff;
+  --canvas-bg: #fdf5eb;
+  --border: #f3dac2;
+  --ink: #2d1c0f;
+  --blue: #2f3bc6;
 
-  --red: #b91c1c;
-  --red-border: #ef4444;
-  --red-bg: #ffecec;
+  --red: #ffffff;
+  --red-border: #d92332;
+  --red-bg: #e73f4f;
 
-  --settings-text: #1e3a8a;
-  --settings-border: #1d4ed8;
-  --settings-bg: #e0ecff;
+  --settings-text: #ffffff;
+  --settings-border: #232887;
+  --settings-bg: #3b3fd1;
 
-  --teal: #2e7d6b;
-  --teal-bg: #e6fff5;
+  --teal: #ffffff;
+  --teal-border: #0c8f76;
+  --teal-fill: #16b19a;
 
-  --orange: #fb923c;
-  --orange-text: #9a3412;
+  --orange: #f97316;
+  --orange-text: #c04c0d;
+  --orange-bg: #fff2e6;
+
+  --accent-gold: #d9a829;
+  --footer-bg: #d62459;
+  --footer-text: #ffffff;
+  --router-icon: #d9a829;
+  --plug-icon: #e63946;
 
   --fs-sm: clamp(0.9rem, 0.8rem + 0.3vw, 1rem);
   --fs-base: clamp(1rem, 0.95rem + 0.5vw, 1.125rem);
@@ -43,8 +53,9 @@ programmer: Jack Ray
 
 body {
   margin: 0;
-  background: #ffffff;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--canvas-bg);
+  color: var(--ink);
+  font-family: "Nunito", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
   font-size: var(--fs-base);
   line-height: 1.4;
 }

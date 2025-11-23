@@ -26,12 +26,21 @@ import LoginModal from "./LoginModal.jsx";
 import SettingsModal from "./SettingsModal.jsx";
 import DeviceDetails from "./DeviceDetails.jsx";
 import logoImage from "./assets/logo.png";
+import routerIllustration from "./assets/router.svg";
+import powerPlugIllustration from "./assets/power-plug.svg";
+import trashIcon from "./assets/trash.svg";
 
+axios.defaults.withCredentials = true;
 
 const VIEW_HOME = "home";
 const VIEW_HISTORY = "history";
 const VIEW_RESULTS = "results";
 const VIEW_DEVICE = "device";
+
+const LOGIN_ACTIONS = {
+  HISTORY: "show-history",
+  SAVE_SCAN: "save-scan",
+};
 
 const MODULE_LABELS = {
   discover: "Discover hosts",
@@ -127,16 +136,17 @@ function pruneScans(scans, retentionDays) {
 
 // Read any stored scans and bring them back into the shape the UI expects. This helps with any missing fields from older versions.
 function loadStoredScans(retentionDays = DEFAULT_SETTINGS.retentionDays) {
-  if (typeof window === "undefined") return [];
+  // Scan data is no longer persisted locally now that SQL handles storage.
+  return [];
+}
+
+function safeParseJsonArray(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
   try {
-    const raw = window.localStorage.getItem("scans");
-    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    const normalized = parsed.map((scan) => normalizeScan(scan)).filter(Boolean);
-    return pruneScans(normalized, retentionDays);
+    return Array.isArray(parsed) ? parsed : [];
   } catch (err) {
-    console.warn("Failed to read scans from storage", err);
     return [];
   }
 }
@@ -148,6 +158,42 @@ function createId(prefix) {
   }
   const random = Math.floor(Math.random() * 10_000);
   return `${prefix}-${Date.now()}-${random}`;
+}
+
+function mapReportToScan(report, devices = []) {
+  if (!report) return null;
+  const targets = safeParseJsonArray(report.targets);
+  const exclusions = safeParseJsonArray(report.exclusions);
+  const submittedAt = report.scanned_at ? new Date(report.scanned_at) : new Date();
+  const submittedAtISO = submittedAt.toISOString();
+  const submittedAtLabel = submittedAt.toLocaleString();
+  const scanId = String(report.report_id ?? createId("scan"));
+
+  const findings = Array.isArray(devices) && devices.length > 0
+    ? devices.map((device, index) => ({
+        id: `${scanId}-device-${index + 1}`,
+        position: index,
+        deviceName: device.device_name || device.ip_address || `Device ${index + 1}`,
+        itemDiscovered: device.device_name || device.ip_address || targets[index] || `Target ${index + 1}`,
+        ipAddress: device.ip_address || "N/A",
+        services: device.services || "N/A",
+        protocolWarnings: device.protocol_warnings || "N/A",
+        remediationTips: device.remediation_tips || "Review configuration",
+        notes: device.notes || "",
+      }))
+    : null;
+
+  return {
+    id: scanId,
+    name: report.title || "Untitled scan",
+    status: "complete",
+    submittedAt: submittedAtLabel,
+    submittedAtISO,
+    moduleSummary: report.detection_options || "Not specified",
+    targets,
+    exclusions,
+    findings: findings && findings.length > 0 ? findings : buildFindings(scanId, targets, {}),
+  };
 }
 
 // normalizeScan is used to ensure any scan loaded from storage has all required fields
@@ -301,7 +347,6 @@ export default function App() {
   const [showWizard, setShowWizard] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   // --- Persisted data ---
   const [settings, setSettings] = useState(initialSettings);
@@ -310,18 +355,40 @@ export default function App() {
   const [selectedScanId, setSelectedScanId] = useState(initialScans[0]?.id ?? null);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [view, setView] = useState(VIEW_HOME);
-  const userMenuRef = useRef(null);
+  const [unsavedScan, setUnsavedScan] = useState(null);
+  const [isViewingFreshScan, setIsViewingFreshScan] = useState(false);
+  const [pendingLoginAction, setPendingLoginAction] = useState(null);
+  const [isSavingScan, setIsSavingScan] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState(null);
+  const [historyFeedback, setHistoryFeedback] = useState(null);
+  const [deletingScanId, setDeletingScanId] = useState(null);
+  const wizardBackdropPointerDownRef = useRef(false); // Prevents dismiss when dragging selections outside the modal.
 
   // On first render, apply the stored theme so the UI does not flash light/dark.
   useEffect(() => {
     applyTheme(settings.theme);
   }, []);
 
-  // Persist scans whenever the list changes.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem("scans", JSON.stringify(scans));
-  }, [scans]);
+    let isActive = true;
+    async function hydrateSession() {
+      try {
+        const res = await axios.get("http://localhost:3001/check_login");
+        if (!isActive) return;
+        if (res?.data?.loggedIn && res?.data?.user) {
+          setUser(res.data.user);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error("Session check failed:", err);
+      }
+    }
+    hydrateSession();
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   // Persist settings and apply theme changes immediately.
   useEffect(() => {
@@ -338,34 +405,17 @@ export default function App() {
     });
   }, [settings.retentionDays]);
 
-  // Handy pointer to whichever scan is selected in the history/results views.
-  const selectedScan = useMemo(
-    () => scans.find((scan) => scan.id === selectedScanId) || null,
-    [scans, selectedScanId],
-  );
-
-//this is how we close the menu for logoutside clicks or escape key
-
   useEffect(() => {
-    if (!showUserMenu) return;
+    setSaveFeedback(null);
+  }, [selectedScanId]);
 
-    function handleClickOutside(event) {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target))
-        setShowUserMenu(false);
+  // Handy pointer to whichever scan is selected in the history/results views.
+  const selectedScan = useMemo(() => {
+    if (unsavedScan && selectedScanId === unsavedScan.id) {
+      return unsavedScan;
     }
-
-    function handleKeydown(event) {
-      if (event.key === "Escape")
-        setShowUserMenu(false);
-    }
-
-    window.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("keydown", handleKeydown);
-    return () => {
-      window.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("keydown", handleKeydown);
-    };
-  }, [showUserMenu]);
+    return scans.find((scan) => scan.id === selectedScanId) || null;
+  }, [scans, selectedScanId, unsavedScan]);
 
   // Modal open/close helpers keep those booleans in place.
   function openWizard(e) {
@@ -379,7 +429,6 @@ export default function App() {
     if(e) e.preventDefault();
     setShowSettings(false);
     setShowWizard(false);
-    setShowUserMenu(false);
     setShowLogin(true);
   }
 
@@ -394,9 +443,24 @@ export default function App() {
     setShowWizard(false);
   }
 
+  function handleWizardBackdropPointerDown(event) {
+    wizardBackdropPointerDownRef.current = event.target === event.currentTarget;
+  }
+
+  function handleWizardBackdropPointerUp(event) {
+    if (wizardBackdropPointerDownRef.current && event.target === event.currentTarget) {
+      closeWizard();
+    }
+    wizardBackdropPointerDownRef.current = false;
+  }
+
+  function resetWizardBackdropPointerFlag() {
+    wizardBackdropPointerDownRef.current = false;
+  }
+
   function closeLogin() {
+    setPendingLoginAction(null);
     setShowLogin(false);
-    setShowUserMenu(false);
   }
 
   function closeSettings() {
@@ -408,13 +472,68 @@ export default function App() {
     setSelectedDevice(null);
     setShowLogin(false);
     setShowSettings(false);
-    setShowUserMenu(false);
+    setIsViewingFreshScan(false);
+    setSaveFeedback(null);
   }
 
   function handleLoginSuccess(userInfo) {
     setUser(userInfo);
     setShowLogin(false);
+    if (pendingLoginAction) {
+      const actionToRun = pendingLoginAction;
+      setPendingLoginAction(null);
+      runPendingLoginAction(actionToRun, userInfo);
+    }
   }
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadHistoryForUser(userId) {
+      try {
+        const reportsRes = await axios.get(`http://localhost:3001/scan-reports/${userId}`);
+        if (!isActive) return;
+        const reports = reportsRes?.data?.success ? reportsRes.data.reports || [] : [];
+        const reportsWithDevices = await Promise.all(
+          reports.map(async (report) => {
+            try {
+              const devicesRes = await axios.get(`http://localhost:3001/scan-reports/${report.report_id}/devices`);
+              const devices = devicesRes?.data?.success ? devicesRes.data.devices || [] : [];
+              return mapReportToScan(report, devices);
+            } catch (err) {
+              console.error("Failed to load devices for report", report.report_id, err);
+              return mapReportToScan(report, []);
+            }
+          })
+        );
+        const cleaned = pruneScans(reportsWithDevices.filter(Boolean), settings.retentionDays);
+        setScans(cleaned);
+        setSelectedScanId((prev) => {
+          if (prev && cleaned.some((scan) => scan.id === prev)) return prev;
+          if (unsavedScan?.id) return unsavedScan.id;
+          return cleaned[0]?.id ?? null;
+        });
+      } catch (err) {
+        if (!isActive) return;
+        console.error("Failed to load scan history for user", userId, err);
+        setScans([]);
+        setSelectedScanId(null);
+      }
+    }
+
+    if (user?.user_id) {
+      loadHistoryForUser(user.user_id);
+    } else {
+      setScans([]);
+      if (!unsavedScan) {
+        setSelectedScanId(null);
+      }
+    }
+
+    return () => {
+      isActive = false;
+    };
+  }, [user?.user_id, settings.retentionDays, unsavedScan]);
 
   async function handleLogout() {
     try {
@@ -423,12 +542,66 @@ export default function App() {
       console.error("Logout failed:", err);
     } finally {
       setUser(null);
-      setShowUserMenu(false);
+      setPendingLoginAction(null);
     }
   }
 
-  function toggleUserMenu() {
-    setShowUserMenu((prev) => !prev);
+  function runPendingLoginAction(action, actor = user) {
+    if (!action) return;
+    if (action.type === LOGIN_ACTIONS.HISTORY) {
+      showHistoryView();
+    } else if (action.type === LOGIN_ACTIONS.SAVE_SCAN) {
+      const scanToPersist = action.scan || selectedScan;
+      if (scanToPersist) {
+        persistScanReport(scanToPersist, actor);
+      }
+    }
+  }
+
+  function showHistoryView() {
+    setSelectedDevice(null);
+    setView(VIEW_HISTORY);
+    setIsViewingFreshScan(false);
+    setSaveFeedback(null);
+  }
+
+  function handleHistoryButtonClick() {
+    if (!user) {
+      setPendingLoginAction({ type: LOGIN_ACTIONS.HISTORY });
+      openLogin();
+      return;
+    }
+    showHistoryView();
+  }
+
+  async function handleDeleteScan(scanId) {
+    if (!scanId) return;
+    if (!user) {
+      setPendingLoginAction({ type: LOGIN_ACTIONS.HISTORY });
+      openLogin();
+      return;
+    }
+    setDeletingScanId(scanId);
+    setHistoryFeedback(null);
+    try {
+      await axios.delete(`http://localhost:3001/delete-scan/${scanId}`);
+      setScans((prev) => {
+        const next = prev.filter((entry) => entry.id !== scanId);
+        if (prev.length !== next.length) {
+          setSelectedScanId((current) => {
+            if (current !== scanId) return current;
+            if (unsavedScan?.id) return unsavedScan.id;
+            return next[0]?.id ?? null;
+          });
+        }
+        return next;
+      });
+    } catch (err) {
+      console.error("Failed to delete scan", scanId, err);
+      setHistoryFeedback({ type: "error", message: "Could not delete scan. Please try again." });
+    } finally {
+      setDeletingScanId(null);
+    }
   }
 
   // Navigation helpers wire the buttons to their views.
@@ -448,6 +621,11 @@ export default function App() {
     setSelectedScanId(id);
     setSelectedDevice(null);
     setView(VIEW_RESULTS);
+    if (unsavedScan && unsavedScan.id === id) {
+      setIsViewingFreshScan(true);
+    } else {
+      setIsViewingFreshScan(false);
+    }
   }
 
   function handleBackToResults() {
@@ -471,8 +649,12 @@ export default function App() {
     setSettings(merged);
     const pruned = pruneScans(scans, merged.retentionDays);
     setScans(pruned);
-    if (!pruned.some((scan) => scan.id === selectedScanId)) {
-      setSelectedScanId(pruned[0]?.id ?? null);
+    const selectedStillExists =
+      (unsavedScan && unsavedScan.id === selectedScanId) ||
+      pruned.some((scan) => scan.id === selectedScanId);
+    if (!selectedStillExists) {
+      const fallbackId = pruned[0]?.id ?? (unsavedScan?.id ?? null);
+      setSelectedScanId(fallbackId);
       setSelectedDevice(null);
     }
     setShowSettings(false);
@@ -482,75 +664,147 @@ export default function App() {
   async function handleCreateScan(payload) {
     await new Promise((resolve) => setTimeout(resolve, 500));
     const enriched = createScanRecord(payload);
-    setScans((prev) => pruneScans([enriched, ...prev], settings.retentionDays));
+    setUnsavedScan(enriched);
     setSelectedScanId(enriched.id);
     setSelectedDevice(null);
+    setIsViewingFreshScan(true);
+    setSaveFeedback(null);
     setView(VIEW_RESULTS);
     closeWizard();
   }
 
-  const hasScans = scans.length > 0;
+  function snapshotScan(scan) {
+    if (!scan) return null;
+    try {
+      return JSON.parse(JSON.stringify(scan));
+    } catch (err) {
+      console.warn("Failed to deep copy scan payload, falling back to shallow copy.", err);
+      return { ...scan };
+    }
+  }
+
+  function formatToMysqlDatetime(value) {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    const pad = (num) => String(num).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  }
+
+  async function persistScanReport(scanData, actor = user) {
+    if (!scanData) return;
+    if (!actor?.user_id) {
+      setSaveFeedback({ type: "error", message: "Log in to save scan reports." });
+      return;
+    }
+    setIsSavingScan(true);
+    setSaveFeedback(null);
+    try {
+      const payload = {
+        user_id: actor.user_id,
+        title: scanData.name,
+        scanned_at: formatToMysqlDatetime(scanData.submittedAtISO || scanData.submittedAt) || formatToMysqlDatetime(new Date().toISOString()),
+        targets: JSON.stringify(scanData.targets || []),
+        exclusions: JSON.stringify(scanData.exclusions || []),
+        detection_options: scanData.moduleSummary,
+        //devices: JSON.stringify(scanData.findings || []),//KV: backend takes array, not string
+        devices: scanData.findings || [],//KV add: send as array, not string
+      };
+      await axios.post("http://localhost:3001/save-scan", payload);
+      const savedScan = snapshotScan(scanData);
+      setScans((prev) => {
+        const withoutCurrent = prev.filter((entry) => entry.id !== savedScan.id);
+        return pruneScans([savedScan, ...withoutCurrent], settings.retentionDays);
+      });
+      setUnsavedScan((current) => (current?.id === savedScan.id ? null : current));
+      setSelectedScanId(savedScan.id);
+      setSaveFeedback({ type: "success", message: "Scan report saved." });
+      setIsViewingFreshScan(false);
+    } catch (err) {
+      console.error("Save scan failed:", err);
+      setSaveFeedback({ type: "error", message: "Could not save scan report. Please try again." });
+    } finally {
+      setIsSavingScan(false);
+    }
+  }
+
+  function handleSaveScanClick() {
+    if (!selectedScan) return;
+    if (!user) {
+      setPendingLoginAction({
+        type: LOGIN_ACTIONS.SAVE_SCAN,
+        scan: snapshotScan(selectedScan),
+      });
+      openLogin();
+      return;
+    }
+    persistScanReport(selectedScan, user);
+  }
+
+  const hasScans = scans.length > 0 || Boolean(unsavedScan);
 //the elements for each view and modal are laid out here
   return (
     <div className="frame">
       <header className="header">
-        <a className="logo" href="/" aria-label="Home" onClick={(e) => { e.preventDefault(); goHome(); }}>
-          <img className="logo-img" src={logoImage} alt="Dashboard logo" />
+        <a
+          className="logo"
+          href="/"
+          aria-label="Home"
+          tabIndex="-1"
+          onClick={(e) => { e.preventDefault(); goHome(); }}
+        >
+          <img className="logo-img" src={logoImage} alt="Vigil IoT logo" />
         </a>
 
         <nav className="top-actions" aria-label="Primary">
           <button type="button" className="settings-btn" onClick={openSettings}>Settings</button>
           {user ? (
-            <div className="user-menu" ref={userMenuRef}>
-              <button
-                type="button"
-                className="user-btn"
-                onClick={toggleUserMenu}
-                aria-haspopup="true"
-                aria-expanded={showUserMenu}
-              >
-                {user.username}
-              </button>
-              {showUserMenu && (
-                <div className="user-dropdown" role="menu">
-                  <button type="button" className="user-dropdownItem" onClick={handleLogout}>
-                    Log out
-                  </button>
-                </div>
-              )}
-            </div>
+            <button type="button" className="user-btn" onClick={handleLogout}>
+              Log out
+            </button>
           ) : (
             <button type="button" className="login-btn" onClick={openLogin}>Log in</button>
           )}
         </nav>
       </header>
 
-      <main className={`main ${view !== VIEW_HOME ? "main--fill" : ""}`}>
-        {/* Home view: big start button plus optional shortcut to history. */}
-        {view === VIEW_HOME && (
-          <>
-            <a
-              href="/scan/new"
-              className="start-circle"
-              aria-label="Start Scan"
-              onClick={openWizard}
-            >
-              <span className="start-text">Start{"\n"}Scan</span>
-            </a>
+        <main className={`main ${view === VIEW_HOME ? "main--home" : "main--fill"}`}>
+          {/* Home view redesigned to feature the start panel artwork flanking the primary call to action. */}
+          {view === VIEW_HOME && (
+          <section className="home-start-panel" aria-label="Start scan panel">
+            <img
+              src={routerIllustration}
+              alt="Stylized wireless router illustration"
+              className="home-start-panel__illustration home-start-panel__illustration--router"
+              draggable="false"
+            />
 
-            {hasScans && (
+            <div className="home-start-panel__center">
+              <a
+                href="/scan/new"
+                className="start-circle home-start-panel__start"
+                aria-label="Start Scan"
+                onClick={openWizard}
+              >
+                <span className="start-text">Start{"\n"}Scan</span>
+              </a>
+
               <button
                 type="button"
-                className="prev-scans"
-                onClick={() => {
-                  setSelectedDevice(null);
-                  setView(VIEW_HISTORY);
-                }}
+                className="prev-scans home-start-panel__history"
+                onClick={handleHistoryButtonClick}
               >
                 Previous Scans
               </button>
-            )}
-          </>
+            </div>
+
+            <img
+              src={powerPlugIllustration}
+              alt="Stylized power plug illustration"
+              className="home-start-panel__illustration home-start-panel__illustration--plug"
+              draggable="false"
+            />
+          </section>
         )}
 
         {/* History view: list each previous scan for quick access. */}
@@ -562,14 +816,34 @@ export default function App() {
                 Back to home
               </button>
             </header>
+            {historyFeedback && (
+              <p className={`history-feedback history-feedback--${historyFeedback.type === "error" ? "error" : "info"}`}>
+                {historyFeedback.message}
+              </p>
+            )}
             {hasScans ? (
               <ul className="history-list">
                 {scans.map((scan) => (
                   <li key={scan.id} className="history-item">
-                    <button type="button" onClick={() => handleSelectScan(scan.id)}>
-                      <span className="history-itemName">{scan.name}</span>
-                      <span className="history-itemMeta">{scan.submittedAt}</span>
-                    </button>
+                    <div className="history-card">
+                      <button
+                        type="button"
+                        className="history-cardMain"
+                        onClick={() => handleSelectScan(scan.id)}
+                      >
+                        <span className="history-itemName">{scan.name}</span>
+                        <span className="history-itemMeta">{scan.submittedAt}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="history-deleteBtn"
+                        aria-label={`Delete scan ${scan.name}`}
+                        onClick={() => handleDeleteScan(scan.id)}
+                        disabled={deletingScanId === scan.id}
+                      >
+                        <img className="history-deleteIcon" src={trashIcon} alt="" aria-hidden="true" />
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -588,6 +862,10 @@ export default function App() {
               onSelectScan={handleSelectScan}
               onSelectDevice={handleSelectDevice}
               onBackToHome={goHome}
+              showSaveButton={isViewingFreshScan}
+              onSaveScan={handleSaveScanClick}
+              isSavingScan={isSavingScan}
+              saveFeedback={saveFeedback}
             />
           </div>
         )}
@@ -605,12 +883,16 @@ export default function App() {
 
       {/* Modals live at the bottom so they overlay the main content when toggled on. */}
       {showWizard && (
-        <div role="dialog" aria-modal="true" className="modal-backdrop" onClick={closeWizard}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="modal-backdrop"
+          onPointerDown={handleWizardBackdropPointerDown}
+          onPointerUp={handleWizardBackdropPointerUp}
+          onPointerLeave={resetWizardBackdropPointerFlag}
+          onPointerCancel={resetWizardBackdropPointerFlag}
+        >
           <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title">New Scan</h2>
-              <button onClick={closeWizard} className="modal-closeBtn" aria-label="Close">X</button>
-            </div>
             <div className="modal-body">
               <NewScanWizard onCreate={handleCreateScan} onClose={closeWizard} defaultOptions={settings.defaultOptions} />
             </div>
