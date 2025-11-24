@@ -6,7 +6,7 @@ import sys
 from typing import Optional
 from base import DeviceDiscoveryAdapter, Device
 
-
+import os
 
 
 # Import OS-specific adapters
@@ -69,6 +69,12 @@ def print_device(device: Device):
     if device.response_time:
         print(f"Response Time: {device.response_time}ms")
     print(f"{'='*60}")
+
+#Clear the contents of discovery.json befure run.
+json_path = "discovery.json"
+if os.path.exists(json_path):
+    os.remove(json_path)
+
 
 
 def main():

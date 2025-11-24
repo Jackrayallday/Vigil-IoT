@@ -3,6 +3,10 @@ Windows-specific device discovery adapter.
 Uses ARP scanning, SSDP (M-SEARCH), mDNS, and network interface detection.
 Note: Windows requires Npcap to be installed for Scapy to work.
 """
+import platform
+from discovery_store import DiscoveryStore
+
+
 import subprocess
 import socket
 import re
@@ -36,6 +40,11 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
         else:
             self.zeroconf = None
         self.discovered_services = {}
+        self.store = DiscoveryStore()
+        try:
+            self.store.set_os(f"{platform.system()}) {platform.release()}")
+        except Exception:
+            pass
         
         # Configure Scapy for Windows
         if SCAPY_AVAILABLE:
@@ -91,6 +100,8 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
                             'network': network_cidr
                         })
                         print(f"  Found interface: {interface_name} - IP: {ip}, Network: {network_cidr}")
+
+                        self.store.add_interface(name=interface_name, ip = ip, network = network_cidr)
                     except Exception as e:
                         print(f"  Error processing interface {interface_name}: {e}")
                         import traceback
@@ -104,7 +115,7 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
         
         return interfaces
     
-    def scan_network(self, network: str, timeout: int = 2) -> List[Device]:
+    def scan_network(self, network: str, iface_name: Optional[str] = None, timeout: int = 2) -> List[Device]:
         """Scan a network using active ARP requests on Windows."""
         devices = []
         
@@ -146,6 +157,15 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
                         os_type=None
                     )
                     devices.append(device)
+                    
+                    self.store.upsert_device(
+                         ip=ip,
+                         hostname=hostname,
+                         mac=mac,
+                         vendor=vendor,
+                         iface=iface_name,
+                         discovered_via=["ARP"]
+                     )
                 
                 # If we found devices with active scanning, return them
                 if devices:
@@ -163,9 +183,9 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
         if not SCAPY_AVAILABLE:
             print(f"  Scapy not available (Npcap not installed). Using ARP table method...")
         
-        return self._scan_network_arp_table(network)
+        return self._scan_network_arp_table(network, iface_name=iface_name)
     
-    def _scan_network_arp_table(self, network: str) -> List[Device]:
+    def _scan_network_arp_table(self, network: str, iface_name: Optional[str] = None) -> List[Device]:
         """Fallback method using Windows ARP table."""
         devices = []
         
@@ -276,6 +296,15 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
                                 vendor=vendor
                             )
                             devices.append(device)
+                            # Structured output (Option 1)
+                            self.store.upsert_device(
+                                ip=ip,
+                                hostname=hostname,
+                                mac=mac,
+                                vendor=vendor,
+                                iface=iface_name,
+                                discovered_via=["ARP"]
+                            )
                         else:
                             print(f"    Device {ip} is not in target network {network} (network is {network_obj})")
                     except Exception as e:
@@ -347,7 +376,7 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
             
             # Method will be determined in scan_network (active scan or ARP table)
             
-            devices = self.scan_network(network, timeout)
+            devices = self.scan_network(network, iface_name=iface_info['interface'], timeout=timeout)
             print(f"  Found {len(devices)} device(s) on this network")
             
             # Use IP as key to avoid duplicates
@@ -403,6 +432,14 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
                 print(f"  Error during mDNS discovery: {e}")
         
         print(f"\n=== Discovery Complete: {len(all_devices)} total device(s) ===\n")
+
+        #Generate a JSON file for react to gather data from
+        try:
+            self.store.save_json("discovery.json")
+            print('Saves structured output to discovery.json.')
+        except Exception as e:
+            print(f"WARNING: could not save discovery.json: {e}")
+
         return list(all_devices.values())
     
     def get_device_info(self, ip_address: str) -> Optional[Device]:
@@ -577,6 +614,13 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
                     services=services_list
                 )
                 devices.append(device)
+                self.store.upsert_device(
+                    ip=ip,
+                    hostname=device_info['hostname'],
+                    vendor=device_info['vendor'],
+                    services=services_list,
+                    discovered_via=["SSDP"]
+                )
         
         except Exception as e:
             print(f"  Error during SSDP discovery: {e}")
@@ -663,6 +707,13 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
                 hostname=info['hostname'],
                 services=info['services']
             ))
+
+            self.store.upsert_device(
+                ip=ip,
+                hostname=info['hostname'],
+                services=info['services'],
+                discovered_via=['mDNS']
+            )
         
         return devices
 
