@@ -11,6 +11,7 @@ const bodyParser = require("body-parser");//Body Parser middleware to read from 
 const cors = require("cors");//CORS middleware to allow cross-origin requests
 const session = require("express-session");//middleware for tracking user sessions and login status.
 const bcrypt = require("bcrypt");//to store passwords as salted hashes
+const nodemailer = require("nodemailer");//use nodemailer for email-sending functionallity
 
 const app = express();//create Express app instance defining routes, middleware, server behavior
 
@@ -32,7 +33,15 @@ app.use(session//configure the session management
         secure: false //Set to true if using HTTPS
     }
 }));
-
+const transporter = nodemailer.createTransport//configure the mail transporter
+({
+    service: "gmail",//use Gmail as the email service
+    auth://set the sender's credentials
+    {
+        user: "vigil.iot.app@gmail.com",//sender email address
+        pass: "bkdohtklsmilwbym"//sender app password
+    }
+});
 const MYSQL_CONFIG = //specify the MySQL connection configuration (replace the user and password
 {                    //values with your own)
     host: "localhost",//specify the host
@@ -216,6 +225,35 @@ async function initDatabase()//function to initialize the database
                     return res.status(500).send("Logout failed");//logout error: inform client
                 res.send({success: true});//logout sucessful: inform client
             });
+        });
+        app.post("/send-email", async (req, res) =>
+        { 
+            const {email} = req.body;//get the recipiant's email from the request body
+            
+            if(!email)//no recipient email: return false
+                return res.status(400).send({success: false, message: "Recipient email required!"});
+                
+            const subject = "Hello from Vigil-IoT"; 
+            const message = "This is a plain-text test email.";
+            
+            try
+            {
+                const info = await transporter.sendMail//send the email through the transporter 
+                ({
+                    from: "vigil.iot.app@gmail.com",//sender address
+                    to: email,//recipient address 
+                    subject,//subject line
+                    text: message//plain-text body
+                }); 
+                
+                console.log("Email sent:", info.messageId);//log the email
+                res.send({success: true});//return true
+            }
+            catch(err)
+            {//if here, error in sending email
+                console.error("Error sending email:", err);//log the error
+                res.status(500).send({success: false, message: "Server error"});//return false
+            }
         });
         app.post("/save-scan", async (req, res) =>
 		{//if here, user wants to save scan report

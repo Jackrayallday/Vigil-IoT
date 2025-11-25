@@ -1,17 +1,17 @@
 /*
 file: src/ForgotPasswordForm.jsx
-programmer: Jack Ray
+programmer: Jack Ray (Modified by Kevin to call corresponding backend route)
 ===================================================
 Password reset request form shown inside the auth modal.
 */
 import React, { useState } from "react";
 
-export default function ForgotPasswordForm({ onBack, onRequestReset }) {
+export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV edit
   const [email, setEmail] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {//KV edit: added "async"
     event.preventDefault();
     setStatusMessage("");
     setErrorMessage("");
@@ -22,7 +22,31 @@ export default function ForgotPasswordForm({ onBack, onRequestReset }) {
       return;
     }
 
-    if (typeof onRequestReset === "function") {
+    //KV add---------------------------------------------------------------------------------------
+    try
+    {
+        const response = await fetch("http://localhost:3001/send-email",//call backend route with following info:
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: trimmedEmail }),
+        });
+
+        const data = await response.json();//get the response from server
+
+        if(response.ok && data.success) 
+            setStatusMessage("Reset email sent successfully!");//email sent
+        else
+            setErrorMessage(data.message || "Something went wrong. Please try again later.");//fail
+    }
+    catch (err)
+    {//if here, server error
+      console.error(err);//log the error
+      setErrorMessage("Server error! Please try again later.");//inform user
+    }
+    //---------------------------------------------------------------------------------------------
+
+    /*if (typeof onRequestReset === "function") {
       try {
         const maybe = onRequestReset({ email: trimmedEmail });
         if (maybe && typeof maybe.then === "function") {
@@ -37,7 +61,7 @@ export default function ForgotPasswordForm({ onBack, onRequestReset }) {
       }
     }
 
-    setStatusMessage("If that email is on file, we'll send a reset link shortly.");
+    setStatusMessage("If that email is on file, we'll send a reset link shortly.");*/
     setEmail("");
   }
 
