@@ -12,9 +12,12 @@ const cors = require("cors");//CORS middleware to allow cross-origin requests
 const session = require("express-session");//middleware for tracking user sessions and login status.
 const bcrypt = require("bcrypt");//to store passwords as salted hashes
 const nodemailer = require("nodemailer");//use nodemailer for email-sending functionallity
+const crypto = require("crypto");//to generate the password reset token
 
 const app = express();//create Express app instance defining routes, middleware, server behavior
 
+app.use(express.urlencoded({ extended: true }));////
+app.use(express.json());/////
 //configure the middleware
 app.use(cors({
     origin: true,//reflect the request origin for dev servers
@@ -60,7 +63,9 @@ async function initDatabase()//function to initialize the database
     (
         user_id INT AUTO_INCREMENT PRIMARY KEY, -- user ID field: auto-increment from previous user
         email VARCHAR(100) UNIQUE NOT NULL, -- email field: max 100 chars, unique and non-empty
-        hashed_password VARCHAR(255) NOT NULL -- hashed password field: max 255 chars and non-empty
+        hashed_password VARCHAR(255) NOT NULL, -- hashed password field: max 255 chars, non-empty
+        resetToken VARCHAR(255), -- token string for password reset
+        resetTokenExpiry BIGINT -- timestamp (in ms) for token expiration
     )`);
 
     //create scan_reports table if it doesn't exist yet
@@ -100,6 +105,53 @@ async function initDatabase()//function to initialize the database
         const db = await initDatabase();//define var to represent database using above function
     
         //set the routes that send responses according to client requests
+        app.get("/reset-password", async (req, res) =>
+        {
+            const { token } = req.query;
+            if(!token)
+                return res.status(400).send("Missing token.");
+  
+            try
+            {
+                // Hash the token (since we store hashed values in DB)
+                const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+                // Look up user with matching token
+                const [results] = await db.query
+                (
+                    "SELECT * FROM users WHERE resetToken = ? AND resetTokenExpiry > ?",
+                    [hashedToken, Date.now()]
+                );
+
+                if(results.length === 0) 
+                    return res.status(400).send("Invalid or expired reset link.");
+    
+
+                res.send
+                (`
+                    <!DOCTYPE html>
+                    <html>
+                        <head>
+                            <title>Reset Password</title>
+                        </head>
+                        <body>
+                            <h2>Reset Your Password</h2>
+                            <form action="/reset-password" method="POST">
+                                <input type="hidden" name="token" value="${token}" />
+                                <label for="new-password">New Password:</label>
+                                <input type="password" id="new-password" name="newPassword" required />
+                                <button type="submit">Reset password</button>
+                            </form>
+                        </body>
+                    </html>
+                `);
+            }
+            catch(err)
+            {
+                console.error("Error validating token:", err);
+                res.status(500).send("Server error.");
+            }
+        });
         app.get("/check_login", (req, res) =>//client requested login status
         {//if here, client requested login status
             if(req.session.user)
@@ -232,18 +284,36 @@ async function initDatabase()//function to initialize the database
             
             if(!email)//no recipient email: return false
                 return res.status(400).send({success: false, message: "Recipient email required!"});
-                
-            const subject = "Hello from Vigil-IoT"; 
-            const message = "This is a plain-text test email.";
+
+            const [results] = await db.query("SELECT * FROM users WHERE email = ?", [email]);//find email in database
+            if(results.length === 0) 
+                return res.status(404).send({success: false, message: "Email address not found!"});
+
+            const token = crypto.randomBytes(32).toString("hex");//generate the token
+            const hashedToken = crypto.createHash("sha256").update(token).digest("hex");//hash the token
+
+            await db.query("UPDATE users SET resetToken = ?, resetTokenExpiry = ? WHERE email = ?",
+            [//store the token
+                hashedToken,
+                Date.now() + 3600000,//1 hour expiry
+                email,
+            ]);
             
             try
             {
                 const info = await transporter.sendMail//send the email through the transporter 
                 ({
                     from: "vigil.iot.app@gmail.com",//sender address
-                    to: email,//recipient address 
-                    subject,//subject line
-                    text: message//plain-text body
+                    to: email,//recipient address
+                    subject: "Password Reset Requested",
+                    html: `<p>Click the following link to reset your password:</p>
+                           <p>
+                               <a href="http://localhost:3001/reset-password?token=${token}">
+                                   Reset Password
+                            </a>
+                        </p>`,
+                    text: "Visit the following URL to reset your password:\n\n" +
+                          `http://localhost:3001/reset-password?token=${token}`//plain text fallback
                 }); 
                 
                 console.log("Email sent:", info.messageId);//log the email
@@ -253,6 +323,46 @@ async function initDatabase()//function to initialize the database
             {//if here, error in sending email
                 console.error("Error sending email:", err);//log the error
                 res.status(500).send({success: false, message: "Server error"});//return false
+            }
+        });
+        app.post("/reset-password", async (req, res) =>
+        {
+            const {token, newPassword} = req.body;
+            if(!token || !newPassword)
+                return res.status(400).send("Missing token or new password."); 
+
+            try
+            {
+                // Hash the token (since we store hashed tokens in DB)
+                const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+                // Look up user with matching token and valid expiry
+                const [results] = await db.query
+                (
+                    "SELECT * FROM users WHERE resetToken = ? AND resetTokenExpiry > ?",
+                    [hashedToken, Date.now()]
+                );
+
+                if(results.length === 0)
+                    return res.status(400).send("Invalid or expired reset token.");
+    
+                const user = results[0];
+
+                // Hash the new password securely
+                const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+                 // Update user’s password and clear reset token fields
+                await db.query(
+                    "UPDATE users SET hashed_password = ?, resetToken = NULL, resetTokenExpiry = NULL WHERE user_id = ?",
+                    [hashedPassword, user.user_id]
+                );
+
+                res.send("Password has been successfully reset.");
+            }
+            catch (err)
+            {
+                console.error("Error resetting password:", err);
+                res.status(500).send("Server error.");
             }
         });
         app.post("/save-scan", async (req, res) =>

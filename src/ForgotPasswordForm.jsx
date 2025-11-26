@@ -36,6 +36,8 @@ export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV
 
         if(response.ok && data.success) 
             setStatusMessage("Reset email sent successfully!");//email sent
+        else if(response.status === 404)
+            setErrorMessage("Email address not found!");//couldn't find email
         else
             setErrorMessage(data.message || "Something went wrong. Please try again later.");//fail
     }
