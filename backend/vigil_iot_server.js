@@ -43,13 +43,16 @@ const transporter = nodemailer.createTransport//configure the mail transporter
     {
         user: "vigil.iot.app@gmail.com",//sender email address
         pass: "bkdohtklsmilwbym"//sender app password
-    }
+    },
+    tls: {
+    rejectUnauthorized: false
+  }
 });
 const MYSQL_CONFIG = //specify the MySQL connection configuration (replace the user and password
 {                    //values with your own)
     host: "localhost",//specify the host
-    user: "root",//set the username
-    password: "comp440"//set the password
+    user: "jackray1",//set the username
+    password: "donthack"//set the password
 };
 
 async function initDatabase()//function to initialize the database
