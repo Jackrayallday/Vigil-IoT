@@ -1,22 +1,19 @@
 {
-  "name": "490-dashboard-test",
+  "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "dev:web": "vite",
-    "dev:electron": "concurrently \"npm run dev:web\" \"npm run electron:start\"",
+    "dev:electron": "concurrently \"npm run dev\" \"npm run electron:start\"",
     "electron:start": "wait-on tcp:5173 && electron . --dev",
-    "build:web": "vite build",
-    "build:electron": "npm run build:web && electron-builder"
+    "build:electron": "npm run build && electron-builder"
   },
   "dependencies": {
-    "bcrypt": "^6.0.0",
-    "express-session": "^1.18.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
@@ -36,8 +33,7 @@
     "wait-on": "^7.2.0"
   },
   "engines": {
-    "node": ">=22.12.0 || ^20.19.0"
+    "node": ">=20.19.0"
   },
-  "packageManager": "npm@10.9.2",
-  "main": "electron/main.js"
+  "packageManager": "npm@10.9.2"
 }
