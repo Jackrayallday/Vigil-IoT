@@ -52,8 +52,8 @@ const transporter = nodemailer.createTransport//configure the mail transporter
 const MYSQL_CONFIG = //specify the MySQL connection configuration (replace the user and password
 {                    //values with your own)
     host: "localhost",//specify the host
-    user: "jackray1",//set the username
-    password: "donthack"//set the password
+    user: "root",//set the username
+    password: "comp440"//set the password
 };
 
 async function initDatabase()//function to initialize the database
