@@ -26,12 +26,20 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
         Username: the password you set when installing MySQL
          Password: click “Store in Vault” and enter it
    Then click Test Connection — it should say “Connection successful.”-->
-3. **Run the containerized server program.**
+3. **Install Docker Desktop.**
+- Install Docker Desktop for Windows here: https://docs.docker.com/desktop/setup/install/windows-install/
+- Install Docker Desktop for Mac here: https://docs.docker.com/desktop/setup/install/mac-install/
+4. **Run The Docker Desktop app (It needs to be running at the same time as the containerized backend for it to work).**
+5. **Run the containerized server program.**
    ```bash
    cd backend
    docker compose up --build
    ```
-4. **In another terminal instance, install fronted dependencies and run the client program.**
+   - To remove containers, networks, and volumes created by Compose, run the following:
+     ```bash
+     docker compose down
+     ```
+6. **In another terminal instance, install fronted dependencies and run the client program.**
    ```bash
    cd backend
    npm install
