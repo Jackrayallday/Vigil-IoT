@@ -5,11 +5,16 @@ zeroconf          # mDNS / Bonjour service discovery
 requests          # HTTP requests (for router API or enrichment)
 netaddr           # IP / MAC / CIDR utilities and OUI lookups
 
+# API server dependencies
+fastapi           # FastAPI web framework
+uvicorn[standard] # ASGI server for FastAPI
+
 # Optional but useful extras
 ifaddr            # Pure-Python interface helper (safer than netifaces)
 python-nmap       # Optional wrapper for nmap binary (if installed)
 pytest            # Testing framework (optional, dev only)
 
-pip install scapy zeroconf psutil netifaces requests python-nmap netaddr
+# Installation command:
+# pip install scapy zeroconf psutil netifaces requests python-nmap netaddr fastapi uvicorn[standard]
 
-For windows will need NPCAP tose SScapy for ARP scans
+# For windows will need NPCAP to use Scapy for ARP scans
