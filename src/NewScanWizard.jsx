@@ -33,9 +33,63 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
   const [indicatorState, setIndicatorState] = useState("center"); // center | corner | stalled
   const idleTimerRef = useRef(null);
 
+  const [discoveryError, setDiscoveryError] = useState("");
+
   useEffect(() => {
     setOptions(initialOptions);
   }, [initialOptions]);
+
+  /*Pull data from discovery.json.*/
+useEffect(() => {
+    if (targetEntries.length > 0) return; // don't override manual choices
+
+    const controller = new AbortController();
+
+    async function loadDiscoveredTargets() {
+      try {
+        const res = await fetch("http://localhost:3002/discovery.json", { signal: controller.signal });
+
+        if (!res.ok) {
+          if (res.status !== 404) {
+            setDiscoveryError("Could not load discovered targets."); 
+          }
+
+          return;
+        }
+
+        const data = await res.json();
+        const devices = Array.isArray(data?.devices) ? data.devices : [];
+
+        const ips = [
+          ...new Set(
+            devices
+              .map((d) => d.ip || d.ip_address)
+              .filter(Boolean)
+          ),
+        ];
+
+        if (ips.length === 0) return;
+
+        setTargetEntries((prev) => {
+          if (prev.length > 0) return prev;
+          return ips.map((ip) => ({
+            id: createLocalId("target"),
+            value: ip,
+            checked: true,
+          })); // ✨ NEW
+        });
+
+        setIndicatorState("corner"); 
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          setDiscoveryError("Error loading discovered targets."); 
+        }
+      }
+    }
+
+    loadDiscoveredTargets();
+    return () => controller.abort();
+  }, [targetEntries.length]);
 
   const targets = useMemo(
     () => targetEntries.filter((entry) => entry.checked).map((entry) => entry.value),
@@ -192,6 +246,11 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
           </header>
 
           <div className="nsw-targetList" aria-label="Discovered targets">
+            {discoveryError &&( 
+              <p className="nsw-error" style={{ marginBottom: "0.5rem"}}>
+                {discoveryError}
+                </p>
+            )}
             {targetEntries.length === 0 ? (
               <div className="nsw-targetEmpty">
                 {indicatorState === "center" && <WifiSpinner variant="large" />}
