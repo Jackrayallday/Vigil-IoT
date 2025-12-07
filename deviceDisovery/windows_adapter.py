@@ -285,7 +285,10 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
                         ip_addr = IPAddress(ip)
                         if ip_addr in network_obj:
                             # Include both dynamic and static entries that are in the network
-                            print(f"    ✓ Found device: {ip} ({mac}) [Type: {entry_type}]")
+                            try:
+                                print(f"    ✓ Found device: {ip} ({mac}) [Type: {entry_type}]")
+                            except UnicodeEncodeError:
+                                print(f"    [+] Found device: {ip} ({mac}) [Type: {entry_type}]")
                             vendor = self._get_vendor_from_mac(mac)
                             hostname = self._get_hostname(ip)
                             
@@ -329,7 +332,10 @@ class WindowsAdapter(DeviceDiscoveryAdapter):
                             try:
                                 ip_addr = IPAddress(ip)
                                 if ip_addr in network_obj:
-                                    print(f"    ✓ Found device (lenient match): {ip} ({mac})")
+                                    try:
+                                        print(f"    ✓ Found device (lenient match): {ip} ({mac})")
+                                    except UnicodeEncodeError:
+                                        print(f"    [+] Found device (lenient match): {ip} ({mac})")
                                     vendor = self._get_vendor_from_mac(mac)
                                     hostname = self._get_hostname(ip)
                                     
