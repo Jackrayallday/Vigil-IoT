@@ -12,7 +12,7 @@ on how we start our project (npm run x:electron).
 import { app, BrowserWindow, screen } from 'electron'; // Main Electron modules import
 import { fileURLToPath } from 'node:url'; // Utility to convert file URL to path
 import path from 'node:path';
-import { spawn } from 'node:child_process'; // 🔹 ADDED: to start FastAPI
+import { spawn } from 'node:child_process'; // ADDED: to start FastAPI
 
 // Determine directory name and environment ESM style
 const __filename = fileURLToPath(import.meta.url);
@@ -27,7 +27,8 @@ let fastAPIServer = null;
 function startFastAPIServer() {
   // Adjust this path if directory changes occur ************************************************
   // This assumes: project root / deviceDisovery / api_server.py
-  const apiPath = path.join(__dirname, '..', 'deviceDisovery', 'api_server.py');
+  // __dirname is frontend/electron, so we need to go up two levels to reach project root
+  const apiPath = path.join(__dirname, '..', '..', 'deviceDisovery', 'api_server.py');
 
   fastAPIServer = spawn('python', [apiPath], {
     cwd: path.dirname(apiPath),
