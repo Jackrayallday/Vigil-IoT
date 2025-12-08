@@ -12,7 +12,7 @@ on how we start our project (npm run x:electron).
 import { app, BrowserWindow, screen } from 'electron'; // Main Electron modules import
 import { fileURLToPath } from 'node:url'; // Utility to convert file URL to path
 import path from 'node:path';
-
+import { spawn } from 'node:child_process'; // 🔹 ADDED: to start FastAPI
 
 // Determine directory name and environment ESM style
 const __filename = fileURLToPath(import.meta.url);
@@ -20,6 +20,34 @@ const __dirname = path.dirname(__filename);
 const isDev = process.argv.includes('--dev');
 const devServerUrl = process.env.ELECTRON_START_URL || 'http://localhost:5173';
 const distPath = path.join(__dirname, '..', 'dist');
+
+let fastAPIServer = null;
+
+//Function to start FastAPI server (api_server.py)
+function startFastAPIServer() {
+  // Adjust this path if directory changes occur ************************************************
+  // This assumes: project root / deviceDisovery / api_server.py
+  const apiPath = path.join(__dirname, '..', 'deviceDisovery', 'api_server.py');
+
+  fastAPIServer = spawn('python', [apiPath], {
+    cwd: path.dirname(apiPath),
+    shell: false,
+  });
+
+  // Logging for dev
+  fastAPIServer.stdout.on('data', (data) => {
+    console.log('[FASTAPI]', data.toString());
+  });
+
+  fastAPIServer.stderr.on('data', (data) => {
+    console.error('[FASTAPI ERROR]', data.toString());
+  });
+
+  fastAPIServer.on('close', (code) => {
+    console.log(`[FASTAPI exited with code ${code}]`);
+    fastAPIServer = null;
+  });
+}
 
 // Function to create the main application window
 async function createWindow() {
@@ -39,7 +67,8 @@ async function createWindow() {
       sandbox: false,
     },
   });
-// Show window when ready and open dev tools if in development mode
+
+  // Show window when ready and open dev tools if in development mode
   win.on('ready-to-show', () => {
     win.maximize(); // start maximized so the window fills the screen
     win.show();
@@ -47,21 +76,31 @@ async function createWindow() {
       win.webContents.openDevTools({ mode: 'detach' });
     }
   });
-// Load content based on environment. For now we are just going to stay in dev mode. The build mode will be used later for packaging.
+
+  // Load content based on environment. For now we are just going to stay in dev mode. The build mode will be used later for packaging.
   if (isDev) {
     await win.loadURL(devServerUrl);
   } else {
     await win.loadFile(path.join(distPath, 'index.html'));
   }
 }
+
 // Application lifecycle event handlers for quitting and activating
 app.on('window-all-closed', () => {
+  // Stop api when program quits.
+  if (fastAPIServer) {
+    fastAPIServer.kill('SIGINT');
+    fastAPIServer = null;
+  }
+
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
 app.whenReady().then(async () => {
+  startFastAPIServer();
+
   await createWindow();
 
   app.on('activate', async () => {
