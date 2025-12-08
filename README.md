@@ -6,7 +6,7 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
 
 1. **Clone the repository.**
    ```bash
-   git clone --branch main --single-branch https://github.com/Jackrayallday/Vigil-IoT.git
+   git clone --branch BackendContainerized --single-branch https://github.com/Jackrayallday/Vigil-IoT.git
    cd vigil-iot
    ```
 2. **Replace the MySQL credentials with your own in the following section of server.js:**
@@ -17,7 +17,7 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
        password: 'passowrd' 
    };
    ```
-3. **In MySQL Workbench, test the connection to the database by doing the following:**
+<!--3. **In MySQL Workbench, test the connection to the database by doing the following:**
    - Go to Database → Manage Connections
    - Select the connection or click New Connection
    - Enter:
@@ -25,14 +25,21 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
          Port: 3306 (default)
         Username: the password you set when installing MySQL
          Password: click “Store in Vault” and enter it
-   Then click Test Connection — it should say “Connection successful.”
-4. **Install backend dependencies and run the server program.**
+   Then click Test Connection — it should say “Connection successful.”-->
+3. **Install Docker Desktop.**
+- Install Docker Desktop for Windows here: https://docs.docker.com/desktop/setup/install/windows-install/
+- Install Docker Desktop for Mac here: https://docs.docker.com/desktop/setup/install/mac-install/
+4. **Run The Docker Desktop app (It needs to be running at the same time as the containerized backend for it to work).**
+5. **Run the containerized server program.**
    ```bash
-   cd frontend
-   npm install
-   node server.js
+   cd backend
+   docker compose up --build
    ```
-5. **In another terminal instance, install fronted dependencies and run the client program.**
+   - To remove containers, networks, and volumes created by Compose, run the following:
+     ```bash
+     docker compose down
+     ```
+6. **In another terminal instance, install fronted dependencies and run the client program.**
    ```bash
    cd backend
    npm install

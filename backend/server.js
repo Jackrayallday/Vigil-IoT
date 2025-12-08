@@ -51,9 +51,11 @@ const transporter = nodemailer.createTransport//configure the mail transporter
 });
 const MYSQL_CONFIG = //specify the MySQL connection configuration (replace the user and password
 {                    //values with your own)
-    host: "localhost",//specify the host
-    user: "root",//set the username
-    password: "comp440"//set the password
+    host: process.env.DB_HOST || 'localhost',//"localhost",//specify the host
+    user: process.env.DB_USER || 'root',//"root",//set the username
+    password: process.env.DB_PASSWORD || '',//"comp440"//set the password
+    database: process.env.DB_NAME || 'vigil_iot',///////////
+    port: process.env.DB_PORT || 3306,
 };
 
 async function initDatabase()//function to initialize the database
