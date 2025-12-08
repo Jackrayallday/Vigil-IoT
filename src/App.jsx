@@ -423,20 +423,25 @@ export default function App() {
     setShowSettings(false);
     setShowLogin(false);
     
-    // Run the device discovery script before opening the wizard
+    // Run the device discovery script (don't wait for it)
     console.log("Starting device discovery...");
-    try {
-      const response = await axios.post("http://localhost:3002/run-discovery", {}, {
-        withCredentials: false  // Don't send credentials for discovery endpoint
+    axios.post("http://localhost:3002/run-discovery", {}, { withCredentials: false })
+      .then((response) => {
+        if (response.data?.success) {
+          console.log(
+            "Device discovery completed successfully, found",
+            response.data.deviceCount || 0,
+            "devices"
+          );
+        } else {
+          console.warn("Device discovery API responded, but success was false:", response.data);
+        }
+      })
+      .catch((err) => {
+        console.error("Device discovery failed:", err);
       });
-      if (response.data.success) {
-        console.log("Device discovery completed successfully, found", response.data.deviceCount || 0, "devices");
-      }
-    } catch (err) {
-      console.error("Device discovery failed:", err);
-      // Still open the wizard even if discovery fails
-    }
-    
+
+    // Open the wizard immediately
     setShowWizard(true);
   }
 
