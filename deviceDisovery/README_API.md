@@ -68,6 +68,6 @@ The frontend (React app) calls:
 
 - The server runs on port 3002 (separate from the Node.js backend on port 3001)
 - CORS is enabled for all origins (adjust for production)
-- The discovery script has a 2-minute timeout
+- The discovery script runs without a timeout
 - Results are written to `discovery.json` in the same directory
 
