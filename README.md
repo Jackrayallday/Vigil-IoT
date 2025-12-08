@@ -23,6 +23,7 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
      docker compose down
      ```
 5. **In another terminal instance, install fronted dependencies and run the client program.**
+   ```
    const MYSQL_CONFIG = {
        host: 'localhost',
        user: 'root',
