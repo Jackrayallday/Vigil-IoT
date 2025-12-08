@@ -418,10 +418,30 @@ export default function App() {
   }, [scans, selectedScanId, unsavedScan]);
 
   // Modal open/close helpers keep those booleans in place.
-  function openWizard(e) {
+  async function openWizard(e) {
     e.preventDefault();
     setShowSettings(false);
     setShowLogin(false);
+    
+    // Run the device discovery script (don't wait for it)
+    console.log("Starting device discovery...");
+    axios.post("http://localhost:3002/run-discovery", {}, { withCredentials: false })
+      .then((response) => {
+        if (response.data?.success) {
+          console.log(
+            "Device discovery completed successfully, found",
+            response.data.deviceCount || 0,
+            "devices"
+          );
+        } else {
+          console.warn("Device discovery API responded, but success was false:", response.data);
+        }
+      })
+      .catch((err) => {
+        console.error("Device discovery failed:", err);
+      });
+
+    // Open the wizard immediately
     setShowWizard(true);
   }
 

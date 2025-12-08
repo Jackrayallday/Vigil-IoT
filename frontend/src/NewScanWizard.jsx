@@ -33,9 +33,145 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
   const [indicatorState, setIndicatorState] = useState("center"); // center | corner | stalled
   const idleTimerRef = useRef(null);
 
+  const [discoveryError, setDiscoveryError] = useState("");
+
   useEffect(() => {
     setOptions(initialOptions);
   }, [initialOptions]);
+
+  /*Load data from discovery.json.*/
+  const loadDiscoveredTargets = React.useCallback(async () => {
+    setIndicatorState("center");
+    setDiscoveryError("");
+
+    try {
+      const res = await fetch("http://localhost:3002/discovery.json");
+
+      if (!res.ok) {
+        if (res.status !== 404) {
+          setDiscoveryError("Could not load discovered targets."); 
+        }
+        setIndicatorState("stalled");
+        return;
+      }
+
+      const data = await res.json();
+      const devices = Array.isArray(data?.devices) ? data.devices : [];
+
+      const ips = [
+        ...new Set(
+          devices
+            .map((d) => d.ip || d.ip_address)
+            .filter(Boolean)
+        ),
+      ];
+
+      if (ips.length === 0) {
+        setIndicatorState("stalled");
+        return;
+      }
+
+      // We have IPs! Load them
+      setTargetEntries((prev) => {
+        // Merge with existing entries, avoiding duplicates
+        const existing = new Set(prev.map((entry) => entry.value));
+        const newEntries = ips
+          .filter((ip) => !existing.has(ip))
+          .map((ip) => ({
+            id: createLocalId("target"),
+            value: ip,
+            checked: true,
+          }));
+        return [...prev, ...newEntries];
+      });
+
+      setIndicatorState("corner"); 
+    } catch (err) {
+      setDiscoveryError("Error loading discovered targets."); 
+      setIndicatorState("stalled");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (targetEntries.length > 0) return; // don't override manual choices
+
+    const controller = new AbortController();
+    let pollTimer = null;
+    let attempts = 0;
+    const maxAttempts = 60; // Try for up to 30 seconds
+
+    async function pollForResults() {
+      attempts++;
+      try {
+        const res = await fetch("http://localhost:3002/discovery.json", { signal: controller.signal });
+
+        if (!res.ok) {
+          if (res.status !== 404) {
+            setDiscoveryError("Could not load discovered targets."); 
+          }
+          // If not found or error, keep polling if we haven't exceeded max attempts
+          if (attempts < maxAttempts) {
+            pollTimer = setTimeout(pollForResults, 500);
+          } else {
+            setIndicatorState("stalled");
+          }
+          return;
+        }
+
+        const data = await res.json();
+        const devices = Array.isArray(data?.devices) ? data.devices : [];
+
+        const ips = [
+          ...new Set(
+            devices
+              .map((d) => d.ip || d.ip_address)
+              .filter(Boolean)
+          ),
+        ];
+
+        if (ips.length === 0) {
+          // No IPs yet, keep polling if we haven't exceeded max attempts
+          if (attempts < maxAttempts) {
+            pollTimer = setTimeout(pollForResults, 500);
+          } else {
+            setIndicatorState("stalled");
+          }
+          return;
+        }
+
+        // We have IPs! Load them
+        setTargetEntries((prev) => {
+          if (prev.length > 0) return prev; // Don't override if user has added targets
+          return ips.map((ip) => ({
+            id: createLocalId("target"),
+            value: ip,
+            checked: true,
+          }));
+        });
+
+        setIndicatorState("corner"); 
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          // On error, keep polling if we haven't exceeded max attempts
+          if (attempts < maxAttempts) {
+            pollTimer = setTimeout(pollForResults, 500);
+          } else {
+            setDiscoveryError("Error loading discovered targets."); 
+            setIndicatorState("stalled");
+          }
+        }
+      }
+    }
+
+    // Start polling after a short delay to let discovery start
+    const initialTimer = setTimeout(pollForResults, 1000);
+    
+    return () => {
+      controller.abort();
+      clearTimeout(initialTimer);
+      if (pollTimer) clearTimeout(pollTimer);
+    };
+  }, [targetEntries.length]);
 
   const targets = useMemo(
     () => targetEntries.filter((entry) => entry.checked).map((entry) => entry.value),
@@ -182,7 +318,10 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
               <button
                 type="button"
                 className="nsw-refreshBtn"
-                onClick={() => setIndicatorState("center")}
+                onClick={() => {
+                  setIndicatorState("center");
+                  loadDiscoveredTargets();
+                }}
                 aria-label="Scan more"
               >
                 <WifiSpinner variant="small" animated={false} />
@@ -192,6 +331,11 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
           </header>
 
           <div className="nsw-targetList" aria-label="Discovered targets">
+            {discoveryError &&( 
+              <p className="nsw-error" style={{ marginBottom: "0.5rem"}}>
+                {discoveryError}
+                </p>
+            )}
             {targetEntries.length === 0 ? (
               <div className="nsw-targetEmpty">
                 {indicatorState === "center" && <WifiSpinner variant="large" />}

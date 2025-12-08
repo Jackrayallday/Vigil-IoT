@@ -23,8 +23,35 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
      docker compose down
      ```
 5. **In another terminal instance, install fronted dependencies and run the client program.**
+   const MYSQL_CONFIG = {
+       host: 'localhost',
+       user: 'root',
+       password: 'passowrd' 
+   };
+   ```
+3. **In MySQL Workbench, test the connection to the database by doing the following:**
+   - Go to Database → Manage Connections
+   - Select the connection or click New Connection
+   - Enter:
+         Hostname: localhost
+         Port: 3306 (default)
+        Username: the password you set when installing MySQL
+         Password: click “Store in Vault” and enter it
+   Then click Test Connection — it should say “Connection successful.”
+4. **Install backend dependencies and run the server program.**
    ```bash
    cd backend
+   npm install
+   node server.js
+   ```
+5. **Install networking dependencies needed for device discovery.**
+   ```bash
+   cd deviceDiscovery
+   pip install scapy zeroconf psutil ifaddr requests netaddr fastapi uvicorn[standard]
+   ```
+6. **In another terminal instance, install frontend dependencies and run the client program.**
+   ```bash
+   cd frontend
    npm install
    npm run dev:electron
    ```
