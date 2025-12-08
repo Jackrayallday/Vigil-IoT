@@ -5,7 +5,7 @@ programmer: Jack Ray
 Component to display detailed information about a selected device.
 */
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./styles/device.css";
 
 export default function DeviceDetails({ device, onBack, onPrint }) {
@@ -13,7 +13,11 @@ export default function DeviceDetails({ device, onBack, onPrint }) {
     return (
       <section className="device-shell">
         <div className="device-header">
-          <button type="button" className="device-backBtn" onClick={onBack}>
+          <button
+            type="button"
+            className="device-backBtn"
+            onClick={onBack}
+          >
             Back to results
           </button>
         </div>
@@ -24,58 +28,110 @@ export default function DeviceDetails({ device, onBack, onPrint }) {
     );
   }
 
-  const name = device.deviceName || device.name || device.itemDiscovered || "Unknown";
-  const warnings = device.protocolWarnings || "None";
-  const services = device.services || device.serviceSummary || "Unknown";
-  const address = device.ipAddress || device.itemDiscovered || "Unknown";
-  const notes = device.notes;
-  const remediation = device.remediationTips;
+  // Use the device as-is (no enrichment or extra fetch)
+  const dev = device;
+
+  // Device Name: hostname or deviceName with a fallback
+  const deviceName = dev.hostname || dev.deviceName || "Not Available";
+
+  // IP Address: use ip/ipAddress with fallback
+  const ipAddress = dev.ip || dev.ipAddress || "Not Available";
+
+  // Services:
+  // - Prefer dev.services if it's an array
+  // - Otherwise, fall back to discovered_via
+  const discoveredVia = Array.isArray(dev.discovered_via)
+    ? dev.discovered_via
+    : [];
+
+  const servicesFromField = Array.isArray(dev.services)
+    ? dev.services
+    : [];
+
+  const combinedServices = servicesFromField.length
+    ? servicesFromField
+    : discoveredVia;
+
+  const servicesDisplay =
+    combinedServices.length > 0
+      ? combinedServices.join(", ")
+      : "None detected";
+
+  // Notes: assemble Vendor / MAC / Interface / Discovered via / Notes
+  const notesParts = [];
+
+  if (dev.vendor) {
+    notesParts.push(`Vendor: ${dev.vendor}`);
+  }
+  if (dev.mac) {
+    notesParts.push(`MAC Address: ${dev.mac}`);
+  }
+  if (dev.iface) {
+    notesParts.push(`Interface: ${dev.iface}`);
+  }
+  if (discoveredVia.length > 0) {
+    notesParts.push(`Discovered via: ${discoveredVia.join(", ")}`);
+  }
+  if (dev.notes) {
+    notesParts.push(dev.notes);
+  }
+
+  const notes =
+    notesParts.length > 0
+      ? notesParts.join(" | ")
+      : "No additional information available";
 
   return (
-    <section className="device-shell" aria-labelledby="device-details-heading">
+    <section className="device-shell">
       <div className="device-header">
-        <button type="button" className="device-backBtn" onClick={onBack}>
+        <button
+          type="button"
+          className="device-backBtn"
+          onClick={onBack}
+        >
           Back to results
         </button>
-        <h1 id="device-details-heading" className="device-title">
-          Device Information
-        </h1>
+
+        {onPrint && (
+          <button
+            type="button"
+            className="device-printBtn"
+            onClick={onPrint}
+          >
+            Print
+          </button>
+        )}
       </div>
 
       <article className="device-card">
-        <dl className="device-grid">
-          <div>
-            <dt>Device Name</dt>
-            <dd>{name}</dd>
+        <header className="device-cardHeader">
+          <h1 className="device-title">{deviceName}</h1>
+          <p className="device-subtitle">
+            IP Address: {ipAddress}
+          </p>
+        </header>
+
+        <div className="device-body">
+          <div className="device-field">
+            <h2 className="device-fieldLabel">Device Name</h2>
+            <p className="device-fieldValue">{deviceName}</p>
           </div>
-          <div>
-            <dt>Protocol Warnings</dt>
-            <dd>{warnings}</dd>
+
+          <div className="device-field">
+            <h2 className="device-fieldLabel">Services</h2>
+            <p className="device-fieldValue">{servicesDisplay}</p>
           </div>
-          <div>
-            <dt>Services</dt>
-            <dd>{services}</dd>
+
+          <div className="device-field">
+            <h2 className="device-fieldLabel">IP Address</h2>
+            <p className="device-fieldValue">{ipAddress}</p>
           </div>
-          <div>
-            <dt>IP Address</dt>
-            <dd>{address}</dd>
+
+          <div className="device-field">
+            <h2 className="device-fieldLabel">Notes</h2>
+            <p className="device-fieldValue">{notes}</p>
           </div>
-          {notes && (
-            <div>
-              <dt>Notes</dt>
-              <dd>{notes}</dd>
-            </div>
-          )}
-          {remediation && (
-            <div>
-              <dt>Remediation Tips</dt>
-              <dd>{remediation}</dd>
-            </div>
-          )}
-        </dl>
-        <button type="button" className="device-pdfBtn" onClick={onPrint}>
-          Convert to PDF
-        </button>
+        </div>
       </article>
     </section>
   );
