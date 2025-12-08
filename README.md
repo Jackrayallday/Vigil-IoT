@@ -28,13 +28,18 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
    Then click Test Connection — it should say “Connection successful.”
 4. **Install backend dependencies and run the server program.**
    ```bash
-   cd frontend
+   cd backend
    npm install
    node server.js
    ```
-5. **In another terminal instance, install fronted dependencies and run the client program.**
+5. **Install networking dependencies needed for device discovery.**
    ```bash
-   cd backend
+   cd deviceDiscovery
+   pip install scapy zeroconf psutil ifaddr requests netaddr fastapi uvicorn[standard]
+   ```
+6. **In another terminal instance, install frontend dependencies and run the client program.**
+   ```bash
+   cd frontend
    npm install
    npm run dev:electron
    ```
