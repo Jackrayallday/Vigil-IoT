@@ -88,7 +88,6 @@ async def run_discovery() -> Dict[str, Any]:
             text=True,
             encoding='utf-8',  # Explicitly set UTF-8 encoding
             errors='replace',  # Replace problematic characters instead of failing
-            timeout=120,  # 2 minute timeout
             shell=(sys.platform == "win32"),  # Use shell on Windows
             env=env  # Pass environment variables
         )
@@ -99,7 +98,7 @@ async def run_discovery() -> Dict[str, Any]:
         print("=" * 60)
         if result.stdout:
             print("[Python stdout]:")
-            print(result.stdout)
+           # print(result.stdout)
         else:
             print("[Python stdout]: (empty)")
         if result.stderr:
@@ -164,10 +163,6 @@ async def run_discovery() -> Dict[str, Any]:
                 "stderr": result.stderr if result.stderr else None
             }
             
-    except subprocess.TimeoutExpired:
-        error_msg = "Discovery script timed out after 2 minutes"
-        print(f"ERROR: {error_msg}")
-        raise HTTPException(status_code=500, detail=error_msg)
     except Exception as e:
         error_msg = f"Failed to run discovery script: {str(e)}"
         print(f"ERROR: {error_msg}")
