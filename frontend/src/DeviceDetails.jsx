@@ -1,6 +1,6 @@
 /*
 file: src/DeviceDetails.jsx
-programmer: Jack Ray
+programmers: Jack Ray, Richie Delgado
 ===================================================
 Component to display detailed information about a selected device.
 */

@@ -7,6 +7,10 @@ This file can be ignored unless you are interested in the Electron main process 
 This file is used to as the main process entry point for an Electron application. We set up the main application window, 
 handle application lifecycle events such as closing the window or starting the project, and load the correct content based 
 on how we start our project (npm run x:electron).
+
+programmer: Richie Delgado
+-------------------------------------------------------
+Start fastAPI for device discovery script. 
 */
 
 import { app, BrowserWindow, screen } from 'electron'; // Main Electron modules import

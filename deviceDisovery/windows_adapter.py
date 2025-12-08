@@ -1,4 +1,6 @@
 """
+programmer: Richie Delgado
+-------------------------------------------------------
 Windows-specific device discovery adapter.
 Uses ARP scanning, SSDP (M-SEARCH), mDNS, and network interface detection.
 Note: Windows requires Npcap to be installed for Scapy to work.

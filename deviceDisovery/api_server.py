@@ -1,4 +1,6 @@
 """
+programmer: Richie Delgado
+-------------------------------------------------------
 FastAPI server for device discovery.
 Provides endpoints to run discovery and retrieve results.
 """

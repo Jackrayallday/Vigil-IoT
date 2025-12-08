@@ -1,4 +1,6 @@
 """
+programmer: Richie Delgado
+-------------------------------------------------------
 Detects the operating system and uses the corresponding adapter.
 """
 import platform

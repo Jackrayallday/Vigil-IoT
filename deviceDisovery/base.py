@@ -1,4 +1,6 @@
 """
+programmer: Richie Delgado
+-------------------------------------------------------
 Base class for device discovery across different operating systems.
 Defines the common interface that all OS-specific adapters must implement.
 """

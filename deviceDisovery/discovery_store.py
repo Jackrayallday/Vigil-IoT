@@ -1,3 +1,8 @@
+"""
+programmer: Richie Delgado
+-------------------------------------------------------
+Data classes to unify the information discovered about interfaces, devifces, and the device summary, exports to json for the frontend.
+"""
 # discovery_store.py
 from __future__ import annotations
 from dataclasses import dataclass, asdict, field

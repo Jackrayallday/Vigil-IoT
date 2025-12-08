@@ -1,6 +1,9 @@
 """
+programmer: Richie Delgado
+-------------------------------------------------------
 macOS-specific device discovery adapter.
 Uses ARP scanning, mDNS/Bonjour, and network interface detection.
+NEEDS MORE RESEARCH INTO OS SPECIFIC NETWORKING
 """
 import subprocess
 import socket

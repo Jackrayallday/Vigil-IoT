@@ -1,6 +1,10 @@
 """
+programmer: Richie Delgado
+-------------------------------------------------------
 Linux-specific device discovery adapter.
 Uses ARP scanning, mDNS, and network interface detection.
+NEEDS MORE RESEARCH INTO OS SPECIFIC NETWORKING
+
 """
 import subprocess
 import socket

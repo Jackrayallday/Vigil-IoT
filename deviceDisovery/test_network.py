@@ -1,4 +1,6 @@
 """
+programmer: Richie Delgado
+-------------------------------------------------------
 Quick test script to debug network detection and ARP table parsing.
 """
 import platform
