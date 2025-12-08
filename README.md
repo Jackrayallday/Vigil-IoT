@@ -26,34 +26,23 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
         Username: the password you set when installing MySQL
          Password: click “Store in Vault” and enter it
    Then click Test Connection — it should say “Connection successful.”
-4. **Open your connection, select "vigil_iot" in schemas sidebar, and run the following query:**
+4. **Install backend dependencies and run the server program.**
    ```bash
-  INSERT INTO users (username, password_hash)
-  VALUES ('example_user', 'example_password');
+   cd frontend
+   npm install
+   node server.js
    ```
-   (You can replace 'example_user' and 'example_password' with any credentials you want)
-   This will manually insert a user account with which you can test the login functionallity.
-5. **Install dependencies on both frontend and backend.**  
-   a. `npm install` (npm may warn about peer dependencies; that's expected. If this doesn't work, confirm Node is installed with `node --version`.)
-   b. switch to the backend directory and do the same on there.
+5. **In another terminal instance, install fronted dependencies and run the client program.**
    ```bash
    cd backend
    npm install
-   ```
-6. **Run the backend server app.**
-   ```bash
-   node vigil_iot_server.js
-   ```
-7. **Run the frontend Electron app.**
-   ```bash
-   cd ..
    npm run dev:electron
    ```
    - For browser-only development, use:
      ```bash
      npm run dev
      ```
-   - To stop use 'control c' - > 'Y' -> 'Enter Key'
+   - To stop use 'control c' - > 'Y' -> 'Enter Key
 
 ## Notes
 
