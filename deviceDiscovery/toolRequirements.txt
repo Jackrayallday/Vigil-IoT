@@ -1,0 +1,29 @@
+This document lists all Python dependencies required for:
+- Network scanning
+- ARP-based discovery
+- Service detection via mDNS / Bonjour
+- MAC vendor identification
+- Running the FastAPI backend server for discovery
+
+
+# Core networking and system tools
+scapy             # ARP / low-level packet scanning
+psutil            # Cross-platform interface & subnet detection
+zeroconf          # mDNS / Bonjour service discovery
+requests          # HTTP requests (for router API or enrichment)
+netaddr           # IP / MAC / CIDR utilities and OUI lookups
+
+# API server dependencies
+fastapi           # FastAPI web framework
+uvicorn[standard] # ASGI server for FastAPI
+
+# Optional but useful extras
+ifaddr            # Pure-Python interface helper (safer than netifaces)
+python-nmap       # Optional wrapper for nmap binary (if installed)
+pytest            # Testing framework (optional, dev only)
+
+# Installation command:
+pip install scapy zeroconf psutil ifaddr requests netaddr fastapi uvicorn[standard]
+
+
+# For windows will need NPCAP to use Scapy for ARP scans
