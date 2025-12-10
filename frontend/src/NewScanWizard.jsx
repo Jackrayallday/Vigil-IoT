@@ -97,11 +97,11 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
 
     const controller = new AbortController();
     let pollTimer = null;
-    let attempts = 0;
-    const maxAttempts = 60; // Try for up to 30 seconds
+    //let attempts = 0;
+    //const maxAttempts = 60; // Try for up to 30 seconds
 
     async function pollForResults() {
-      attempts++;
+      //attempts++;
       try {
         const res = await fetch("http://localhost:3002/discovery.json", { signal: controller.signal });
 
@@ -109,12 +109,8 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
           if (res.status !== 404) {
             setDiscoveryError("Could not load discovered targets."); 
           }
-          // If not found or error, keep polling if we haven't exceeded max attempts
-          if (attempts < maxAttempts) {
-            pollTimer = setTimeout(pollForResults, 500);
-          } else {
-            setIndicatorState("stalled");
-          }
+          // Keep polling indefinitely until targets are found (404 or other errors)
+          pollTimer = setTimeout(pollForResults, 500);
           return;
         }
 
@@ -130,12 +126,8 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
         ];
 
         if (ips.length === 0) {
-          // No IPs yet, keep polling if we haven't exceeded max attempts
-          if (attempts < maxAttempts) {
-            pollTimer = setTimeout(pollForResults, 500);
-          } else {
-            setIndicatorState("stalled");
-          }
+          // No IPs yet, keep polling indefinitely until targets are found
+          pollTimer = setTimeout(pollForResults, 500);
           return;
         }
 
@@ -152,13 +144,9 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
         setIndicatorState("corner"); 
       } catch (err) {
         if (err.name !== "AbortError") {
-          // On error, keep polling if we haven't exceeded max attempts
-          if (attempts < maxAttempts) {
-            pollTimer = setTimeout(pollForResults, 500);
-          } else {
-            setDiscoveryError("Error loading discovered targets."); 
-            setIndicatorState("stalled");
-          }
+          // On error, keep polling indefinitely (network errors are usually temporary)
+          setDiscoveryError("Error loading discovered targets."); 
+          pollTimer = setTimeout(pollForResults, 500);
         }
       }
     }
@@ -194,10 +182,11 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
     }
   }, [targetEntries.length, indicatorState]);
 
-  // Idle timer: after 10s in center or corner, pause the indicator (stalled).
+  // Idle timer: after 10s in corner (when targets exist), pause the indicator (stalled).
+  // Keep animation running in center state (no targets yet) until targets are populated.
   useEffect(() => {
     clearIdleTimer(idleTimerRef);
-    if (indicatorState === "center" || indicatorState === "corner") {
+    if (indicatorState === "corner") {
       idleTimerRef.current = window.setTimeout(() => setIndicatorState("stalled"), 10_000);
     }
     return () => clearIdleTimer(idleTimerRef);
