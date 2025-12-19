@@ -314,12 +314,12 @@ async function initDatabase()//function to initialize the database
                     subject: "Password Reset Requested",
                     html: `<p>Click the following link to reset your password:</p>
                            <p>
-                               <a href="http://localhost:3001/reset-password?token=${token}">
+                               <a href="http://localhost:3000/reset-password?token=${token}">
                                    Reset Password
                             </a>
                         </p>`,
                     text: "Visit the following URL to reset your password:\n\n" +
-                          `http://localhost:3001/reset-password?token=${token}`//plain text fallback
+                          `http://localhost:3000/reset-password?token=${token}`//plain text fallback
                 }); 
                 
                 console.log("Email sent:", info.messageId);//log the email
@@ -452,7 +452,7 @@ async function initDatabase()//function to initialize the database
             }
         });
    
-        app.listen(3001, () => console.log("Server running on port 3001"));//start server: prt 3001
+        app.listen(3000, () => console.log("Server running on port 3000"));//start server: prt 3000
     } 
     catch (err)
     {//if here, error in MySQL database initialization

@@ -373,7 +373,7 @@ export default function App() {
     let isActive = true;
     async function hydrateSession() {
       try {
-        const res = await axios.get("http://localhost:3001/check_login");
+        const res = await axios.get("http://localhost:3000/check_login");
         if (!isActive) return;
         if (res?.data?.loggedIn && res?.data?.user) {
           setUser(res.data.user);
@@ -511,13 +511,13 @@ export default function App() {
 
     async function loadHistoryForUser(userId) {
       try {
-        const reportsRes = await axios.get(`http://localhost:3001/scan-reports/${userId}`);
+        const reportsRes = await axios.get(`http://localhost:3000/scan-reports/${userId}`);
         if (!isActive) return;
         const reports = reportsRes?.data?.success ? reportsRes.data.reports || [] : [];
         const reportsWithDevices = await Promise.all(
           reports.map(async (report) => {
             try {
-              const devicesRes = await axios.get(`http://localhost:3001/scan-reports/${report.report_id}/devices`);
+              const devicesRes = await axios.get(`http://localhost:3000/scan-reports/${report.report_id}/devices`);
               const devices = devicesRes?.data?.success ? devicesRes.data.devices || [] : [];
               return mapReportToScan(report, devices);
             } catch (err) {
@@ -557,7 +557,7 @@ export default function App() {
 
   async function handleLogout() {
     try {
-      await axios.post("http://localhost:3001/logout");
+      await axios.post("http://localhost:3000/logout");
     } catch (err) {
       console.error("Logout failed:", err);
     } finally {
@@ -604,7 +604,7 @@ export default function App() {
     setDeletingScanId(scanId);
     setHistoryFeedback(null);
     try {
-      await axios.delete(`http://localhost:3001/delete-scan/${scanId}`);
+      await axios.delete(`http://localhost:3000/delete-scan/${scanId}`);
       setScans((prev) => {
         const next = prev.filter((entry) => entry.id !== scanId);
         if (prev.length !== next.length) {
@@ -730,7 +730,7 @@ export default function App() {
         //devices: JSON.stringify(scanData.findings || []),//KV: backend takes array, not string
         devices: scanData.findings || [],//KV add: send as array, not string
       };
-      await axios.post("http://localhost:3001/save-scan", payload);
+      await axios.post("http://localhost:3000/save-scan", payload);
       const savedScan = snapshotScan(scanData);
       setScans((prev) => {
         const withoutCurrent = prev.filter((entry) => entry.id !== savedScan.id);

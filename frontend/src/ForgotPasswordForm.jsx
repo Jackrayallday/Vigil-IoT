@@ -25,7 +25,7 @@ export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV
     //KV add---------------------------------------------------------------------------------------
     try
     {
-        const response = await fetch("http://localhost:3001/send-email",//call backend route with following info:
+        const response = await fetch("http://localhost:3000/send-email",//call backend route with following info:
         {
             method: "POST",
             headers: { "Content-Type": "application/json" },

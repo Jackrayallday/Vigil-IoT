@@ -68,7 +68,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
     // Stub for now; could hook into auth later
     //KV add --------------------------------------------------------
     try {
-      const res = await axios.post("http://localhost:3001/login", {
+      const res = await axios.post("http://localhost:3000/login", {
         email,
         password,
       });
