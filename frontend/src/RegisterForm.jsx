@@ -5,6 +5,7 @@ programmer: Jack Ray (modified by Kevin Volkov to add functionality)
 Standalone registration form shown inside the auth modal.
 */
 import React, { useState } from "react";
+import axios from "axios";//KV add
 import PasswordField from "./PasswordField"; // Shared press-to-reveal password input
 
 export default function RegisterForm({ onBack }) {//KV edit //export default function RegisterForm({ onBack, onRegister }) {
@@ -36,32 +37,31 @@ export default function RegisterForm({ onBack }) {//KV edit //export default fun
     resetForm();*///KV remove
 
     //KV add ------------------------------------------------------------------
-    try{
-        const response = await fetch("http://localhost:3000/register", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ email, password })
-        });
-
-        const result = await response.json();
-
-        if(result.success){
-            setFormSuccess("Registration successful!");
-            setFormError("");
-            resetForm();
+   try {
+    const response = await axios.post(
+        "http://localhost:3000/register",
+        { email, password },
+        {
+            headers: { "Content-Type": "application/json" }
         }
-        else{
-            setFormError(result.message || "Registration failed.");
-            setFormSuccess("");
-        }
-    }
-    catch (err) {
-        console.error("Registration error:", err);
-        setFormError("Server error. Please try again later.");
+    );
+
+    const result = response.data;
+
+    if (result.success) {
+        setFormSuccess("Registration successful!");
+        setFormError("");
+        resetForm();
+    } else {
+        setFormError(result.message || "Registration failed.");
         setFormSuccess("");
     }
+}
+catch (err) {
+    console.error("Registration error:", err);
+    setFormError("Server error. Please try again later.");
+    setFormSuccess("");
+}
     //-------------------------------------------------------------------------
   }
 

@@ -563,6 +563,7 @@ export default function App() {
     } finally {
       setUser(null);
       setPendingLoginAction(null);
+      //later clear the cookie here
     }
   }
 

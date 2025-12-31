@@ -85,8 +85,8 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
         setError("Invalid email or password.");
       }
     } catch (err) {
-      console.error(err);
-      setError("Server error. Please try again later.");
+      console.error("Server Error: "+err);
+      setError("\n\nServer error. Please try again later: " + err);
     }
     //---------------------------------------------------------------
   }

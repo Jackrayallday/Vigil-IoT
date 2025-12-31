@@ -5,6 +5,7 @@ programmer: Jack Ray (Modified by Kevin to call corresponding backend route)
 Password reset request form shown inside the auth modal.
 */
 import React, { useState } from "react";
+import axios from "axios";//KV add
 
 export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV edit
   const [email, setEmail] = useState("");
@@ -25,12 +26,10 @@ export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV
     //KV add---------------------------------------------------------------------------------------
     try
     {
-        const response = await fetch("http://localhost:3000/send-email",//call backend route with following info:
-        {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: trimmedEmail }),
-        });
+        const response = await axios.post("http://localhost:3000/send-email",
+            {email: trimmedEmail},
+            {headers: {"Content-Type": "application/json"}}
+        );
 
         const data = await response.json();//get the response from server
 
@@ -43,8 +42,8 @@ export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV
     }
     catch (err)
     {//if here, server error
-      console.error(err);//log the error
-      setErrorMessage("Server error! Please try again later.");//inform user
+      console.error("send-email route ERROR: "+err);//log the error
+      setErrorMessage("Server error! Please try again later: "+err);//inform user
     }
     //---------------------------------------------------------------------------------------------
 

@@ -1,41 +1,39 @@
 /*File: server.js
   Programmer: Kevin Volkov
-  File Description: This file contains all the server-side code of the Vigil-IoT Node.js express
-                    app. It defines the database schema, creates the MySQL database itself if it
-                    doesn't exist yet, defines the routes that the frontend can access via GET and
-                    POST requests, and starts the server on the localhost.*/
+  Description: This file contains all server-side code of Vigil IoT as a single Node.js and Express          app. It defines the database schema, creates the MySQL database itself if it
+               app. It defines the database schema, creates the MySQL database itself if it doesn't
+               exist yet, defines the routes that the frontend can access via GET and POST
+               requests, and starts the server on the localhost.*/
 //import dependencies
-const express = require("express");//Express is the minimal app framework of Node.js
-const mysql = require("mysql2/promise");//library for connecting JS to MySQL database with promises
-const bodyParser = require("body-parser");//Body Parser middleware to read from POST requests
-const cors = require("cors");//CORS middleware to allow cross-origin requests
-const session = require("express-session");//middleware for tracking user sessions and login status.
-const bcrypt = require("bcrypt");//to store passwords as salted hashes
-const nodemailer = require("nodemailer");//use nodemailer for email-sending functionallity
-const crypto = require("crypto");//to generate the password reset token
+const express = require("express");//minimal framework for building backend APIs
+const mysql = require("mysql2/promise");//for connecting to MySQL database and using promises
+const cors = require("cors");//to allow cross-origin requests
+const session = require("express-session");//for user session management
+const bcrypt = require("bcrypt");//to hash passwords before storing them in the database
+const nodemailer = require("nodemailer");//for email-sending functionallity
+const crypto = require("crypto");//to generate the password reset token////////////////////////////
 
-const app = express();//create Express app instance defining routes, middleware, server behavior
+const app = express();//create the express object to represent the server app
 
-app.use(express.urlencoded({ extended: true }));////
-app.use(express.json());/////
-//configure the middleware
-app.use(cors({
-    origin: true,//reflect the request origin for dev servers
-    credentials: true//allow session cookies cross-origin
-}));//tell express to allow cross-origin requests
-app.use(bodyParser.json());//tell express to parse JSON requests through req.body
-app.use(session//configure the session management
-({
-    secret: "your-secret-key",//strong secret key to sign the session ID cookie
-    resave: false,//prevent session from being saved back to store if it wan't modified
-    saveUninitialized: false,//don't save inmodified sessions
-    cookie:
-    {
-        maxAge: 1000 * 60 * 60,//1 hour max age
+app.use(express.json());//parse incoming JSON request bodies and store them in req.body
+
+app.use(cors({//configure the server's CORS policy
+    origin: "http://localhost:5173",//allow cross-origin requests from only our frontend
+    credentials: true//allow credentials to be sent in these requests
+}));
+
+app.use(session({//configure the session management
+    secret: "d50b70c9e0ceb011db93c851cdfc365128995575ae25dcb87cc838e6afc34b0a",//secret key to sign the session ID cookie
+    resave: false,//don't resave the session unless it was modified
+    saveUninitialized: false,//don't save uninitialized sessions to the session store
+    cookie: {//configure the cookie that will be stored on the client
+        maxAge: 3600000,//3600000 ms = 1 hour max age of the session (it expires after this limit)
         httpOnly: true,//https may not be used yet
         secure: false //Set to true if using HTTPS
-    }
+    },
+    rolling: true,//reset the expiration countdown after every request
 }));
+
 const transporter = nodemailer.createTransport//configure the mail transporter
 ({
     service: "gmail",//use Gmail as the email service
@@ -51,11 +49,14 @@ const transporter = nodemailer.createTransport//configure the mail transporter
 });
 const MYSQL_CONFIG = //specify the MySQL connection configuration (replace the user and password
 {                    //values with your own)
-    host: process.env.DB_HOST || 'localhost',//"localhost",//specify the host
+    /*host: process.env.DB_HOST || 'localhost',//"localhost",//specify the host
     user: process.env.DB_USER || 'root',//"root",//set the username
     password: process.env.DB_PASSWORD || '',//"comp440"//set the password
     database: process.env.DB_NAME || 'vigil_iot',///////////
-    port: process.env.DB_PORT || 3306,
+    port: process.env.DB_PORT || 3306,*/
+    host: "localhost",
+    user: "root",
+    password: "comp440"
 };
 
 async function initDatabase()//function to initialize the database
@@ -111,9 +112,8 @@ async function initDatabase()//function to initialize the database
         const db = await initDatabase();//define var to represent database using above function
     
         //set the routes that send responses according to client requests
-        app.get("/reset-password", async (req, res) =>
-        {
-            const { token } = req.query;
+        app.get("/get-reset-page", async (req, res) => {
+            const {token} = req.query;
             if(!token)
                 return res.status(400).send("Missing token.");
   
@@ -128,11 +128,9 @@ async function initDatabase()//function to initialize the database
                     "SELECT * FROM users WHERE resetToken = ? AND resetTokenExpiry > ?",
                     [hashedToken, Date.now()]
                 );
-
                 if(results.length === 0) 
                     return res.status(400).send("Invalid or expired reset link.");
     
-
                 res.send
                 (`
                     <!DOCTYPE html>
@@ -142,12 +140,31 @@ async function initDatabase()//function to initialize the database
                         </head>
                         <body>
                             <h2>Reset Your Password</h2>
-                            <form action="/reset-password" method="POST">
-                                <input type="hidden" name="token" value="${token}" />
-                                <label for="new-password">New Password:</label>
-                                <input type="password" id="new-password" name="newPassword" required />
-                                <button type="submit">Reset password</button>
-                            </form>
+
+                            <label for="new-password">New Password:</label>
+                            <input type="password" id="new-password" required />
+
+                            <button id="reset-btn">Reset Password</button>
+
+                            <p id="message"></p>
+
+                            <script>
+                                document.getElementById("reset-btn").addEventListener("click", async () => {
+                                    const newPassword = document.getElementById("new-password").value;
+
+                                    const response = await fetch("/reset-password", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                            token: "${token}",
+                                            newPassword
+                                        })
+                                    });
+
+                                    const text = await response.text();
+                                    document.getElementById("message").innerText = text;
+                                });
+                            </script>
                         </body>
                     </html>
                 `);
@@ -314,12 +331,12 @@ async function initDatabase()//function to initialize the database
                     subject: "Password Reset Requested",
                     html: `<p>Click the following link to reset your password:</p>
                            <p>
-                               <a href="http://localhost:3000/reset-password?token=${token}">
+                               <a href="http://localhost:3000/get-reset-page?token=${token}">
                                    Reset Password
                             </a>
                         </p>`,
                     text: "Visit the following URL to reset your password:\n\n" +
-                          `http://localhost:3000/reset-password?token=${token}`//plain text fallback
+                          `http://localhost:3000/get-reset-page?token=${token}`//plain text fallback
                 }); 
                 
                 console.log("Email sent:", info.messageId);//log the email
