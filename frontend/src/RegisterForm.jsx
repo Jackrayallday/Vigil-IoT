@@ -8,7 +8,7 @@ import React, { useState } from "react";
 import axios from "axios";//KV add
 import PasswordField from "./PasswordField"; // Shared press-to-reveal password input
 
-export default function RegisterForm({ onBack }) {//KV edit //export default function RegisterForm({ onBack, onRegister }) {
+export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,48 +21,57 @@ export default function RegisterForm({ onBack }) {//KV edit //export default fun
     setConfirmPassword("");
   }
 
-  async function handleSubmit(e) {//KV edit //function handleSubmit(e) {
+  async function handleSubmit(e) {//KV edit: added "async"
     e.preventDefault();
 
     if(password !== confirmPassword) {
-      setFormError("Passwords do not match.");
+      setFormError("Invalid Input!: Passwords do not match!");
       setFormSuccess("");//KV add
       return;
     }
+    //KV: later maybe add password strength validation
 
-    /*setFormError("");
-    if(typeof onRegister === "function")
-      onRegister({email, password});
-
-    resetForm();*///KV remove
-
-    //KV add ------------------------------------------------------------------
-   try {
-    const response = await axios.post(
+    try{
+      const response = await axios.post(//send request to /register on server
         "http://localhost:3000/register",
-        { email, password },
-        {
-            headers: { "Content-Type": "application/json" }
-        }
-    );
+        {email, password},
+        {headers: {"Content-Type": "application/json"}}
+      );
 
-    const result = response.data;
+      const result = response.data;//extract data from response
 
-    if (result.success) {
+      if(result.success){//if here, registration was sucessful
         setFormSuccess("Registration successful!");
         setFormError("");
         resetForm();
-    } else {
-        setFormError(result.message || "Registration failed.");
+      }
+      else{//unlikely because 400/500 won't land here, but keep for safety
+        setFormError(result.message || "Registration failed!");
         setFormSuccess("");
+      }
     }
-}
-catch (err) {
-    console.error("Registration error:", err);
-    setFormError("Server error. Please try again later.");
-    setFormSuccess("");
-}
-    //-------------------------------------------------------------------------
+    catch(err){
+      console.error("Registration error!: ", err); 
+      
+      if(err.response){//Axios attaches backend response here for 400/500 errors
+        const {status, data} = err.response;
+        
+        if(status === 400){//handle 400-level errors (e.g., email already taken)  
+          setFormError(data.message || "Invalid input!");
+          setFormSuccess(""); 
+          return;
+        } 
+          
+        if(status === 500){//handle 500-level errors 
+          setFormError(data.message || "Server error in registration!");
+          setFormSuccess(""); 
+          return; 
+        }
+      } 
+      
+      setFormError("Unable to connect to server!");//if no response (network error, server down)
+      setFormSuccess("");
+    }
   }
 
   return (

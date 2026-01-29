@@ -1,6 +1,6 @@
 /*File: server.js
   Programmer: Kevin Volkov
-  Description: This file contains all server-side code of Vigil IoT as a single Node.js and Express          app. It defines the database schema, creates the MySQL database itself if it
+  Description: This file contains all server-side code of Vigil IoT as a single Node.js and Express
                app. It defines the database schema, creates the MySQL database itself if it doesn't
                exist yet, defines the routes that the frontend can access via GET and POST
                requests, and starts the server on the localhost.*/
@@ -23,94 +23,238 @@ app.use(cors({//configure the server's CORS policy
 }));
 
 app.use(session({//configure the session management
-    secret: "d50b70c9e0ceb011db93c851cdfc365128995575ae25dcb87cc838e6afc34b0a",//secret key to sign the session ID cookie
-    resave: false,//don't resave the session unless it was modified
+    secret: "d50b70c9e0ceb011db93c851cdfc365128995575ae25dcb87cc838e6afc34b0a",//secret key to sign
+    resave: false,//don't resave the session unless it was modified            //session ID cookie
     saveUninitialized: false,//don't save uninitialized sessions to the session store
     cookie: {//configure the cookie that will be stored on the client
         maxAge: 3600000,//3600000 ms = 1 hour max age of the session (it expires after this limit)
-        httpOnly: true,//https may not be used yet
-        secure: false //Set to true if using HTTPS
+        httpOnly: true,//prevent Javascript from reading, writing, or deleting the cookie
+        secure: false//send the cookie over HTTP for now, not HTTPS
     },
     rolling: true,//reset the expiration countdown after every request
 }));
 
-const transporter = nodemailer.createTransport//configure the mail transporter
-({
-    service: "gmail",//use Gmail as the email service
-    auth://set the sender's credentials
-    {
+const transporter = nodemailer.createTransport({//configure the mail transporter
+    service: "gmail",//Use Gmail’s SMTP servers
+    auth: {//set the sender's credentials
         user: "vigil.iot.app@gmail.com",//sender email address
-        pass: "bkdohtklsmilwbym"//sender app password
+        pass: "bkdohtklsmilwbym"//app password to access the gmail account through an app
     },
-    tls:
-    {
-        rejectUnauthorized: false//to fix recent bug with cerification
-    }
+    tls: {rejectUnauthorized: false}//to fix recent bug with cerification (temporary)//////////////
 });
-const MYSQL_CONFIG = //specify the MySQL connection configuration (replace the user and password
-{                    //values with your own)
-    /*host: process.env.DB_HOST || 'localhost',//"localhost",//specify the host
-    user: process.env.DB_USER || 'root',//"root",//set the username
-    password: process.env.DB_PASSWORD || '',//"comp440"//set the password
-    database: process.env.DB_NAME || 'vigil_iot',///////////
-    port: process.env.DB_PORT || 3306,*/
-    host: "localhost",
-    user: "root",
-    password: "comp440"
-};
 
-async function initDatabase()//function to initialize the database
-{
-    const connection = await mysql.createConnection(MYSQL_CONFIG);//connect to MySQL database
-    await connection.query(`CREATE DATABASE IF NOT EXISTS vigil_iot`);//create db if non-existent
-    await connection.query(`USE vigil_iot`);//use that db in this program
+async function initDatabase(){//function to initialize the database
+    const connection = await mysql.createConnection({//configure the MySQL connection
+        host: "localhost",//process.env.DB_HOST || 'localhost',////////////////////////////////////
+        user: "root",//process.env.DB_USER || 'root',//////////////////////////////////////////////
+        password: "comp440"//process.env.DB_PASSWORD || '',////////////////////////////////////////
+        //database: process.env.DB_NAME || 'vigil_iot',////////////////////////////////////////////
+        //port: process.env.DB_PORT || 3306,*//////////////////////////////////////////////////////
+    });
 
-    //create the users table if it doesn't exist yet
-    await connection.query(`CREATE TABLE IF NOT EXISTS users
-    (
-        user_id INT AUTO_INCREMENT PRIMARY KEY, -- user ID field: auto-increment from previous user
-        email VARCHAR(100) UNIQUE NOT NULL, -- email field: max 100 chars, unique and non-empty
-        hashed_password VARCHAR(255) NOT NULL, -- hashed password field: max 255 chars, non-empty
-        resetToken VARCHAR(255), -- token string for password reset
-        resetTokenExpiry BIGINT -- timestamp (in ms) for token expiration
+    await connection.query(`CREATE DATABASE IF NOT EXISTS vigil_iot`);//create db if not exists
+    await connection.query(`USE vigil_iot`);//all future queries should apply to this db
+
+    await connection.query(`CREATE TABLE IF NOT EXISTS users ( -- create users table if not exists
+        user_id INT AUTO_INCREMENT PRIMARY KEY, -- user ID: integer auto-incremented from previous
+        email VARCHAR(100) UNIQUE NOT NULL,     -- email address: <= 100 char unique non-null str
+        hashed_password VARCHAR(255) NOT NULL,  -- hashed password: <=255 char non-null string
+        resetToken VARCHAR(255),                -- reset token: <=255 char string//////////////////
+        resetTokenExpiry BIGINT                 -- reset token expiration time: large integer//////
     )`);
 
-    //create scan_reports table if it doesn't exist yet
-    await connection.query(`CREATE TABLE IF NOT EXISTS scan_reports
-    (
-        report_id INT AUTO_INCREMENT PRIMARY KEY, -- report ID field: auto-increment from previous
-        title VARCHAR(100) NOT NULL, -- title of the scan report
-        scanned_at DATETIME NOT NULL, -- time at which the scan was performed
-        targets TEXT NOT NULL, -- IPs or hostnames targeted in the scan
-        exclusions TEXT, -- IPs or hostnames excluded from the scan (optional)
-        detection_options TEXT, -- options used during scan (e.g., host discovery, service detection)
-        user_id INT NOT NULL, -- ID of user who owns this report
-        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE -- define as foreign key
+    await connection.query(`CREATE TABLE IF NOT EXISTS scan_reports ( -- create scan_reports table
+        report_id INT AUTO_INCREMENT PRIMARY KEY, -- report ID: int auto-incremented from previous
+        title VARCHAR(100) NOT NULL,              -- title: <= 100 char non-null string
+        scanned_at DATETIME NOT NULL,             -- timestamp of scan: non-null time and date
+        targets TEXT NOT NULL,                    -- target IPs or hostnames: non-null string
+        exclusions TEXT,                          -- excluded IPs or hostnames: string (optional)
+        detection_options TEXT,                   -- selected detection options: string
+        owner_id INT NOT NULL,                    -- report owner's user ID: integer
+        FOREIGN KEY (owner_id)                    -- define owner_id as a foregin key
+            REFERENCES users(user_id) -- reference user_id field in users table
+            ON DELETE CASCADE         -- delete this report when the corresponding user is deleted
     )`);
 
-    //create devices table if it doesn't exist yet
-    await connection.query(`CREATE TABLE IF NOT EXISTS devices
-    (
-        device_id INT AUTO_INCREMENT PRIMARY KEY, -- device ID field: auto-increment from previous
-        device_name VARCHAR(100), -- name of the device
-        protocol_warnings TEXT, -- protocol warnings field for vulnerability type
-        services TEXT, -- lists the services used in device discovery
-        ip_address VARCHAR(45), -- IP address of the device
-        notes TEXT, -- additional notes
-        remediation_tips TEXT, -- explains tips to manage vulnerability
-        report_id INT NOT NULL, -- ID of report that lists this device
-        FOREIGN KEY (report_id) REFERENCES scan_reports(report_id) ON DELETE CASCADE -- foreign key
+    await connection.query(`CREATE TABLE IF NOT EXISTS devices ( -- create devices table
+        device_id INT AUTO_INCREMENT PRIMARY KEY, -- device ID: int auto-incremented from previous
+        device_name VARCHAR(100),                 -- device name: <= 100 char string
+        protocol_warnings TEXT,                   -- protocol warnings list: string
+        services TEXT,                            -- services list: string
+        ip_address VARCHAR(45),                   -- IP address: <=45 char string
+        notes TEXT,                               -- additional notes: string
+        remediation_tips TEXT,                    -- remediation tips: string
+        associated_report INT NOT NULL,           -- associated report: ID of report listing device
+        FOREIGN KEY (associated_report)                   -- define associated_report as a foregin key
+            REFERENCES scan_reports(report_id) -- reference report_id field in reports table 
+            ON DELETE CASCADE                  -- delete device when corresponding report deleted
     )`);
 
-  return connection;//return the connection to the MySQL server
-}//end function initDatabase
+    return connection;//return the MySQL connection
+}
 
-(async () => //the below try-catch sequence is asynchronous, meaning "await" can be used in it
-{
-    try
-    {
-        const db = await initDatabase();//define var to represent database using above function
+(async () => {
+    try{
+        const db = await initDatabase();//call the method to initialize the database
+
+        app.post("/register", async (req, res) => {//if here, client submitted registration form
+            const {email, password} = req.body;//extract entered credentials from request body
+
+            try{
+                const [existingUsers] = await db.query(//search for entered email in database
+                    "SELECT * FROM users WHERE email = ?", [email]
+                );                             
+
+                if(existingUsers.length > 0)//if here, entered email exists in database
+                    return res.status(400).json({//indicate unsucessful registration in response
+                        success: false,
+                        message: "Invalid Input: Email already taken!"
+                    });
+
+                //if here, email not taken: proceed with registration
+                const hashedPassword = await bcrypt.hash(password, 10);//hash the password
+
+                await db.query(//insert the new user's info into the database
+                    "INSERT INTO users (email, hashed_password) VALUES (?, ?)",
+                    [email, hashedPassword]
+                );
+
+                return res.status(201).json({success: true});//indicate successful registration
+            }
+            catch(err){//if here, registration error was caught
+                console.error("Server error in registration!: ", err);//log error to console
+                return res.status(500).json({//indicate the error in response to client
+                    success: false,
+                    message: "Server error in registration!"
+                });
+            }
+        });
+
+        app.post("/login", async (req, res) => {//if here, client submitted login form
+            const {email, password} = req.body;//extract entered credentials from request body
+
+            try{  
+                const [users] = await db.query(//search for entered email in database
+                    "SELECT * FROM users WHERE email = ?", [email]
+                );
+
+                if(users.length === 0)//if here, entered email not found
+                    return res.status(400).json({//indicate unsucessful login in response
+                        success: false,
+                        message: "Invalid Input: Email not found!"
+                    });
+                
+                //if here, email was found. Proceed with password check
+                //hash the entered password and compare it with the hash in the database
+                const passwordMatch = await bcrypt.compare(password, users[0].hashed_password);
+
+                if(passwordMatch){//if here, passwords match: login sucessful
+                    const sessionUser = {user_id: users[0].user_id, email: users[0].email};
+                    req.session.user = sessionUser;//store user info in session
+                    return res.json({success: true, user: sessionUser});//indicate login success
+                } 
+                else//if here, passwords don't match
+                    return res.status(400).json({//indicate unsucessful login in response
+                        success: false,
+                        message: "Invalid Input: Wrong Password!"
+                    });
+            }
+            catch (err)
+            {//if here, login error was caught
+                console.error("Server error in login!: ", err);//log the error to the console
+                return res.status(500).json({//indicate the error in response to client
+                    success: false,
+                    message: "Server error in login!"
+                });
+            }
+        });
+
+        app.post("/logout", (req, res) => {//if here, client submitted logout request
+            req.session.destroy(err => {//destroy the user's session
+                if(err){//if here, error in logging out
+                    return res.status(500).json({//indicate logout failure in response
+                        success: false,
+                        message: "Server error in logout!"
+                    });
+                }
+                
+                //if here, logout succeeded
+                res.clearCookie("connect.sid");//tell the client to delete the session cookie
+                return res.json({success: true});//indicate logout success in response
+            });
+        });
+
+        app.get("/check_login", (req, res) => {//if here, client requested login status
+            if(req.session.user)//if here, user logged in
+                res.json({loggedIn: true, user: req.session.user});//return true and user info
+            else//if here, user not logged in
+                res.json({loggedIn: false});//return false  
+        });
+
+        app.post("/save-scan", async (req, res) => {//if here, client requested to save scan report
+            const sessionUserId = req.session?.user?.user_id ?? null;//get user ID from session
+            const {//get the scan report info from request body
+                user_id: userIdFromBody,//rename this variable to userIdFromBody
+                title,
+                scanned_at,
+                targets,
+                exclusions,
+                detection_options,
+                devices
+            } = req.body;
+            const user_id = userIdFromBody || sessionUserId;//if no body user ID, use session
+
+            if(!user_id || !title || !scanned_at || !targets)//check required fields  
+		        return res.status(400).json({success: false, message: "Missing required fields!"});
     
+            try{
+                const [reportResult] = await db.query(//inser scan report into database
+                    `INSERT INTO scan_reports 
+                    (user_id, title, scanned_at, targets, exclusions, detection_options) 
+                    VALUES (?, ?, ?, ?, ?, ?)`,
+                    [user_id, title, scanned_at, targets, exclusions || null, detection_options || null]
+                );
+
+                const report_id = reportResult.insertId;//get id of the previously inserted report
+
+                if(Array.isArray(devices) && devices.length > 0){//insert devices if provided
+                    for(const device of devices){//for each device
+                        const {//get the device data
+                            deviceName,
+                            ipAddress,
+                            services,
+                            protocolWarnings,
+                            notes,
+                            remediationTips
+                        } = device;
+
+                        await db.query(//insert device into database
+                            `INSERT INTO devices 
+                            (report_id, device_name, ip_address, services, protocol_warnings, notes, remediation_tips) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?)`, [
+                                report_id,
+                                deviceName || null,
+                                ipAddress || null,
+                                services || null,
+                                protocolWarnings || null,
+                                notes || null,
+                                remediationTips || null
+                            ]
+                        );
+                    }
+                }
+		
+                res.status(201).json({success: true, report_id});//inform client of success
+            }
+	        catch (err)
+	        {//if here, error occured
+                console.error("Error saving scan report!: ", err);
+                res.status(500).send({success: false, message: "Server error!"});
+            }
+        });
+
+
+    /////////////////////////////////////////////////////////////////////////////////////
         //set the routes that send responses according to client requests
         app.get("/get-reset-page", async (req, res) => {
             const {token} = req.query;
@@ -175,13 +319,6 @@ async function initDatabase()//function to initialize the database
                 res.status(500).send("Server error.");
             }
         });
-        app.get("/check_login", (req, res) =>//client requested login status
-        {//if here, client requested login status
-            if(req.session.user)
-                res.send({loggedIn: true, user: req.session.user});//user logged in: return true
-            else 
-                res.send({loggedIn: false});//user logged out: return false  
-        });
         app.get("/scan-reports/:user_id", async (req, res) =>
         {//if here, client requested all the logged-in user's scan reports
             const {user_id} = req.params;//get the user's id
@@ -231,75 +368,6 @@ async function initDatabase()//function to initialize the database
                 console.error("Error retrieving devices:", err);//log the error
                 res.status(500).send({ success: false, message: "Server error!" });//inform client
             }
-        });
-        app.post("/register", async (req, res) =>
-        {//if here, user wants to register: validate credentials.
-            const {email, password} = req.body;//get credentials from request body
-
-            try
-            {
-                //check if entered email already exists in database
-                const [existingUsers] =
-                    await db.query("SELECT * FROM users WHERE email = ?", [email]);
-                if(existingUsers.length > 0)//if email taken, return false
-                    return res.send({success: false, message: "email already taken"});
-
-                //if here, email not taken: proceed with registration
-                const hashedPassword = await bcrypt.hash(password, 10);//hash the password
-
-                await db.query//query database to insert new user
-                (
-                    "INSERT INTO users (email, hashed_password) VALUES (?, ?)",
-                    [email, hashedPassword]
-                );
-
-                return res.send({ success: true });//indicate successful registration to client
-            }
-            catch (err)
-            {//if here, registration error
-                console.error("Registration error:", err);//log error to console
-                return res.status(500).send("Server error");//indicate error to frontend
-            }
-        });
-        app.post("/login", async (req, res) => {
-            const { email, password } = req.body;
-
-            try
-            {   //find email in database
-                const [results] = await db.query("SELECT * FROM users WHERE email = ?",[email]);
-
-                if(results.length === 0)//email not found: return false
-                    return res.send({ success: false, message: "Invalid credentials" });
-
-                const user = results[0];//save the email
-
-                //Compare entered password with stored hash
-                const passwordMatch = await bcrypt.compare(password, user.hashed_password);
-
-                if(passwordMatch) 
-                {//passwords match: return true and create session
-                    const sessionUser = { user_id: user.user_id, email: user.email };
-                    req.session.user = sessionUser;
-                    return res.send({ success: true, user: sessionUser });
-                } 
-                else//passwords don't match: return false
-                    return res.send({ success: false, message: "Invalid credentials" });
-    
-            }
-            catch (err)
-            {//if here, database error
-                console.error("Login query error:", err);//log the error
-                return res.status(500).send("Server error");//return status 500 to client
-            }
-        });
-        app.post("/logout", (req, res) =>
-        {//if here, user wants to log out
-            req.session.destroy(err =>//destroy the session
-            {
-                if(err) 
-                    return res.status(500).send("Logout failed");//logout error: inform client
-                res.send({success: true});//logout sucessful: inform client
-            });
         });
         app.post("/send-email", async (req, res) =>
         { 
@@ -386,67 +454,6 @@ async function initDatabase()//function to initialize the database
             {
                 console.error("Error resetting password:", err);
                 res.status(500).send("Server error.");
-            }
-        });
-        app.post("/save-scan", async (req, res) =>
-		{//if here, user wants to save scan report
-            const sessionUserId = req.session?.user?.user_id || null;
-            const {
-                user_id: userIdFromBody,
-                title,
-                scanned_at,
-                targets,
-                exclusions,
-                detection_options,
-                devices
-            } = req.body;
-            const user_id = userIdFromBody || sessionUserId;
-
-            if(!user_id || !title || !scanned_at || !targets)//check required fields  
-		        return res.status(400).send({success: false, message: "Missing required fields!"});
-    
-            try
-			{
-                const [reportResult] = await db.query
-				(
-                    `INSERT INTO scan_reports 
-                    (user_id, title, scanned_at, targets, exclusions, detection_options) 
-                    VALUES (?, ?, ?, ?, ?, ?)`,
-                    [user_id, title, scanned_at, targets, exclusions || null, detection_options || null]
-                );
-
-                const report_id = reportResult.insertId;//get the auto-generated report_id
-
-                if(Array.isArray(devices) && devices.length > 0)//insert devices if provided
-		        {
-                    for (const device of devices)
-			        {
-                        const {deviceName,ipAddress,services,protocolWarnings,notes,remediationTips} = device;
-
-                        await db.query
-				        (
-                            `INSERT INTO devices 
-                            (report_id, device_name, ip_address, services, protocol_warnings, notes, remediation_tips) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                            [
-                                report_id,
-                                deviceName || null,
-                                ipAddress || null,
-                                services || null,
-                                protocolWarnings || null,
-                                notes || null,
-                                remediationTips || null
-                            ]
-                        );
-                    }
-                }
-		
-                res.send({ success: true, report_id });
-            }
-	        catch (err)
-	        {
-                console.error("Error saving scan report:", err);
-                res.status(500).send({ success: false, message: "Server error" });
             }
         });
         app.delete("/delete-scan/:id", async (req, res) =>

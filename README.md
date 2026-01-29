@@ -3,32 +3,21 @@ Vite + React UI for exploring discovered IoT devices, their services, and associ
 ## Getting Started
 1. **Clone the repository.**
    ```bash
-   git clone --branch main --single-branch https://github.com/Jackrayallday/Vigil-IoT.git
+   git clone --branch KevinWinterWork --single-branch https://github.com/Jackrayallday/Vigil-IoT.git
    cd vigil-iot
    ```
-2. **Install Docker Desktop.**
-- Install Docker Desktop for Windows here: https://docs.docker.com/desktop/setup/install/windows-install/
-- Install Docker Desktop for Mac here: https://docs.docker.com/desktop/setup/install/mac-install/
-3. **Run The Docker Desktop app (It needs to be running at the same time as the containerized backend for it to work).**
-4. **Build and run the containerized server program.**
+2. **Install dependencies and run the server program.**
    ```bash
    cd backend
-   docker compose up --build
+   npm install
+   node server.js
    ```
-   - For subsequent runs, you can use:
-     ```bash
-     docker compose up
-     ```
-   - To remove containers, networks, and volumes created by Compose, run the following command:
-     ```bash
-     docker compose down
-     ```
-5. **In another terminal instance, install networking dependencies needed for device discovery.**
+3. **In another terminal instance, install networking dependencies needed for device discovery.**
    ```bash
    cd deviceDiscovery
    pip install scapy zeroconf psutil ifaddr requests netaddr fastapi uvicorn[standard]
    ```
-6. **Install frontend dependencies and run the client program.**
+4. **Install frontend dependencies and run the client program.**
    ```bash
    cd frontend
    npm install

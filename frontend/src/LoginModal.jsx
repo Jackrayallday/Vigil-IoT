@@ -66,29 +66,44 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
   async function handleSubmit(e) { //function handleSubmit(e) { KV edit
     e.preventDefault();
     // Stub for now; could hook into auth later
-    //KV add --------------------------------------------------------
-    try {
-      const res = await axios.post("http://localhost:3000/login", {
-        email,
-        password,
-      });
-
-      if (res.data.success) {
-        const userInfo = res?.data?.user ?? { email };
-        resetLoginState();
-        if (typeof onLoginSuccess === "function")
-          onLoginSuccess(userInfo);
-        else if (typeof onClose === "function")
-          onClose();
-        return;
-      } else {
-        setError("Invalid email or password.");
-      }
-    } catch (err) {
-      console.error("Server Error: "+err);
-      setError("\n\nServer error. Please try again later: " + err);
+    try{ // Send request to /login on server
+      const response = await axios.post(
+        "http://localhost:3000/login",
+        {email, password},
+        {headers: {"Content-Type": "application/json"}}
+      );
+      
+      const userInfo = response.data.user;//if here, status is 2xx -> login successful
+      
+      resetLoginState(); 
+      
+      if(typeof onLoginSuccess === "function")
+        onLoginSuccess(userInfo);
+      else if(typeof onClose === "function") 
+        onClose(); 
+      
+      return;
     }
-    //---------------------------------------------------------------
+    catch(err){//if here, error occured
+      console.error("Login error!: ", err); 
+
+      if(err.response){//get the error daTa
+        const {status, data} = err.response;
+        
+         
+        if(status === 400){//handle 400-level errors (email not found, wrong password)
+          setError(data.message || "Invalid Input: Wrong Email or password!");
+          return;
+        }
+        
+        if(status === 500){//handle 500-level errors 
+          setError(data.message || "Server error in login!");
+          return;
+        }
+      } 
+      
+      setError("Unable to connect to server!");//network error or no response from server
+    }
   }
 
   function handleBackdropPointerDown(event) {

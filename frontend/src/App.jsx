@@ -556,14 +556,41 @@ export default function App() {
   }, [user?.user_id, settings.retentionDays, unsavedScan]);
 
   async function handleLogout() {
-    try {
-      await axios.post("http://localhost:3000/logout");
-    } catch (err) {
-      console.error("Logout failed:", err);
-    } finally {
+    try{ 
+      const response = await axios.post(//send request to /logout route on server
+        "http://localhost:3000/logout",
+        {},
+        {headers: {"Content-Type": "application/json"}}
+      ); 
+      
+      if(response.data.success){//if here, logout succeeded (status 200)
+        setUser(null);
+        setPendingLoginAction(null);
+        return;
+      }
+
+      console.error("Unexpected logout response: ", response.data);//unlikley, but here for saftey
+    }
+    catch(err)
+    {//if here, logout failed
+      console.error("Logout failed!: ", err);//log the errpr
+
+      if(err.response){
+        const {status, data} = err.response; 
+
+        if(status === 500){ 
+          comsole.error(data.message || "Server error in logout!");
+          return; 
+        }
+      } 
+      
+      // Network error or no response
+      console.error("Unable to connect to server.");
+    }
+    finally{ 
+      // Frontend UI reset always happens, even if logout fails
       setUser(null);
       setPendingLoginAction(null);
-      //later clear the cookie here
     }
   }
 
@@ -729,7 +756,7 @@ export default function App() {
         exclusions: JSON.stringify(scanData.exclusions || []),
         detection_options: scanData.moduleSummary,
         //devices: JSON.stringify(scanData.findings || []),//KV: backend takes array, not string
-        devices: scanData.findings || [],//KV add: send as array, not string
+        devices: Array.isArray(scanData.findings) ? scanData.findings : []//KV add: send as array, not string
       };
       await axios.post("http://localhost:3000/save-scan", payload);
       const savedScan = snapshotScan(scanData);
@@ -741,9 +768,13 @@ export default function App() {
       setSelectedScanId(savedScan.id);
       setSaveFeedback({ type: "success", message: "Scan report saved." });
       setIsViewingFreshScan(false);
-    } catch (err) {
+    }
+    catch (err) {
       console.error("Save scan failed:", err);
-      setSaveFeedback({ type: "error", message: "Could not save scan report. Please try again." });
+      const message =
+        err.response?.data?.message ||
+        "Could not save scan report. Please try again.";
+      setSaveFeedback({type: "error", message});
     } finally {
       setIsSavingScan(false);
     }
