@@ -21,6 +21,7 @@ programmer: Jack Ray
 .settings-title {
   margin: 0;
   font-size: var(--fs-lg);
+  color: var(--ink);
 }
 
 .settings-form {
@@ -38,7 +39,7 @@ programmer: Jack Ray
   font-size: var(--fs-sm);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #555;
+  color: var(--text-subtle);
 }
 
 .settings-options {
@@ -68,10 +69,19 @@ programmer: Jack Ray
 
 .settings-row input,
 .settings-row select {
-  border: 0.125rem solid #d1d5db;
-  border-radius: 0.5rem;
+  border: 1px solid var(--surface-border-strong);
+  border-radius: 0.6rem;
   padding: var(--space-2) var(--space-3);
   font-size: var(--fs-sm);
+  background: rgba(10, 18, 30, 0.85);
+  color: var(--ink);
+}
+
+.settings-row input:focus,
+.settings-row select:focus {
+  outline: 2px solid rgba(111, 209, 255, 0.35);
+  outline-offset: 1px;
+  border-color: rgba(111, 209, 255, 0.45);
 }
 
 .settings-actions {
@@ -81,18 +91,19 @@ programmer: Jack Ray
 }
 
 .settings-cancel {
-  border: 0.125rem solid #d1d5db;
-  border-radius: 0.5rem;
-  background: #fff;
+  border: 1px solid var(--surface-border-strong);
+  border-radius: 0.6rem;
+  background: rgba(10, 20, 32, 0.75);
+  color: var(--ink);
   padding: var(--space-2) var(--space-4);
   cursor: pointer;
 }
 
 .settings-save {
-  border: 0.125rem solid var(--blue);
-  border-radius: 0.6rem;
-  background: var(--settings-bg);
-  color: var(--settings-text);
+  border: 1px solid rgba(111, 209, 255, 0.6);
+  border-radius: 0.7rem;
+  background: linear-gradient(135deg, rgba(61, 151, 195, 0.95), rgba(38, 109, 148, 0.95));
+  color: #ffffff;
   font-weight: 700;
   padding: var(--space-2) var(--space-4);
   cursor: pointer;

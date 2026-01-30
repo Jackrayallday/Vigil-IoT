@@ -10,17 +10,21 @@ programmer: Jack Ray
   min-height: 100svh;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  background: var(--canvas-bg);
-  padding-block-start: clamp(var(--space-4), 4vw, var(--space-7));
+  background: transparent;
+  padding-block-start: clamp(var(--space-2), 1.6vw, var(--space-4));
+  position: relative;
+  overflow: hidden;
 }
 
 .header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   padding-inline: clamp(var(--space-4), 6vw, var(--space-8));
-  padding-bottom: clamp(var(--space-4), 4vw, var(--space-6));
-  gap: var(--space-4);
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--surface-border);
+  position: relative;
+  z-index: 1;
 }
 
 .logo {
@@ -39,11 +43,11 @@ programmer: Jack Ray
 }
 
 .logo-img {
-  inline-size: clamp(5.5rem, 11vw, 8rem);
+  inline-size: clamp(3.6rem, 7.5vw, 5.4rem);
   block-size: auto;
   max-inline-size: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 0.75rem 1.5rem rgba(217, 168, 41, 0.18));
+  filter: drop-shadow(0 0.85rem 1.6rem rgba(23, 50, 70, 0.6));
 }
 
 .top-actions {
@@ -51,16 +55,16 @@ programmer: Jack Ray
   gap: var(--space-3);
   flex-wrap: wrap;
   justify-content: flex-end;
-  margin-block-start: clamp(var(--space-2), 2vw, var(--space-4));
+  margin-block-start: 0;
 }
 
 .settings-btn,
 .login-btn,
 .user-btn {
-  padding: 0.65rem 1.35rem;
-  border-radius: 0.85rem;
+  padding: 0.55rem 1.4rem;
+  border-radius: 0.95rem;
   text-decoration: none;
-  font-weight: 800;
+  font-weight: 600;
   font-size: var(--fs-sm);
   line-height: 1;
   display: inline-flex;
@@ -68,28 +72,25 @@ programmer: Jack Ray
   justify-content: center;
   white-space: nowrap;
   cursor: pointer;
+  border: 1px solid var(--settings-border);
+  background: rgba(15, 26, 40, 0.8);
+  color: var(--settings-text);
+  box-shadow: 0 0.8rem 1.6rem rgba(4, 9, 16, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
 }
 
 .settings-btn {
-  border: 0.125rem solid var(--settings-border);
-  background: var(--settings-bg);
-  color: var(--settings-text);
-  box-shadow: 0 0.45rem 0.9rem rgba(35, 40, 135, 0.18);
+  background: linear-gradient(135deg, rgba(18, 30, 46, 0.95), rgba(12, 22, 36, 0.9));
 }
 
 .login-btn {
-  border: 0.125rem solid var(--red-border);
-  background: var(--red-bg);
+  border: 1px solid var(--red-border);
+  background: linear-gradient(135deg, rgba(164, 76, 96, 0.95), rgba(124, 52, 68, 0.95));
   color: var(--red);
-  box-shadow: 0 0.45rem 0.9rem rgba(217, 35, 50, 0.18);
 }
 
 .user-btn {
-  border: 0.125rem solid var(--settings-border);
-  background: var(--settings-bg);
-  color: var(--settings-text);
-  box-shadow: 0 0.45rem 0.9rem rgba(35, 40, 135, 0.18);
+  background: linear-gradient(135deg, rgba(20, 32, 48, 0.95), rgba(12, 22, 36, 0.9));
 }
 
 .settings-btn:hover,
@@ -99,7 +100,7 @@ programmer: Jack Ray
 .user-btn:hover,
 .user-btn:focus-visible {
   transform: translateY(-1px);
-  filter: brightness(1.02);
+  filter: brightness(1.08);
   outline: none;
 }
 
@@ -108,8 +109,10 @@ programmer: Jack Ray
   place-items: center;
   gap: clamp(var(--space-5), 6vw, var(--space-8));
   padding-inline: clamp(var(--space-4), 8vw, 6rem);
-  padding-bottom: clamp(var(--space-5), 8vw, 6rem);
+  padding-bottom: clamp(var(--space-4), 6vw, 5rem);
   container-type: inline-size;
+  position: relative;
+  z-index: 1;
 }
 
 .main--fill {
@@ -121,23 +124,45 @@ programmer: Jack Ray
   align-content: center;
 }
 
+.main--home::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  left: clamp(var(--space-3), 4vw, var(--space-8));
+  right: clamp(var(--space-3), 4vw, var(--space-8));
+  border: 1px solid var(--surface-border);
+  border-radius: 1.6rem;
+  pointer-events: none;
+}
+
 .home-start-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: clamp(1.5rem, 6vw, 5rem);
-  align-items: end;
-  width: min(81rem, 100%);
+  align-items: center;
+  justify-items: center;
+  width: min(72rem, 100%);
+  text-align: center;
+  padding: clamp(1.5rem, 3vw, 2.8rem);
+  position: relative;
+  background: transparent;
+}
+
+.home-start-panel::before {
+  content: "";
+  position: absolute;
+  width: min(32rem, 70vw);
+  height: min(32rem, 70vw);
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(93, 229, 214, 0.28), transparent 65%);
+  opacity: 0.75;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .home-start-panel__illustration {
-  display: block;
-  inline-size: clamp(7.2rem, 15vw, 11.5rem);
-  max-inline-size: 100%;
-  height: auto;
-  object-fit: contain;
-  filter: drop-shadow(0 0.75rem 1.5rem rgba(0, 0, 0, 0.08));
-  user-select: none;
-  align-self: center;
+  display: none;
 }
 
 .home-start-panel__illustration--router {
@@ -156,15 +181,23 @@ programmer: Jack Ray
 
 .home-start-panel__center {
   display: grid;
-  gap: var(--space-4);
+  gap: clamp(1.2rem, 2vw, 2.2rem);
   justify-items: center;
   text-align: center;
   align-self: center;
+  max-width: 34rem;
+  position: relative;
+  z-index: 1;
 }
 
-.home-start-panel__history {
-  padding-inline: clamp(var(--space-5), 6vw, 3.5rem);
-  margin-block-start: clamp(4rem, 10vw, 7rem);
+.home-start-panel__subtitle {
+  margin: 0;
+  font-size: clamp(1rem, 0.9rem + 0.7vw, 1.25rem);
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  max-width: 30rem;
+  line-height: 1.6;
+  transform: translateY(2rem);
 }
 
 .start-circle {
@@ -173,59 +206,124 @@ programmer: Jack Ray
   border-radius: 50%;
   border: 0.35rem solid var(--teal-border);
   background: var(--teal-fill);
-  box-shadow: 0 1.25rem 2.5rem rgba(12, 143, 118, 0.22);
+  box-shadow:
+    0 1.8rem 3.6rem rgba(11, 120, 130, 0.45),
+    0 0 0 0.45rem rgba(10, 20, 30, 0.65),
+    inset 0 0.55rem 1.2rem rgba(255, 255, 255, 0.28);
   display: grid;
   place-items: center;
   text-decoration: none;
   transition: transform 0.14s ease, box-shadow 0.14s ease;
   user-select: none;
+  position: relative;
+  overflow: hidden;
 }
 
 .start-circle:hover,
 .start-circle:focus-visible {
   transform: translateY(-0.25rem);
-  box-shadow: 0 1.6rem 3rem rgba(12, 143, 118, 0.28);
+  box-shadow:
+    0 2.1rem 3.9rem rgba(11, 120, 130, 0.55),
+    0 0 0 0.45rem rgba(10, 20, 30, 0.65),
+    inset 0 0.55rem 1.2rem rgba(255, 255, 255, 0.32);
   outline: none;
 }
 
+.start-circle::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.55), transparent 55%);
+  opacity: 0.7;
+  z-index: 0;
+}
+
 .start-text {
+  padding-top: 20px;
   color: var(--teal);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.08;
   text-align: center;
-  white-space: pre-line;
-  font-size: clamp(2.3rem, 1.9rem + 3.8vw, 3.5rem);
-  letter-spacing: 0.02em;
+  white-space: nowrap;
+  font-size: clamp(2rem, 1.6rem + 3vw, 3.2rem);
+  letter-spacing: 0.04em;
+  font-family: "Space Grotesk", "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1.1rem 2rem rgba(6, 28, 32, 0.45);
 }
 
 .prev-scans {
-  min-inline-size: clamp(11.5rem, 35vw, 15rem);
-  block-size: clamp(3.6rem, 2.6rem + 1.2vw, 4.1rem);
-  padding-inline: clamp(var(--space-5), 6vw, 4rem);
-  padding-block: clamp(0.75rem, 0.6rem + 0.3vw, 1rem);
-  border: 0.22rem solid var(--orange);
-  border-radius: 0.75rem;
+  width: min(32rem, 90vw);
+  padding: clamp(0.9rem, 1.1vw, 1.3rem) clamp(1.1rem, 2.5vw, 1.6rem);
+  border: 1px solid var(--orange);
+  border-radius: 0.9rem;
   background: var(--orange-bg);
   color: var(--orange-text);
-  font-weight: 800;
-  font-size: clamp(1.15rem, 0.95rem + 0.7vw, 1.35rem);
+  font-weight: 600;
+  font-size: clamp(1.05rem, 0.95rem + 0.6vw, 1.25rem);
   letter-spacing: 0.01em;
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-3);
   text-decoration: none;
-  text-align: center;
-  line-height: 1;
+  text-align: left;
+  line-height: 1.1;
   cursor: pointer;
-  box-shadow: 0 0.8rem 1.6rem rgba(249, 115, 22, 0.14);
+  box-shadow: 0 1.2rem 2.6rem rgba(4, 8, 14, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   transition: transform 0.14s ease, box-shadow 0.14s ease;
+  transform: translateY(2.8rem);
 }
 
 .prev-scans:hover,
 .prev-scans:focus-visible {
-  transform: translateY(-0.2rem);
-  box-shadow: 0 1.1rem 2.1rem rgba(249, 115, 22, 0.2);
+  transform: translateY(2.6rem);
+  box-shadow: 0 1.5rem 3rem rgba(4, 8, 14, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   outline: none;
+}
+
+.prev-scans__icon {
+  width: 2.6rem;
+  height: 2rem;
+  border: 1px solid rgba(200, 214, 232, 0.7);
+  border-radius: 0.35rem;
+  position: relative;
+  background: rgba(11, 22, 34, 0.7);
+}
+
+.prev-scans__icon::before {
+  content: "";
+  position: absolute;
+  width: 1.1rem;
+  height: 0.4rem;
+  top: -0.4rem;
+  left: 0.35rem;
+  border: 1px solid rgba(200, 214, 232, 0.7);
+  border-bottom: none;
+  border-radius: 0.35rem 0.35rem 0 0;
+  background: rgba(11, 22, 34, 0.7);
+}
+
+.prev-scans__content {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.prev-scans__title {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.prev-scans__subtitle {
+  font-size: 0.85em;
+  color: var(--text-subtle);
+}
+
+.prev-scans__arrow {
+  font-size: 1.5rem;
+  color: var(--text-muted);
 }
 
 .results-host,
@@ -252,6 +350,43 @@ programmer: Jack Ray
   padding-inline: clamp(var(--space-4), 6vw, var(--space-8));
   gap: var(--space-3);
   flex-wrap: nowrap;
+  border-top: 1px solid var(--surface-border);
+  position: relative;
+  z-index: 1;
+}
+
+.drift-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.drift-dot {
+  position: absolute;
+  left: var(--dot-x);
+  top: var(--dot-y);
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-radius: 999px;
+  background: hsl(173 70% var(--dot-lightness));
+  opacity: var(--dot-opacity);
+  filter: blur(var(--dot-blur));
+  animation: drift-float var(--dot-duration) ease-in-out infinite;
+  animation-delay: var(--dot-delay);
+  transform: translate3d(0, 0, 0);
+}
+
+@keyframes drift-float {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(60px, -45px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 .footer a {
@@ -260,22 +395,34 @@ programmer: Jack Ray
 }
 
 .legal {
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  font-size: clamp(1.1rem, 0.95rem + 0.6vw, 1.4rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  font-size: clamp(1rem, 0.95rem + 0.4vw, 1.2rem);
   flex: 0 0 auto;
   text-align: center;
+  order: 2;
 }
 
 .intro {
   font-size: var(--fs-sm);
-  font-weight: 600;
+  font-weight: 500;
   opacity: 0.85;
-  position: absolute;
-  right: clamp(var(--space-4), 6vw, var(--space-8));
-  top: 50%;
-  transform: translateY(-50%);
+  position: static;
+  transform: none;
+  order: 1;
 }
+
+.intro::after {
+  content: "";
+  display: inline-block;
+  width: 0.35rem;
+  height: 0.35rem;
+  margin-inline: 0.8rem;
+  border-radius: 50%;
+  background: var(--text-subtle);
+  transform: translateY(-2px);
+}
+
 
 .footer a:hover,
 .footer a:focus-visible {
@@ -298,23 +445,23 @@ programmer: Jack Ray
     padding-inline: clamp(var(--space-4), 8vw, var(--space-6));
   }
 
+  .main--home::before {
+    left: clamp(var(--space-2), 4vw, var(--space-5));
+    right: clamp(var(--space-2), 4vw, var(--space-5));
+    border-radius: 1.1rem;
+  }
+
   .home-start-panel {
-    grid-template-columns: 1fr;
-    align-items: center;
-    justify-items: center;
-    text-align: center;
+    padding: clamp(1.5rem, 6vw, 2.5rem);
   }
 
   .home-start-panel__illustration--router,
   .home-start-panel__illustration--plug {
-    justify-self: center;
-    transform: none;
+    display: none;
   }
 
   .home-start-panel__illustration {
-    inline-size: clamp(6.5rem, 40vw, 10rem);
-    transform: none;
-    align-self: center;
+    display: none;
   }
 
   .footer {
@@ -334,5 +481,9 @@ programmer: Jack Ray
     position: static;
     transform: none;
     margin-top: var(--space-1);
+  }
+
+  .intro::after {
+    display: none;
   }
 }

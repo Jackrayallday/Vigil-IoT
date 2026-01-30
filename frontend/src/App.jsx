@@ -19,15 +19,12 @@ import "./styles/base.css";
 import "./styles/app-shell.css";
 import "./styles/modal.css";
 import "./styles/history.css";
-import "./styles/theme-dark.css";
 import NewScanWizard from "./NewScanWizard.jsx";
 import ScanResults from "./ScanResults.jsx";
 import LoginModal from "./LoginModal.jsx";
 import SettingsModal from "./SettingsModal.jsx";
 import DeviceDetails from "./DeviceDetails.jsx";
-import logoImage from "./assets/logo.png";
-import routerIllustration from "./assets/router.svg";
-import powerPlugIllustration from "./assets/power-plug.svg";
+import logoImage from "./assets/logo.svg";
 import trashIcon from "./assets/trash.svg";
 
 axios.defaults.withCredentials = true;
@@ -363,6 +360,30 @@ export default function App() {
   const [historyFeedback, setHistoryFeedback] = useState(null);
   const [deletingScanId, setDeletingScanId] = useState(null);
   const wizardBackdropPointerDownRef = useRef(false); // Prevents dismiss when dragging selections outside the modal.
+  const driftDots = useMemo(() => (
+    Array.from({ length: 54 }, (_, index) => {
+      const sizeRem = 0.12 + Math.random() * 0.28;
+      const opacity = 0.25 + Math.random() * 0.55;
+      const duration = 18 + Math.random() * 32;
+      const delay = Math.random() * 6;
+      const x = Math.random() * 100;
+      const y = Math.random() * 100;
+      const lightness = 52 + Math.random() * 24;
+      const blur = Math.random() * 0.6;
+      return {
+        id: `dot-${index}`,
+        sizeRem,
+        opacity,
+        duration,
+        delay,
+        x,
+        y,
+        lightness,
+        blur,
+      };
+    })
+  ), []);
+
 
   // On first render, apply the stored theme so the UI does not flash light/dark.
   useEffect(() => {
@@ -765,6 +786,24 @@ export default function App() {
 //the elements for each view and modal are laid out here
   return (
     <div className="frame">
+      <div className="drift-layer" aria-hidden="true">
+        {driftDots.map((dot) => (
+          <span
+            key={dot.id}
+            className="drift-dot"
+            style={{
+              "--dot-size": `${dot.sizeRem}rem`,
+              "--dot-opacity": dot.opacity,
+              "--dot-duration": `${dot.duration}s`,
+              "--dot-delay": `${dot.delay}s`,
+              "--dot-x": `${dot.x}%`,
+              "--dot-y": `${dot.y}%`,
+              "--dot-lightness": `${dot.lightness}%`,
+              "--dot-blur": `${dot.blur}px`,
+            }}
+          />
+        ))}
+      </div>
       <header className="header">
         <a
           className="logo"
@@ -774,6 +813,7 @@ export default function App() {
           onClick={(e) => { e.preventDefault(); goHome(); }}
         >
           <img className="logo-img" src={logoImage} alt="Vigil IoT logo" />
+          
         </a>
 
         <nav className="top-actions" aria-label="Primary">
@@ -792,13 +832,6 @@ export default function App() {
           {/* Home view redesigned to feature the start panel artwork flanking the primary call to action. */}
           {view === VIEW_HOME && (
           <section className="home-start-panel" aria-label="Start scan panel">
-            <img
-              src={routerIllustration}
-              alt="Stylized wireless router illustration"
-              className="home-start-panel__illustration home-start-panel__illustration--router"
-              draggable="false"
-            />
-
             <div className="home-start-panel__center">
               <a
                 href="/scan/new"
@@ -806,24 +839,26 @@ export default function App() {
                 aria-label="Start Scan"
                 onClick={openWizard}
               >
-                <span className="start-text">Start{"\n"}Scan</span>
+                <span className="start-text">Start Scan</span>
               </a>
+
+              <p className="home-start-panel__subtitle">
+                Scan your local network for vulnerable IoT devices
+              </p>
 
               <button
                 type="button"
-                className="prev-scans home-start-panel__history"
+                className="prev-scans"
                 onClick={handleHistoryButtonClick}
               >
-                Previous Scans
+                <span className="prev-scans__icon" aria-hidden="true" />
+                <span className="prev-scans__content">
+                  <span className="prev-scans__title">Previous Scans</span>
+                  <span className="prev-scans__subtitle">View past results</span>
+                </span>
+                <span className="prev-scans__arrow" aria-hidden="true">&gt;</span>
               </button>
             </div>
-
-            <img
-              src={powerPlugIllustration}
-              alt="Stylized power plug illustration"
-              className="home-start-panel__illustration home-start-panel__illustration--plug"
-              draggable="false"
-            />
           </section>
         )}
 
