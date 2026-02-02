@@ -5,6 +5,7 @@ programmer: Jack Ray (Modified by Kevin to call corresponding backend route)
 Password reset request form shown inside the auth modal.
 */
 import React, { useState } from "react";
+import { getApiErrorMessage, getApiResponseMessage } from "./apiErrors";
 
 export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV edit
   const [email, setEmail] = useState("");
@@ -25,26 +26,34 @@ export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV
     //KV add---------------------------------------------------------------------------------------
     try
     {
-        const response = await fetch("http://localhost:3001/send-email",//call backend route with following info:
+        const response = await fetch("http://localhost:3000/send-email",//call backend route with following info:
         {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: trimmedEmail }),
         });
 
-        const data = await response.json();//get the response from server
+        let data = null;
+        try {
+          data = await response.json();//get the response from server
+        } catch (err) {
+          data = null;
+        }
 
-        if(response.ok && data.success) 
+        if(response.ok && data?.success) 
             setStatusMessage("Reset email sent successfully!");//email sent
-        else if(response.status === 404)
-            setErrorMessage("Email address not found!");//couldn't find email
         else
-            setErrorMessage(data.message || "Something went wrong. Please try again later.");//fail
+        {
+            const fallback = response.status === 404
+              ? "Email address not found!"
+              : "Something went wrong. Please try again later.";
+            setErrorMessage(getApiResponseMessage(data, fallback));//fail
+        }
     }
     catch (err)
     {//if here, server error
       console.error(err);//log the error
-      setErrorMessage("Server error! Please try again later.");//inform user
+      setErrorMessage(getApiErrorMessage(err, "Server error! Please try again later."));//inform user
     }
     //---------------------------------------------------------------------------------------------
 

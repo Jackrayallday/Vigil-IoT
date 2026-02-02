@@ -46,8 +46,8 @@ const transporter = nodemailer.createTransport({//configure the mail transporter
 async function initDatabase(){//function to initialize the database
     const connection = await mysql.createConnection({//configure the MySQL connection
         host: "localhost",//process.env.DB_HOST || 'localhost',////////////////////////////////////
-        user: "root",//process.env.DB_USER || 'root',//////////////////////////////////////////////
-        password: "comp440"//process.env.DB_PASSWORD || '',////////////////////////////////////////
+        user: "jackray1",//process.env.DB_USER || 'root',//////////////////////////////////////////////
+        password: "donthack"//process.env.DB_PASSWORD || '',////////////////////////////////////////
         //database: process.env.DB_NAME || 'vigil_iot',////////////////////////////////////////////
         //port: process.env.DB_PORT || 3306,*//////////////////////////////////////////////////////
     });

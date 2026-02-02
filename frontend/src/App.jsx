@@ -15,6 +15,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
+import { getApiErrorMessage, getApiErrorStatus } from "./apiErrors";
 import "./styles/base.css";
 import "./styles/app-shell.css";
 import "./styles/modal.css";
@@ -426,7 +427,7 @@ export default function App() {
     let isActive = true;
     async function hydrateSession() {
       try {
-        const res = await axios.get("http://localhost:3001/check_login");
+        const res = await axios.get("http://localhost:3000/check_login");
         if (!isActive) return;
         if (res?.data?.loggedIn && res?.data?.user) {
           setUser(res.data.user);
@@ -580,14 +581,15 @@ export default function App() {
     let isActive = true;
 
     async function loadHistoryForUser(userId) {
+      setHistoryFeedback(null);
       try {
-        const reportsRes = await axios.get(`http://localhost:3001/scan-reports/${userId}`);
+        const reportsRes = await axios.get(`http://localhost:3000/scan-reports/${userId}`);
         if (!isActive) return;
         const reports = reportsRes?.data?.success ? reportsRes.data.reports || [] : [];
         const reportsWithDevices = await Promise.all(
           reports.map(async (report) => {
             try {
-              const devicesRes = await axios.get(`http://localhost:3001/scan-reports/${report.report_id}/devices`);
+              const devicesRes = await axios.get(`http://localhost:3000/scan-reports/${report.report_id}/devices`);
               const devices = devicesRes?.data?.success ? devicesRes.data.devices || [] : [];
               return mapReportToScan(report, devices);
             } catch (err) {
@@ -606,6 +608,13 @@ export default function App() {
       } catch (err) {
         if (!isActive) return;
         console.error("Failed to load scan history for user", userId, err);
+        const status = getApiErrorStatus(err);
+        if (status === 401 || status === 403) {
+          setUser(null);
+          setHistoryFeedback({ type: "error", message: "Session expired. Please log in again." });
+        } else {
+          setHistoryFeedback({ type: "error", message: getApiErrorMessage(err, "Failed to load scan history.") });
+        }
         setScans([]);
         setSelectedScanId(null);
       }
@@ -627,7 +636,7 @@ export default function App() {
 
   async function handleLogout() {
     try {
-      await axios.post("http://localhost:3001/logout");
+      await axios.post("http://localhost:3000/logout");
     } catch (err) {
       console.error("Logout failed:", err);
     } finally {
@@ -674,7 +683,7 @@ export default function App() {
     setDeletingScanId(scanId);
     setHistoryFeedback(null);
     try {
-      await axios.delete(`http://localhost:3001/delete-scan/${scanId}`);
+      await axios.delete(`http://localhost:3000/delete-scan/${scanId}`);
       setScans((prev) => {
         const next = prev.filter((entry) => entry.id !== scanId);
         if (prev.length !== next.length) {
@@ -688,7 +697,7 @@ export default function App() {
       });
     } catch (err) {
       console.error("Failed to delete scan", scanId, err);
-      setHistoryFeedback({ type: "error", message: "Could not delete scan. Please try again." });
+      setHistoryFeedback({ type: "error", message: getApiErrorMessage(err, "Could not delete scan. Please try again.") });
     } finally {
       setDeletingScanId(null);
     }
@@ -800,7 +809,7 @@ export default function App() {
         //devices: JSON.stringify(scanData.findings || []),//KV: backend takes array, not string
         devices: scanData.findings || [],//KV add: send as array, not string
       };
-      await axios.post("http://localhost:3001/save-scan", payload);
+      await axios.post("http://localhost:3000/save-scan", payload);
       const savedScan = snapshotScan(scanData);
       setScans((prev) => {
         const withoutCurrent = prev.filter((entry) => entry.id !== savedScan.id);
@@ -812,7 +821,7 @@ export default function App() {
       setIsViewingFreshScan(false);
     } catch (err) {
       console.error("Save scan failed:", err);
-      setSaveFeedback({ type: "error", message: "Could not save scan report. Please try again." });
+      setSaveFeedback({ type: "error", message: getApiErrorMessage(err, "Could not save scan report. Please try again.") });
     } finally {
       setIsSavingScan(false);
     }

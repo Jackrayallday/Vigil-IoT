@@ -6,6 +6,7 @@ Standalone registration form shown inside the auth modal.
 */
 import React, { useState } from "react";
 import PasswordField from "./PasswordField"; // Shared press-to-reveal password input
+import { getApiErrorMessage, getApiResponseMessage } from "./apiErrors";
 
 export default function RegisterForm({ onBack }) {//KV edit //export default function RegisterForm({ onBack, onRegister }) {
   const [email, setEmail] = useState("");
@@ -37,7 +38,7 @@ export default function RegisterForm({ onBack }) {//KV edit //export default fun
 
     //KV add ------------------------------------------------------------------
     try{
-        const response = await fetch("http://localhost:3001/register", {
+        const response = await fetch("http://localhost:3000/register", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -45,21 +46,26 @@ export default function RegisterForm({ onBack }) {//KV edit //export default fun
             body: JSON.stringify({ email, password })
         });
 
-        const result = await response.json();
+        let result = null;
+        try {
+            result = await response.json();
+        } catch (err) {
+            result = null;
+        }
 
-        if(result.success){
+        if(response.ok && result?.success){
             setFormSuccess("Registration successful!");
             setFormError("");
             resetForm();
         }
         else{
-            setFormError(result.message || "Registration failed.");
+            setFormError(getApiResponseMessage(result, "Registration failed."));
             setFormSuccess("");
         }
     }
     catch (err) {
         console.error("Registration error:", err);
-        setFormError("Server error. Please try again later.");
+        setFormError(getApiErrorMessage(err, "Server error. Please try again later."));
         setFormSuccess("");
     }
     //-------------------------------------------------------------------------

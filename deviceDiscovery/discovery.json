@@ -1,31 +1,41 @@
 {
   "meta": {
     "os": "Windows) 11",
-    "started_at": 1770059584.4178648,
-    "finished_at": 1770059656.1875703
+    "started_at": 1770070383.741384,
+    "finished_at": 1770070402.385331
   },
   "interfaces": [
     {
       "name": "Wi-Fi",
       "ip": "192.168.1.13",
       "network": "192.168.1.0/24"
-    },
-    {
-      "name": "vEthernet (WSL (Hyper-V firewall))",
-      "ip": "172.21.128.1",
-      "network": "172.21.128.0/20"
     }
   ],
   "devices": [
     {
       "ip": "192.168.1.1",
-      "hostname": null,
+      "hostname": "Ubuntu/xenial UPnP/1.1 MiniUPnPd/2.1",
       "mac": "84:1e:a3:cf:01:b2",
-      "vendor": "Sagemcom Broadband SAS",
-      "services": [],
+      "vendor": "Ubuntu/xenial UPnP/1.1 MiniUPnPd/2.1",
+      "services": [
+        "USN:uuid:841ea3cf01b2",
+        "SSDP:uuid:841ea3cf01b0",
+        "SSDP:urn:schemas-upnp-org:service:DeviceProtection:1",
+        "SSDP:uuid:841ea3cf01b2",
+        "SSDP:urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
+        "SSDP:uuid:841ea3cf01b1",
+        "SSDP:urn:schemas-upnp-org:service:WANIPConnection:2",
+        "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:2",
+        "SSDP:urn:schemas-upnp-org:service:Layer3Forwarding:1",
+        "SSDP:upnp:rootdevice",
+        "SSDP:urn:schemas-upnp-org:device:WANDevice:2",
+        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:2",
+        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1"
+      ],
       "iface": "Wi-Fi",
       "discovered_via": [
-        "ARP"
+        "ARP",
+        "SSDP"
       ]
     },
     {
@@ -41,33 +51,28 @@
     },
     {
       "ip": "192.168.1.143",
-      "hostname": "TCL-RokuTV-310.lan",
+      "hostname": "Roku/15.1.4 UPnP/1.0 Roku/15.1.4",
       "mac": "9c:95:61:41:64:03",
-      "vendor": "Hui Zhou Gaoshengda Technology Co.,LTD",
-      "services": [],
+      "vendor": "Roku/15.1.4 UPnP/1.0 Roku/15.1.4",
+      "services": [
+        "SSDP:upnp:rootdevice",
+        "USN:uuid:296c0009-a00b-1086-806e-9c9561416403::upnp:rootdevice",
+        "SSDP:roku:ecp",
+        "SSDP:urn:dial-multiscreen-org:service:dial:1"
+      ],
       "iface": "Wi-Fi",
       "discovered_via": [
-        "ARP"
+        "ARP",
+        "SSDP"
       ]
     },
     {
-      "ip": "172.21.138.234",
-      "hostname": null,
-      "mac": "00:15:5d:08:06:cf",
-      "vendor": "Microsoft Corporation",
-      "services": [],
-      "iface": "vEthernet (WSL (Hyper-V firewall))",
-      "discovered_via": [
-        "ARP"
-      ]
-    },
-    {
-      "ip": "172.21.143.255",
+      "ip": "192.168.1.255",
       "hostname": null,
       "mac": "ff:ff:ff:ff:ff:ff",
       "vendor": null,
       "services": [],
-      "iface": "vEthernet (WSL (Hyper-V firewall))",
+      "iface": "Wi-Fi",
       "discovered_via": [
         "ARP"
       ]
@@ -87,9 +92,9 @@
     }
   ],
   "summary": {
-    "total_devices": 6,
-    "with_hostnames": 3,
-    "with_macs": 5,
-    "with_vendor": 4
+    "total_devices": 5,
+    "with_hostnames": 4,
+    "with_macs": 4,
+    "with_vendor": 3
   }
 }

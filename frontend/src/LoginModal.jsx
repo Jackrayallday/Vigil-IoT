@@ -8,6 +8,7 @@ Includes placeholder flows for register + forgot password.
 */
 import React, { useRef, useState } from "react"; //import React from "react"; KV edit
 import axios from "axios"; //KV add
+import { getApiErrorMessage } from "./apiErrors";
 import "./styles/modal.css";
 import "./styles/login.css";
 import logoImage from "./assets/logo.png";
@@ -68,7 +69,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
     // Stub for now; could hook into auth later
     //KV add --------------------------------------------------------
     try {
-      const res = await axios.post("http://localhost:3001/login", {
+      const res = await axios.post("http://localhost:3000/login", {
         email,
         password,
       });
@@ -86,7 +87,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
       }
     } catch (err) {
       console.error(err);
-      setError("Server error. Please try again later.");
+      setError(getApiErrorMessage(err, "Server error. Please try again later."));
     }
     //---------------------------------------------------------------
   }
