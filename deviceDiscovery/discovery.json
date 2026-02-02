@@ -1,8 +1,8 @@
 {
   "meta": {
     "os": "Windows) 11",
-    "started_at": 1769744003.6600325,
-    "finished_at": 1769744079.511607
+    "started_at": 1770059584.4178648,
+    "finished_at": 1770059656.1875703
   },
   "interfaces": [
     {
@@ -51,20 +51,9 @@
       ]
     },
     {
-      "ip": "192.168.1.202",
-      "hostname": "EntertamentRoom.lan",
-      "mac": "64:d2:c4:d0:78:48",
-      "vendor": "Apple, Inc.",
-      "services": [],
-      "iface": "Wi-Fi",
-      "discovered_via": [
-        "ARP"
-      ]
-    },
-    {
       "ip": "172.21.138.234",
       "hostname": null,
-      "mac": "00:15:5d:37:67:ae",
+      "mac": "00:15:5d:08:06:cf",
       "vendor": "Microsoft Corporation",
       "services": [],
       "iface": "vEthernet (WSL (Hyper-V firewall))",
@@ -98,9 +87,9 @@
     }
   ],
   "summary": {
-    "total_devices": 7,
-    "with_hostnames": 4,
-    "with_macs": 6,
-    "with_vendor": 5
+    "total_devices": 6,
+    "with_hostnames": 3,
+    "with_macs": 5,
+    "with_vendor": 4
   }
 }

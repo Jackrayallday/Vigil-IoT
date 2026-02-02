@@ -66,6 +66,11 @@ const SAMPLE_SERVICE_PROFILES = [
   "SNMP :161, NTP :123",
 ];
 
+const RADAR_SWEEP_MS = 2200;
+const RADAR_PING_COUNT = 3;
+const RADAR_PING_FADE_MS = 1800;
+const RADAR_SWEEP_CENTER_OFFSET_DEG = 45;
+
 
 const SETTINGS_STORAGE_KEY = "appSettings";
 
@@ -324,6 +329,31 @@ function createScanRecord(payload) {
     findings: buildFindings(id, payload.targets, options),
   };
 }
+
+function createRadarPings(count = RADAR_PING_COUNT, now = Date.now()) {
+  return Array.from({ length: count }, () => {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 6 + Math.sqrt(Math.random()) * 22;
+    const cx = 32 + Math.cos(angle) * radius;
+    const cy = 32 + Math.sin(angle) * radius;
+    const size = 1.3 + Math.random() * 0.7;
+    const dx = cx - 32;
+    const dy = cy - 32;
+    const rawAngleDeg = (Math.atan2(dx, -dy) * 180) / Math.PI;
+    const normalizedAngle = (rawAngleDeg + 360) % 360;
+    const revealAngle = (normalizedAngle - RADAR_SWEEP_CENTER_OFFSET_DEG + 360) % 360;
+    const delayMs = (revealAngle / 360) * RADAR_SWEEP_MS;
+    const expiresAt = now + delayMs + RADAR_PING_FADE_MS + 120;
+    return {
+      id: createId("ping"),
+      cx: Number(cx.toFixed(2)),
+      cy: Number(cy.toFixed(2)),
+      r: Number(size.toFixed(2)),
+      delayMs: Number(delayMs.toFixed(0)),
+      expiresAt,
+    };
+  });
+}
 // Main shell puts together the scan wizard modal, history list, and results details.
 // The backbone React component that holds the modals, history list, and results screen together.
 export default function App() {
@@ -359,6 +389,8 @@ export default function App() {
   const [saveFeedback, setSaveFeedback] = useState(null);
   const [historyFeedback, setHistoryFeedback] = useState(null);
   const [deletingScanId, setDeletingScanId] = useState(null);
+  const [radarPings, setRadarPings] = useState([]);
+  const [isRadarActive, setIsRadarActive] = useState(false);
   const wizardBackdropPointerDownRef = useRef(false); // Prevents dismiss when dragging selections outside the modal.
   const driftDots = useMemo(() => (
     Array.from({ length: 54 }, (_, index) => {
@@ -429,6 +461,23 @@ export default function App() {
   useEffect(() => {
     setSaveFeedback(null);
   }, [selectedScanId]);
+
+  useEffect(() => {
+    if (view !== VIEW_HOME || !isRadarActive) {
+      setRadarPings([]);
+      return undefined;
+    }
+    const spawnPings = () => {
+      const now = Date.now();
+      setRadarPings((prev) => {
+        const active = prev.filter((ping) => ping.expiresAt > now);
+        return [...active, ...createRadarPings(RADAR_PING_COUNT, now)];
+      });
+    };
+    spawnPings();
+    const intervalId = window.setInterval(spawnPings, RADAR_SWEEP_MS);
+    return () => window.clearInterval(intervalId);
+  }, [view, isRadarActive]);
 
   // Handy pointer to whichever scan is selected in the history/results views.
   const selectedScan = useMemo(() => {
@@ -838,7 +887,36 @@ export default function App() {
                 className="start-circle home-start-panel__start"
                 aria-label="Start Scan"
                 onClick={openWizard}
+                onMouseEnter={() => setIsRadarActive(true)}
+                onMouseLeave={() => setIsRadarActive(false)}
+                onFocus={() => setIsRadarActive(true)}
+                onBlur={() => setIsRadarActive(false)}
               >
+                <span className="start-radar" aria-hidden="true">
+                  <svg viewBox="0 0 64 64" className="start-radar__svg">
+                    <circle className="start-radar__ring" cx="32" cy="32" r="30" />
+                    <g className="start-radar__sweep-group">
+                      <path className="start-radar__sweep" d="M32 32 L32 2 A30 30 0 0 1 62 32 Z" />
+                      <path className="start-radar__grid" d="M32 12 A20 20 0 0 1 52 32" />
+                      <path className="start-radar__grid" d="M32 18 A14 14 0 0 1 46 32" />
+                    </g>
+                    <g className="start-radar__pings">
+                      {radarPings.map((ping, index) => (
+                        <circle
+                          key={ping.id}
+                          className="start-radar__ping"
+                          cx={ping.cx}
+                          cy={ping.cy}
+                          r={ping.r}
+                          style={{
+                            "--ping-delay": `${ping.delayMs}ms`,
+                            "--ping-life": `${RADAR_PING_FADE_MS}ms`,
+                          }}
+                        />
+                      ))}
+                    </g>
+                  </svg>
+                </span>
                 <span className="start-text">Start Scan</span>
               </a>
 
