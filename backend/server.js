@@ -46,8 +46,8 @@ const transporter = nodemailer.createTransport({//configure the mail transporter
 async function initDatabase(){//function to initialize the database
     const connection = await mysql.createConnection({//configure the MySQL connection
         host: "localhost",//process.env.DB_HOST || 'localhost',////////////////////////////////////
-        user: "jackray1",//process.env.DB_USER || 'root',//////////////////////////////////////////////
-        password: "donthack"//process.env.DB_PASSWORD || '',////////////////////////////////////////
+        user: "root",//process.env.DB_USER || 'root',//////////////////////////////////////////////
+        password: "comp440"//process.env.DB_PASSWORD || '',////////////////////////////////////////
         //database: process.env.DB_NAME || 'vigil_iot',////////////////////////////////////////////
         //port: process.env.DB_PORT || 3306,*//////////////////////////////////////////////////////
     });
@@ -85,7 +85,7 @@ async function initDatabase(){//function to initialize the database
         notes TEXT,                               -- additional notes: string
         remediation_tips TEXT,                    -- remediation tips: string
         associated_report INT NOT NULL,           -- associated report: ID of report listing device
-        FOREIGN KEY (associated_report)                   -- define associated_report as a foregin key
+        FOREIGN KEY (associated_report)           -- define associated_report as a foregin key
             REFERENCES scan_reports(report_id) -- reference report_id field in reports table 
             ON DELETE CASCADE                  -- delete device when corresponding report deleted
     )`);
@@ -99,6 +99,12 @@ async function initDatabase(){//function to initialize the database
 
         app.post("/register", async (req, res) => {//if here, client submitted registration form
             const {email, password} = req.body;//extract entered credentials from request body
+
+            if(!email || !password)//if here, username or password missing
+                return res.status(400).json({//indicate unsucessful registration in response
+                    success: false,
+                    message: "Email or password missing!"
+                });
 
             try{
                 const [existingUsers] = await db.query(//search for entered email in database
@@ -132,6 +138,12 @@ async function initDatabase(){//function to initialize the database
 
         app.post("/login", async (req, res) => {//if here, client submitted login form
             const {email, password} = req.body;//extract entered credentials from request body
+
+            if(!email || !password)//if here, username or password missing
+                return res.status(400).json({//indicate unsucessful registration in response
+                    success: false,
+                    message: "Email or password missing!"
+                });
 
             try{  
                 const [users] = await db.query(//search for entered email in database

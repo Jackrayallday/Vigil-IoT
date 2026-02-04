@@ -1,36 +1,35 @@
 {
   "meta": {
     "os": "Windows) 11",
-    "started_at": 1770070383.741384,
-    "finished_at": 1770070402.385331
+    "started_at": 1770231162.4691992,
+    "finished_at": 1770231174.867928
   },
   "interfaces": [
     {
       "name": "Wi-Fi",
-      "ip": "192.168.1.13",
-      "network": "192.168.1.0/24"
+      "ip": "192.168.0.235",
+      "network": "192.168.0.0/24"
     }
   ],
   "devices": [
     {
-      "ip": "192.168.1.1",
-      "hostname": "Ubuntu/xenial UPnP/1.1 MiniUPnPd/2.1",
-      "mac": "84:1e:a3:cf:01:b2",
-      "vendor": "Ubuntu/xenial UPnP/1.1 MiniUPnPd/2.1",
+      "ip": "192.168.0.1",
+      "hostname": "TP-LINK/TP-LINK UPnP/1.1 MiniUPnPd/2.2.2",
+      "mac": "50:3d:d1:50:b5:c0",
+      "vendor": "TP-LINK/TP-LINK UPnP/1.1 MiniUPnPd/2.2.2",
       "services": [
-        "USN:uuid:841ea3cf01b2",
-        "SSDP:uuid:841ea3cf01b0",
-        "SSDP:urn:schemas-upnp-org:service:DeviceProtection:1",
-        "SSDP:uuid:841ea3cf01b2",
-        "SSDP:urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
-        "SSDP:uuid:841ea3cf01b1",
-        "SSDP:urn:schemas-upnp-org:service:WANIPConnection:2",
-        "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:2",
+        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35c",
+        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1",
         "SSDP:urn:schemas-upnp-org:service:Layer3Forwarding:1",
+        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:1",
+        "SSDP:urn:schemas-upnp-org:device:WANDevice:1",
+        "SSDP:urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
         "SSDP:upnp:rootdevice",
-        "SSDP:urn:schemas-upnp-org:device:WANDevice:2",
-        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:2",
-        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1"
+        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35e",
+        "SSDP:urn:schemas-upnp-org:service:WANIPConnection:1",
+        "USN:uuid:85780d52-59d5-40ad-876d-192979d5f35e",
+        "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:1",
+        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35d"
       ],
       "iface": "Wi-Fi",
       "discovered_via": [
@@ -39,35 +38,7 @@
       ]
     },
     {
-      "ip": "192.168.1.19",
-      "hostname": "EPSON208997.lan",
-      "mac": "e0:bb:9e:20:89:97",
-      "vendor": "Seiko Epson Corporation",
-      "services": [],
-      "iface": "Wi-Fi",
-      "discovered_via": [
-        "ARP"
-      ]
-    },
-    {
-      "ip": "192.168.1.143",
-      "hostname": "Roku/15.1.4 UPnP/1.0 Roku/15.1.4",
-      "mac": "9c:95:61:41:64:03",
-      "vendor": "Roku/15.1.4 UPnP/1.0 Roku/15.1.4",
-      "services": [
-        "SSDP:upnp:rootdevice",
-        "USN:uuid:296c0009-a00b-1086-806e-9c9561416403::upnp:rootdevice",
-        "SSDP:roku:ecp",
-        "SSDP:urn:dial-multiscreen-org:service:dial:1"
-      ],
-      "iface": "Wi-Fi",
-      "discovered_via": [
-        "ARP",
-        "SSDP"
-      ]
-    },
-    {
-      "ip": "192.168.1.255",
+      "ip": "192.168.0.255",
       "hostname": null,
       "mac": "ff:ff:ff:ff:ff:ff",
       "vendor": null,
@@ -76,25 +47,12 @@
       "discovered_via": [
         "ARP"
       ]
-    },
-    {
-      "ip": "b'\\xc0\\xa8\\x01\\x13'",
-      "hostname": "EPSON ET-2850 Series",
-      "mac": null,
-      "vendor": null,
-      "services": [
-        "_http._tcp.local."
-      ],
-      "iface": null,
-      "discovered_via": [
-        "mDNS"
-      ]
     }
   ],
   "summary": {
-    "total_devices": 5,
-    "with_hostnames": 4,
-    "with_macs": 4,
-    "with_vendor": 3
+    "total_devices": 2,
+    "with_hostnames": 1,
+    "with_macs": 2,
+    "with_vendor": 1
   }
 }
