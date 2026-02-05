@@ -163,7 +163,10 @@ async function initDatabase(){//function to initialize the database
                 if(passwordMatch){//if here, passwords match: login sucessful
                     const sessionUser = {user_id: users[0].user_id, email: users[0].email};
                     req.session.user = sessionUser;//store user info in session
-                    return res.json({success: true, user: sessionUser});//indicate login success
+                    return res.json({//indicate login success
+                        success: true,
+                        user: sessionUser
+                    });
                 } 
                 else//if here, passwords don't match
                     return res.status(400).json({//indicate unsucessful login in response
@@ -198,7 +201,10 @@ async function initDatabase(){//function to initialize the database
 
         app.get("/check_login", (req, res) => {//if here, client requested login status
             if(req.session.user)//if here, user logged in
-                res.json({loggedIn: true, user: req.session.user});//return true and user info
+                res.json({//return true and user info
+                    loggedIn: true,
+                    user: req.session.user
+                });
             else//if here, user not logged in
                 res.json({loggedIn: false});//return false  
         });
@@ -206,8 +212,11 @@ async function initDatabase(){//function to initialize the database
         app.post("/save-scan", async (req, res) => {//if here, client requested to save scan report
             const user_id = req.session?.user?.user_id ?? null;//get user ID from session
 
-            if(!user_id)//if here, user not logged in: indicate failure
-                return res.status(401).json({success: false, message: "Not logged in!"});
+            if(!user_id)//if here, user not logged in
+                return res.status(401).json({//indicate failure
+                    success: false,
+                    message: "Not logged in!"
+                });
 
             const {//get the scan report info from request body
                 title,
@@ -218,21 +227,35 @@ async function initDatabase(){//function to initialize the database
                 devices
             } = req.body;
             
-            if(!title || !scanned_at || !targets)//check required fields  
-		        return res.status(400).json({success: false, message: "Missing required fields!"});
+            if(!title || !scanned_at || !targets)//if here, required fields missing
+		        return res.status(400).json({//indicate failure in response
+                    success: false, 
+                    message: "Missing required fields!"
+                });
     
             try{
-                const [reportResult] = await db.query(//inser scan report into database
-                    `INSERT INTO scan_reports 
-                    (user_id, title, scanned_at, targets, exclusions, detection_options) 
-                    VALUES (?, ?, ?, ?, ?, ?)`,
-                    [user_id, title, scanned_at, targets, exclusions || null, detection_options || null]
+                const [reportResult] = await db.query(//insert scan report into database
+                    `INSERT INTO scan_reports (
+                        user_id,
+                        title,
+                        scanned_at,
+                        targets,
+                        exclusions,
+                        detection_options
+                    ) VALUES (?, ?, ?, ?, ?, ?)`, [
+                        user_id,
+                        title,
+                        scanned_at,
+                        targets,
+                        exclusions || null,
+                        detection_options || null
+                    ]
                 );
 
                 const report_id = reportResult.insertId;//get id of the previously inserted report
 
-                if(Array.isArray(devices) && devices.length > 0){//insert devices if provided
-                    for(const device of devices){//for each device
+                if(Array.isArray(devices) && devices.length > 0){//if here, devices provided
+                    for(const device of devices){//iterate through the devices array
                         const {//get the device data
                             deviceName,
                             ipAddress,
@@ -243,9 +266,15 @@ async function initDatabase(){//function to initialize the database
                         } = device;
 
                         await db.query(//insert device into database
-                            `INSERT INTO devices 
-                            (report_id, device_name, ip_address, services, protocol_warnings, notes, remediation_tips) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?)`, [
+                            `INSERT INTO devices  (
+                                report_id,
+                                device_name,
+                                ip_address,
+                                services,
+                                protocol_warnings,
+                                notes,
+                                remediation_tips
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?)`, [
                                 report_id,
                                 deviceName || null,
                                 ipAddress || null,
@@ -258,24 +287,40 @@ async function initDatabase(){//function to initialize the database
                     }
                 }
 		
-                res.status(201).json({success: true, report_id});//inform client of success
+                res.status(201).json({//inform client of success
+                    success: true,
+                    report_id
+                });
             }
 	        catch (err)
 	        {//if here, error occured
-                console.error("Error in saving report!: ", err);
-                res.status(500).send({success: false, message: "Server error in saving report!"});
+                console.error("Error in saving report!: ", err);//log the error
+                res.status(500).send({//indicate failure in saving report
+                    success:false,
+                    message: "Server error in saving report!"});
             }
         });
 
         app.delete("/delete-scan/:id", async (req, res) =>{//if here, report deletion requested
+            const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
             const reportId = req.params.id;//get the report id from the request
 
+            if(!user_id)//if here, user not logged in
+                return res.status(401).json({//indicate failure
+                    success: false,
+                    message: "Not logged in!"
+                });
+
             try{
-                const [result] = //delete the report from the database
-                    await db.query("DELETE FROM scan_reports WHERE report_id = ?",[reportId]);
+                const [result] = await db.query(//delete the report only if the user owns it
+                    "DELETE FROM scan_reports WHERE report_id = ? AND user_id = ?",
+                    [reportId, user_id]
+                );
 
                 if(result.affectedRows === 0) //no rows affected (deletion failed): inform client
-                    return res.status(404).send({success: false, message: "Report not found!"});
+                    return res.status(404).send({
+                        success: false,
+                        message: "Report not found or belongs to someone else!"});
                 res.json({success: true});//deletion successful: inform client
             } 
             catch (err){//if here, error in deletion
