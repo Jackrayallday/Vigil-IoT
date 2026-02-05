@@ -329,23 +329,14 @@ async function initDatabase(){//function to initialize the database
             }
         });
 
-        app.get("/scan-reports/:user_id", async (req, res) => {//if here, client requested reports
-            const {user_id} = req.params;//get the user's id
+        app.get("/scan-reports", async (req, res) => {//if here, client requested scan reports list
+            const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
 
-            if(!user_id)//if here, no user ID: inform client
-                return res.status(400).json({success: false, message: "Missing user ID!"});
-
-                //Validate the URL parameter
-                if(!user_id)
-                    return res.status(400).json({success: false, message: "Missing user ID!"});
-                
-                //Ensure the user is logged in
-                if(!req.session?.user)
-                    return res.status(401).json({success: false, message: "Not logged in!"}); 
-                
-                // Ensure the logged-in user is only accessing their own reports
-                if(req.session.user.user_id !== Number(user_id))
-                    return res.status(403).json({ success: false, message: "Forbidden!"});
+            if(!user_id)//if here, user not logged in
+                return res.status(401).json({//indicate failure
+                    success: false,
+                    message: "Not logged in!"
+                });
 
             try{
                 const [reports] = await db.query(//get the scan reports from the database
@@ -355,12 +346,18 @@ async function initDatabase(){//function to initialize the database
                     ORDER BY scanned_at DESC`,
                     [user_id]
                 );
-                res.json({success: true, reports});//send reports to the client
+
+                res.json({//query was successful: send reports to client
+                    success: true,
+                    reports
+                });
             }
-            catch(err)
-            {//if here, error occured
-                console.error("Error retrieving scan reports:", err);//log the error
-                res.status(500).send({ success: false, message: "Server error!" });//inform client
+            catch(err){//if here, error occured
+                console.error("Server error in retrieving scan reports!:", err);//log the error
+                res.status(500).send({//inform client
+                    success: false,
+                    message: "Server error in retrieving scan reports!:"
+                });
             }
         });
 
