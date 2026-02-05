@@ -303,7 +303,7 @@ async function initDatabase(){//function to initialize the database
 
         app.delete("/delete-scan/:id", async (req, res) =>{//if here, report deletion requested
             const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
-            const reportId = req.params.id;//get the report id from the request
+            const reportId = req.params.id;//get the report id from the URL
 
             if(!user_id)//if here, user not logged in
                 return res.status(401).json({//indicate failure
@@ -321,6 +321,7 @@ async function initDatabase(){//function to initialize the database
                     return res.status(404).send({
                         success: false,
                         message: "Report not found or belongs to someone else!"});
+                        
                 res.json({success: true});//deletion successful: inform client
             } 
             catch (err){//if here, error in deletion
@@ -353,50 +354,53 @@ async function initDatabase(){//function to initialize the database
                 });
             }
             catch(err){//if here, error occured
-                console.error("Server error in retrieving scan reports!:", err);//log the error
+                console.error("Server error in getting scan reports!: ", err);//log the error
                 res.status(500).send({//inform client
                     success: false,
-                    message: "Server error in retrieving scan reports!:"
+                    message: "Server error in getting scan reports!"
                 });
             }
         });
 
         app.get("/scan-reports/:report_id/devices", async (req, res) =>{//if here, devices request
-            const {report_id} = req.params;
+            const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
+            const report_id = req.params.report_id;//get the report id from the URL
 
-            if(!report_id)//if here, no report ID: inform client
-                return res.status(400).json({success: false, message: "Missing report_id"});
-
-            //Must be logged in
-            if(!req.session?.user)
-                return res.status(401).json({ success: false, message: "Not logged in!" });
+             if(!user_id)//if here, user not logged in
+                return res.status(401).json({//indicate failure
+                    success: false,
+                    message: "Not logged in!"
+                });
 
             try{
-                //Verify the report belongs to the logged-in user
-                const [[reportOwner]] = await db.query(
-                    "SELECT user_id FROM scan_reports WHERE report_id = ?",
-                    [report_id]
-                );
-                
-                if(!reportOwner)
-                    return res.status(404).json({success: false, message: "Report not found!"});
-                
-                if (reportOwner.user_id !== req.session.user.user_id)
-                    return res.status(403).json({success: false, message: "Forbidden!"});
+                const [devices] = await db.query(//get devices from report of logged-in user
+                    `SELECT d.device_id, d.device_name, d.ip_address, d.services,
+                            d.protocol_warnings, d.notes, d.remediation_tips
+                     FROM devices d
+                     JOIN scan_reports r ON r.report_id = d.report_id
+                     WHERE d.report_id = ? AND r.user_id = ?
+                     ORDER BY d.device_id ASC`,
+                     [report_id, user_id] );
 
-                const [devices] = await db.query(//get the devices from the database
-                    `SELECT device_id, device_name, ip_address, services, protocol_warnings, notes, remediation_tips
-                    FROM devices
-                    WHERE report_id = ?
-                    ORDER BY device_id ASC`,
-                    [report_id]
-                );
-                res.json({success: true, devices});//send the devices to the client
+                if(devices.length === 0){//if here, no report found or it belongs to someone else
+                    return res.status(404).json({//indicate failure in response
+                        success: false,
+                        message: "Report not found or belongs to someone else!"
+                    });
+                }
+                
+                res.json({//if here, success: send the devices to client
+                    success: true,
+                    devices
+                });
             } 
             catch(err)
             {//if here, error in retrieving devices
-                console.error("Error retrieving devices:", err);//log the error
-                res.status(500).json({ success: false, message: "Server error!" });//inform client
+                console.error("Error retrieving devices: ", err);//log the error
+                res.status(500).json({//inform client
+                    success: false,
+                    message: "Server error in retrieving devices!"
+                });
             }
         });
     /////////////////////////////////////////////////////////////////////////////////////
