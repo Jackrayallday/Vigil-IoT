@@ -578,6 +578,8 @@ export default function App() {
   }
 
   useEffect(() => {
+    if(isViewingFreshScan) return;//KV add: prevent override
+
     let isActive = true;
 
     async function loadHistoryForUser(userId) {
@@ -632,7 +634,7 @@ export default function App() {
     return () => {
       isActive = false;
     };
-  }, [user?.user_id, settings.retentionDays, unsavedScan]);
+  }, [user?.user_id, settings.retentionDays, unsavedScan, isViewingFreshScan]);//KV edit: added isViewingFreshScan
 
   async function handleLogout() {
     try {

@@ -1,14 +1,19 @@
 {
   "meta": {
     "os": "Windows) 11",
-    "started_at": 1770247208.975602,
-    "finished_at": 1770247226.2680125
+    "started_at": 1770613274.360332,
+    "finished_at": 1770613305.3026354
   },
   "interfaces": [
     {
       "name": "Wi-Fi",
       "ip": "192.168.0.235",
       "network": "192.168.0.0/24"
+    },
+    {
+      "name": "vEthernet (WSL (Hyper-V firewall))",
+      "ip": "192.168.64.1",
+      "network": "192.168.64.0/20"
     }
   ],
   "devices": [
@@ -18,17 +23,17 @@
       "mac": "50:3d:d1:50:b5:c0",
       "vendor": "TP-LINK/TP-LINK UPnP/1.1 MiniUPnPd/2.2.2",
       "services": [
-        "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:1",
         "SSDP:urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
-        "SSDP:urn:schemas-upnp-org:device:WANDevice:1",
-        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35c",
-        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1",
-        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35e",
-        "SSDP:urn:schemas-upnp-org:service:WANIPConnection:1",
-        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:1",
-        "SSDP:upnp:rootdevice",
         "SSDP:urn:schemas-upnp-org:service:Layer3Forwarding:1",
+        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35c",
         "USN:uuid:85780d52-59d5-40ad-876d-192979d5f35e",
+        "SSDP:urn:schemas-upnp-org:service:WANIPConnection:1",
+        "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:1",
+        "SSDP:urn:schemas-upnp-org:device:WANDevice:1",
+        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35e",
+        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:1",
+        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1",
+        "SSDP:upnp:rootdevice",
         "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35d"
       ],
       "iface": "Wi-Fi",
@@ -49,6 +54,29 @@
       ]
     },
     {
+      "ip": "192.168.0.198",
+      "hostname": "Samsung-Linux/4.1, UPnP/1.0, Samsung_UPnP_SDK/1.0",
+      "mac": "4c:c9:5e:96:cd:dc",
+      "vendor": "Samsung-Linux/4.1, UPnP/1.0, Samsung_UPnP_SDK/1.0",
+      "services": [
+        "SSDP:urn:schemas-upnp-org:device:MediaRenderer:1",
+        "SSDP:urn:dial-multiscreen-org:service:dial:1",
+        "SSDP:urn:schemas-upnp-org:service:RenderingControl:1",
+        "USN:uuid:c9966b6f-b082-486a-8662-e8a54cd2bb88::upnp:rootdevice",
+        "SSDP:urn:schemas-upnp-org:service:ConnectionManager:1",
+        "SSDP:urn:dial-multiscreen-org:device:dialreceiver:1",
+        "SSDP:uuid:c9966b6f-b082-486a-8662-e8a54cd2bb88",
+        "SSDP:urn:schemas-upnp-org:service:AVTransport:1",
+        "SSDP:uuid:eaf1dee7-3cd0-46d5-bd31-1bb9fb0f1007",
+        "SSDP:upnp:rootdevice"
+      ],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP",
+        "SSDP"
+      ]
+    },
+    {
       "ip": "192.168.0.255",
       "hostname": null,
       "mac": "ff:ff:ff:ff:ff:ff",
@@ -58,12 +86,23 @@
       "discovered_via": [
         "ARP"
       ]
+    },
+    {
+      "ip": "192.168.79.255",
+      "hostname": null,
+      "mac": "ff:ff:ff:ff:ff:ff",
+      "vendor": null,
+      "services": [],
+      "iface": "vEthernet (WSL (Hyper-V firewall))",
+      "discovered_via": [
+        "ARP"
+      ]
     }
   ],
   "summary": {
-    "total_devices": 3,
-    "with_hostnames": 1,
-    "with_macs": 3,
-    "with_vendor": 2
+    "total_devices": 5,
+    "with_hostnames": 2,
+    "with_macs": 5,
+    "with_vendor": 3
   }
 }

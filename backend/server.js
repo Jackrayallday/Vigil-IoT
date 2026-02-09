@@ -380,7 +380,8 @@ async function initDatabase(){//function to initialize the database
                      JOIN scan_reports r ON r.report_id = d.report_id
                      WHERE d.report_id = ? AND r.user_id = ?
                      ORDER BY d.device_id ASC`,
-                     [report_id, user_id] );
+                     [report_id, user_id]
+                );
 
                 if(devices.length === 0){//if here, no report found or it belongs to someone else
                     return res.status(404).json({//indicate failure in response
