@@ -236,7 +236,7 @@ async function initDatabase(){//function to initialize the database
             try{
                 const [reportResult] = await db.query(//insert scan report into database
                     `INSERT INTO scan_reports (
-                        user_id,
+                        owner_id,
                         title,
                         scanned_at,
                         targets,
@@ -267,7 +267,7 @@ async function initDatabase(){//function to initialize the database
 
                         await db.query(//insert device into database
                             `INSERT INTO devices  (
-                                report_id,
+                                associated_report,
                                 device_name,
                                 ip_address,
                                 services,
@@ -294,7 +294,7 @@ async function initDatabase(){//function to initialize the database
             }
 	        catch (err)
 	        {//if here, error occured
-                console.error("Error in saving report!: ", err);//log the error
+                console.error("Server error in saving report!: ", err);//log the error
                 res.status(500).send({//indicate failure in saving report
                     success:false,
                     message: "Server error in saving report!"});
@@ -395,8 +395,7 @@ async function initDatabase(){//function to initialize the database
                     devices
                 });
             } 
-            catch(err)
-            {//if here, error in retrieving devices
+            catch(err){//if here, error in retrieving devices
                 console.error("Error retrieving devices: ", err);//log the error
                 res.status(500).json({//inform client
                     success: false,
