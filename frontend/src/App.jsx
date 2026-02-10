@@ -820,7 +820,7 @@ export default function App() {
       setUnsavedScan((current) => (current?.id === savedScan.id ? null : current));
       setSelectedScanId(savedScan.id);
       setSaveFeedback({ type: "success", message: "Scan report saved." });
-      setIsViewingFreshScan(false);
+      //setIsViewingFreshScan(false);//KV: removed to fix UI bug
     } catch (err) {
       console.error("Save scan failed:", err);
       setSaveFeedback({ type: "error", message: getApiErrorMessage(err, "Could not save scan report. Please try again.") });
