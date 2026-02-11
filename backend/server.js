@@ -313,7 +313,7 @@ async function initDatabase(){//function to initialize the database
 
             try{
                 const [result] = await db.query(//delete the report only if the user owns it
-                    "DELETE FROM scan_reports WHERE report_id = ? AND user_id = ?",
+                    "DELETE FROM scan_reports WHERE report_id = ? AND owner_id = ?",
                     [reportId, user_id]
                 );
 
