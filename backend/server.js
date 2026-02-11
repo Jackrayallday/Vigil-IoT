@@ -343,7 +343,7 @@ async function initDatabase(){//function to initialize the database
                 const [reports] = await db.query(//get the scan reports from the database
                     `SELECT report_id, title, scanned_at, targets, exclusions, detection_options
                     FROM scan_reports
-                    WHERE user_id = ?
+                    WHERE owner_id = ?
                     ORDER BY scanned_at DESC`,
                     [user_id]
                 );
