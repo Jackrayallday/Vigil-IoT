@@ -843,6 +843,12 @@ export default function App() {
   }
 
   const hasScans = scans.length > 0 || Boolean(unsavedScan);
+  
+  //KV add: fix bug that prevents "save scan" buttom from disappearing
+  const showSaveButton = 
+    unsavedScan?.id === selectedScanId &&
+    view === VIEW_RESULTS && !isSavingScan;
+
 //the elements for each view and modal are laid out here
   return (
     <div className="frame">
@@ -1006,7 +1012,7 @@ export default function App() {
               onSelectScan={handleSelectScan}
               onSelectDevice={handleSelectDevice}
               onBackToHome={goHome}
-              showSaveButton={isViewingFreshScan}
+              showSaveButton={showSaveButton}//{isViewingFreshScan}//KV edit: fix non-disappearing "save scan" button
               onSaveScan={handleSaveScanClick}
               isSavingScan={isSavingScan}
               saveFeedback={saveFeedback}
