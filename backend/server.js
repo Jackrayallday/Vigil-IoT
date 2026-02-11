@@ -377,8 +377,8 @@ async function initDatabase(){//function to initialize the database
                     `SELECT d.device_id, d.device_name, d.ip_address, d.services,
                             d.protocol_warnings, d.notes, d.remediation_tips
                      FROM devices d
-                     JOIN scan_reports r ON r.report_id = d.report_id
-                     WHERE d.report_id = ? AND r.user_id = ?
+                     JOIN scan_reports r ON r.report_id = d.associated_report
+                     WHERE d.associated_report = ? AND r.owner_id = ?
                      ORDER BY d.device_id ASC`,
                      [report_id, user_id]
                 );
