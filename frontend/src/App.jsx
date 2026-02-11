@@ -585,7 +585,7 @@ export default function App() {
     async function loadHistoryForUser(userId) {
       setHistoryFeedback(null);
       try {
-        const reportsRes = await axios.get(`http://localhost:3000/scan-reports/${userId}`);
+        const reportsRes = await axios.get(`http://localhost:3000/scan-reports`);///${userId}`);//KV: no longer accepted by backend
         if (!isActive) return;
         const reports = reportsRes?.data?.success ? reportsRes.data.reports || [] : [];
         const reportsWithDevices = await Promise.all(
