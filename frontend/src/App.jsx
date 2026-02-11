@@ -802,7 +802,7 @@ export default function App() {
     setSaveFeedback(null);
     try {
       const payload = {
-        user_id: actor.user_id,
+        //user_id: actor.user_id,//KV: no longer needed (not used by backend)
         title: scanData.name,
         scanned_at: formatToMysqlDatetime(scanData.submittedAtISO || scanData.submittedAt) || formatToMysqlDatetime(new Date().toISOString()),
         targets: JSON.stringify(scanData.targets || []),
