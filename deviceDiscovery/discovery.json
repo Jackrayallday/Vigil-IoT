@@ -1,8 +1,8 @@
 {
   "meta": {
     "os": "Windows) 11",
-    "started_at": 1770843457.759625,
-    "finished_at": 1770843488.686938
+    "started_at": 1770929960.5480418,
+    "finished_at": 1770929994.7712972
   },
   "interfaces": [
     {
@@ -23,18 +23,18 @@
       "mac": "50:3d:d1:50:b5:c0",
       "vendor": "TP-LINK/TP-LINK UPnP/1.1 MiniUPnPd/2.2.2",
       "services": [
-        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1",
+        "SSDP:upnp:rootdevice",
         "SSDP:urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
         "USN:uuid:85780d52-59d5-40ad-876d-192979d5f35e",
-        "SSDP:urn:schemas-upnp-org:device:WANDevice:1",
-        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35c",
-        "SSDP:upnp:rootdevice",
-        "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:1",
-        "SSDP:urn:schemas-upnp-org:service:Layer3Forwarding:1",
-        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:1",
-        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35d",
         "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35e",
-        "SSDP:urn:schemas-upnp-org:service:WANIPConnection:1"
+        "SSDP:urn:schemas-upnp-org:service:Layer3Forwarding:1",
+        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1",
+        "SSDP:urn:schemas-upnp-org:device:WANDevice:1",
+        "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:1",
+        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35c",
+        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35d",
+        "SSDP:urn:schemas-upnp-org:service:WANIPConnection:1",
+        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:1"
       ],
       "iface": "Wi-Fi",
       "discovered_via": [
@@ -43,10 +43,10 @@
       ]
     },
     {
-      "ip": "192.168.0.59",
+      "ip": "192.168.0.198",
       "hostname": null,
-      "mac": "f0:f0:a4:04:e4:bd",
-      "vendor": "Amazon Technologies Inc.",
+      "mac": "4c:c9:5e:96:cd:dc",
+      "vendor": "Samsung Electronics Co.,Ltd",
       "services": [],
       "iface": "Wi-Fi",
       "discovered_via": [
@@ -59,13 +59,13 @@
       "mac": "dc:98:40:dc:1c:d2",
       "vendor": "Microsoft-Windows/10.0 UPnP/1.0 UPnP-Device-Host/1.0",
       "services": [
-        "SSDP:urn:schemas-upnp-org:service:AVTransport:1",
-        "SSDP:urn:schemas-upnp-org:service:RenderingControl:1",
-        "USN:uuid:2dc06b1b-22ba-4ebb-9308-2d31c9ba83d2::urn:schemas-upnp-org:service:AVTransport:1",
-        "SSDP:urn:schemas-upnp-org:device:MediaRenderer:1",
-        "SSDP:uuid:2dc06b1b-22ba-4ebb-9308-2d31c9ba83d2",
         "SSDP:upnp:rootdevice",
-        "SSDP:urn:schemas-upnp-org:service:ConnectionManager:1"
+        "SSDP:uuid:2dc06b1b-22ba-4ebb-9308-2d31c9ba83d2",
+        "SSDP:urn:schemas-upnp-org:device:MediaRenderer:1",
+        "SSDP:urn:schemas-upnp-org:service:RenderingControl:1",
+        "SSDP:urn:schemas-upnp-org:service:ConnectionManager:1",
+        "SSDP:urn:schemas-upnp-org:service:AVTransport:1",
+        "USN:uuid:2dc06b1b-22ba-4ebb-9308-2d31c9ba83d2::urn:schemas-upnp-org:service:RenderingControl:1"
       ],
       "iface": "Wi-Fi",
       "discovered_via": [

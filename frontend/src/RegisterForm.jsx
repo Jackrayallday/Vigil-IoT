@@ -5,10 +5,10 @@ programmer: Jack Ray (modified by Kevin Volkov to add functionality)
 Standalone registration form shown inside the auth modal.
 */
 import React, { useState } from "react";
+import axios from "axios";//KV add
 import PasswordField from "./PasswordField"; // Shared press-to-reveal password input
-import { getApiErrorMessage, getApiResponseMessage } from "./apiErrors";
 
-export default function RegisterForm({ onBack }) {//KV edit //export default function RegisterForm({ onBack, onRegister }) {
+export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,54 +21,59 @@ export default function RegisterForm({ onBack }) {//KV edit //export default fun
     setConfirmPassword("");
   }
 
-  async function handleSubmit(e) {//KV edit //function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     if(password !== confirmPassword) {
-      setFormError("Passwords do not match.");
+      setFormError("Passwords don't match!");
       setFormSuccess("");//KV add
       return;
     }
 
-    /*setFormError("");
-    if(typeof onRegister === "function")
-      onRegister({email, password});
+    //KV: maybe later add password strength validation here
 
-    resetForm();*///KV remove
-
-    //KV add ------------------------------------------------------------------
     try{
-        const response = await fetch("http://localhost:3000/register", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ email, password })
-        });
+      const response = await axios.post(//send request to /register on server
+        "http://localhost:3000/register",
+        {email, password},
+        {headers: {"Content-Type": "application/json"}}
+      );
 
-        let result = null;
-        try {
-            result = await response.json();
-        } catch (err) {
-            result = null;
-        }
+      const result = response.data;//extract data from response
 
-        if(response.ok && result?.success){
-            setFormSuccess("Registration successful!");
-            setFormError("");
-            resetForm();
-        }
-        else{
-            setFormError(getApiResponseMessage(result, "Registration failed."));
-            setFormSuccess("");
-        }
-    }
-    catch (err) {
-        console.error("Registration error:", err);
-        setFormError(getApiErrorMessage(err, "Server error. Please try again later."));
+      if(result.success){//if here, registration was sucessful (status 2XX)
+        setFormSuccess("Registration successful!");
+        setFormError("");
+        resetForm();
+      }
+      else{//unlikely because 400/500 won't land here, but keep for safety
+        setFormError(result.message || "Registration failed!");
         setFormSuccess("");
+      }
     }
-    //-------------------------------------------------------------------------
+    catch (err){//400 and 500 responses are caught here
+      console.error("Registration error!: ", err);
+
+      if(err.response){//Axios attaches backend response here for 400/500 errors
+        const {status, data} = err.response;//extract the error data
+
+        if(status === 400){//handle 400-level errors (e.g., email already taken)  
+          setFormError(data.message || "Invalid input!");
+          setFormSuccess(""); 
+          return;
+        } 
+          
+        if(status === 500){//handle 500-level errors 
+          setFormError(data.message || "Server error in registration!");
+          setFormSuccess(""); 
+          return; 
+        }
+      }
+      
+      //if here, no response at all (network error, server down, CORS, timeout)
+      setFormError("Unable to connect to server!");
+      setFormSuccess("");
+    }
   }
 
   return (
