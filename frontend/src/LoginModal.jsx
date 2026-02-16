@@ -8,7 +8,6 @@ Includes placeholder flows for register + forgot password.
 */
 import React, { useRef, useState } from "react"; //import React from "react"; KV edit
 import axios from "axios"; //KV add
-//import { getApiErrorMessage } from "./apiErrors";////////////////////////////////////////////////
 import "./styles/modal.css";
 import "./styles/login.css";
 import logoImage from "./assets/logo.png";
@@ -70,7 +69,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
     try {
       const response = await axios.post(//Send request to /login on server
         "http://localhost:3000/login",
-        {email, password,},
+        {email, password},
         {headers: {"Content-Type": "application/json"}}
       );
 

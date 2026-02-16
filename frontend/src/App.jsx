@@ -427,7 +427,10 @@ export default function App() {
     let isActive = true;
     async function hydrateSession() {
       try {
-        const res = await axios.get("http://localhost:3000/check_login");
+        const res = await axios.get(
+          "http://localhost:3000/check_login",
+          {withCredentials: true}
+        );
         if (!isActive) return;
         if (res?.data?.loggedIn && res?.data?.user) {
           setUser(res.data.user);
@@ -636,12 +639,36 @@ export default function App() {
     };
   }, [user?.user_id, settings.retentionDays, unsavedScan, isViewingFreshScan]);//KV edit: added isViewingFreshScan
 
-  async function handleLogout() {
-    try {
-      await axios.post("http://localhost:3000/logout");
-    } catch (err) {
-      console.error("Logout failed:", err);
-    } finally {
+  async function handleLogout(){
+    try{
+      const response = await axios.post(//Send request to /logout on server
+        "http://localhost:3000/logout",
+        {},
+        {
+          withCredentials: true,
+          headers: {"Content-Type": "application/json"}
+        }
+      );
+
+      if(!response.data?.success)//unlikely because 400/500 won't land here, but keep for safey
+         console.error("Logout failed!: ", response.data?.message);
+
+    }
+    catch (err){//400 and 500 responses are caught here
+      console.error("Logout failed!: ", err);
+
+      if(err.response){
+        const {status, data} = err.response;//extract error data from response
+        
+        if(status === 500){//handle 500-level error
+          console.error(data.message || "Server error in logout!"); 
+          return;
+        } 
+      } 
+      
+      console.error("Unable to connect to server!");//if here, no connection
+    } 
+    finally{//execute this no matter what
       setUser(null);
       setPendingLoginAction(null);
     }
@@ -654,7 +681,7 @@ export default function App() {
     } else if (action.type === LOGIN_ACTIONS.SAVE_SCAN) {
       const scanToPersist = action.scan || selectedScan;
       if (scanToPersist) {
-        persistScanReport(scanToPersist, actor);
+        persistScanReport(scanToPersist/*, actor*/);//actor no longer needed
       }
     }
   }
@@ -792,39 +819,65 @@ export default function App() {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   }
 
-  async function persistScanReport(scanData, actor = user) {
+  async function persistScanReport(scanData/*, actor = user*/) {//KV: actor no longer needed
     if (!scanData) return;
-    if (!actor?.user_id) {
+    /*if (!actor?.user_id) {
       setSaveFeedback({ type: "error", message: "Log in to save scan reports." });
       return;
-    }
+    }*/
     setIsSavingScan(true);
     setSaveFeedback(null);
+
     try {
       const payload = {
         //user_id: actor.user_id,//KV: no longer needed (not used by backend)
         title: scanData.name,
-        scanned_at: formatToMysqlDatetime(scanData.submittedAtISO || scanData.submittedAt) || formatToMysqlDatetime(new Date().toISOString()),
+        scanned_at: formatToMysqlDatetime(scanData.submittedAtISO || scanData.submittedAt) ||
+                    formatToMysqlDatetime(new Date().toISOString()),
         targets: JSON.stringify(scanData.targets || []),
         exclusions: JSON.stringify(scanData.exclusions || []),
         detection_options: scanData.moduleSummary,
-        //devices: JSON.stringify(scanData.findings || []),//KV: backend takes array, not string
-        devices: scanData.findings || [],//KV add: send as array, not string
+        devices: Array.isArray(scanData.findings) ? scanData.findings : []//scanData.findings||[],
       };
-      await axios.post("http://localhost:3000/save-scan", payload);
-      const savedScan = snapshotScan(scanData);
+
+      const response = await axios.post(//Send request to /save-scan on server
+        "http://localhost:3000/save-scan",
+        payload,
+        {withCredentials: true}
+      );
+
+      if(!response.data?.success){//unlikley, but here for saftey
+        console.error("Error in saving report!: ", response.data?.message);
+        setSaveFeedback({
+          type: "error",
+          message: response.data?.message || "Error in saving report!"
+        });
+        return; 
+      }
+      
+      const savedScan = snapshotScan(scanData);//if here, scan report successfully saved
+
       setScans((prev) => {
         const withoutCurrent = prev.filter((entry) => entry.id !== savedScan.id);
         return pruneScans([savedScan, ...withoutCurrent], settings.retentionDays);
       });
+
       setUnsavedScan((current) => (current?.id === savedScan.id ? null : current));
       setSelectedScanId(savedScan.id);
       setSaveFeedback({ type: "success", message: "Scan report saved." });
       //setIsViewingFreshScan(false);//KV: removed to fix UI bug
-    } catch (err) {
-      console.error("Save scan failed:", err);
-      setSaveFeedback({ type: "error", message: getApiErrorMessage(err, "Could not save scan report. Please try again.") });
-    } finally {
+    }
+    catch (err){//if here, saving failed
+      console.error("Save scan failed!: ", err);//log the error
+
+      if(err.response?.status === 401){ 
+        setSaveFeedback({type: "error", message: "You must be logged in to save scans!"});
+        return;
+      }
+
+      setSaveFeedback({type: "error", message: getApiErrorMessage(err, "Error in saving scan reports!")});
+    }
+    finally{
       setIsSavingScan(false);
     }
   }
@@ -839,7 +892,7 @@ export default function App() {
       openLogin();
       return;
     }
-    persistScanReport(selectedScan, user);
+    persistScanReport(selectedScan/*, user*/);//user no longer needed
   }
 
   const hasScans = scans.length > 0 || Boolean(unsavedScan);
