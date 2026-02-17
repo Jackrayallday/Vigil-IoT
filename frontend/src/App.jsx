@@ -641,7 +641,7 @@ export default function App() {
 
   async function handleLogout(){
     try{
-      const response = await axios.post(//Send request to /logout on server
+      await axios.post(//Send request to /logout on server
         "http://localhost:3000/logout",
         {},
         {
@@ -649,24 +649,15 @@ export default function App() {
           headers: {"Content-Type": "application/json"}
         }
       );
-
-      if(!response.data?.success)//unlikely because 400/500 won't land here, but keep for safey
-         console.error("Logout failed!: ", response.data?.message);
-
     }
-    catch (err){//400 and 500 responses are caught here
-      console.error("Logout failed!: ", err);
+    catch(err){//if here, logout failed
+      console.error("Logout failed!: ", err);//log the error
 
-      if(err.response){
-        const {status, data} = err.response;//extract error data from response
-        
-        if(status === 500){//handle 500-level error
-          console.error(data.message || "Server error in logout!"); 
-          return;
-        } 
-      } 
-      
-      console.error("Unable to connect to server!");//if here, no connection
+      //uncomment and edit when you find a way to print logout failure message in UI
+      /*if(err.response)//Axios attaches backend response here for 400/500 errors
+        //print(err.response.data?.message || "Registration failed!");
+      else//if here, no response at all (network error, server down, CORS, timeout)
+	      //print("Unable to connect to server!");*/
     } 
     finally{//execute this no matter what
       setUser(null);
