@@ -33,7 +33,7 @@ export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister
     //KV: maybe later add password strength validation here
 
     try{
-      const response = await axios.post(//send request to /register on server
+      await axios.post(//send request to /register on server
         "http://localhost:3000/register",
         {email, password},
         {headers: {"Content-Type": "application/json"}}

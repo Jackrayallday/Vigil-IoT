@@ -1,8 +1,8 @@
 {
   "meta": {
     "os": "Windows) 11",
-    "started_at": 1771283403.0901606,
-    "finished_at": 1771283434.1554003
+    "started_at": 1771366223.023097,
+    "finished_at": 1771366253.9242215
   },
   "interfaces": [
     {
@@ -19,27 +19,13 @@
   "devices": [
     {
       "ip": "192.168.0.1",
-      "hostname": "TP-LINK/TP-LINK UPnP/1.1 MiniUPnPd/2.2.2",
+      "hostname": null,
       "mac": "50:3d:d1:50:b5:c0",
-      "vendor": "TP-LINK/TP-LINK UPnP/1.1 MiniUPnPd/2.2.2",
-      "services": [
-        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35e",
-        "SSDP:urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
-        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:1",
-        "USN:uuid:85780d52-59d5-40ad-876d-192979d5f35e",
-        "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:1",
-        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35c",
-        "SSDP:urn:schemas-upnp-org:service:Layer3Forwarding:1",
-        "SSDP:uuid:85780d52-59d5-40ad-876d-192979d5f35d",
-        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1",
-        "SSDP:urn:schemas-upnp-org:service:WANIPConnection:1",
-        "SSDP:urn:schemas-upnp-org:device:WANDevice:1",
-        "SSDP:upnp:rootdevice"
-      ],
+      "vendor": null,
+      "services": [],
       "iface": "Wi-Fi",
       "discovered_via": [
-        "ARP",
-        "SSDP"
+        "ARP"
       ]
     },
     {
@@ -89,8 +75,8 @@
   ],
   "summary": {
     "total_devices": 5,
-    "with_hostnames": 1,
+    "with_hostnames": 0,
     "with_macs": 5,
-    "with_vendor": 3
+    "with_vendor": 2
   }
 }
