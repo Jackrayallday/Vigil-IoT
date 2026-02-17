@@ -702,8 +702,10 @@ export default function App() {
     }
     setDeletingScanId(scanId);
     setHistoryFeedback(null);
-    try {
-      await axios.delete(`http://localhost:3000/delete-scan/${scanId}`);
+    try{
+      await axios.delete(`http://localhost:3000/delete-scan/${scanId}`);//send req to /delete-scan
+
+      //if here, deletion was successful
       setScans((prev) => {
         const next = prev.filter((entry) => entry.id !== scanId);
         if (prev.length !== next.length) {
@@ -715,10 +717,22 @@ export default function App() {
         }
         return next;
       });
-    } catch (err) {
-      console.error("Failed to delete scan", scanId, err);
-      setHistoryFeedback({ type: "error", message: getApiErrorMessage(err, "Could not delete scan. Please try again.") });
-    } finally {
+    }
+    catch(err){//if here, deletion failed
+      console.error("Failed to delete scan!: ", scanId, err);//log the error
+
+      if(err.response)//Axios attaches backend response here for 400/500 errors
+         setHistoryFeedback({//indicate failure in response
+          type: "error",
+          message: err.response.data?.message || "Delete scan failed!"
+        });
+      else
+        setHistoryFeedback({//indicate failure in response
+          type: "error",
+          message: "Unable to connect to server!"
+        });
+    }
+    finally{
       setDeletingScanId(null);
     }
   }

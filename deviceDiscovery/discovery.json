@@ -1,8 +1,8 @@
 {
   "meta": {
     "os": "Windows) 11",
-    "started_at": 1771366223.023097,
-    "finished_at": 1771366253.9242215
+    "started_at": 1771368575.526742,
+    "finished_at": 1771368599.4708247
   },
   "interfaces": [
     {
@@ -29,21 +29,10 @@
       ]
     },
     {
-      "ip": "192.168.0.59",
-      "hostname": null,
-      "mac": "f0:f0:a4:04:e4:bd",
-      "vendor": "Amazon Technologies Inc.",
-      "services": [],
-      "iface": "Wi-Fi",
-      "discovered_via": [
-        "ARP"
-      ]
-    },
-    {
-      "ip": "192.168.0.198",
-      "hostname": null,
-      "mac": "4c:c9:5e:96:cd:dc",
-      "vendor": "Samsung Electronics Co.,Ltd",
+      "ip": "192.168.0.244",
+      "hostname": "MyNewDELLxps15",
+      "mac": "04:6c:59:0b:ca:de",
+      "vendor": "Intel Corporate",
       "services": [],
       "iface": "Wi-Fi",
       "discovered_via": [
@@ -74,9 +63,9 @@
     }
   ],
   "summary": {
-    "total_devices": 5,
-    "with_hostnames": 0,
-    "with_macs": 5,
-    "with_vendor": 2
+    "total_devices": 4,
+    "with_hostnames": 1,
+    "with_macs": 4,
+    "with_vendor": 1
   }
 }

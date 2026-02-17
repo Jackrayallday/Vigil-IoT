@@ -321,9 +321,12 @@ async function initDatabase(){//function to initialize the database
                         
                 res.json({success: true});//deletion successful: inform client
             } 
-            catch (err){//if here, error in deletion
-                console.error("Error deleting scan report:", err);//log the error
-                res.status(500).json({success: false, message: "Server error"});//inform client
+            catch(err){//if here, error in deletion
+                console.error("Server error deleting report!: ", err);//log the error
+                res.status(500).json({//inform client
+                    success: false,
+                    message: "Server error deleting report!"
+                });
             }
         });
 
