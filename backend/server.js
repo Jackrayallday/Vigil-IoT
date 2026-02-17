@@ -106,20 +106,9 @@ async function initDatabase(){//function to initialize the database
                     message: "Email or password missing!"
                 });
 
+            const hashedPassword = await bcrypt.hash(password, 10);//hash the password
+
             try{
-                const [existingUsers] = await db.query(//search for entered email in database
-                    "SELECT * FROM users WHERE email = ?", [email]
-                );                             
-
-                if(existingUsers.length > 0)//if here, entered email exists in database
-                    return res.status(400).json({//indicate unsucessful registration in response
-                        success: false,
-                        message: "Email already taken!"
-                    });
-
-                //if here, email not taken: proceed with registration
-                const hashedPassword = await bcrypt.hash(password, 10);//hash the password
-
                 await db.query(//insert the new user's info into the database
                     "INSERT INTO users (email, hashed_password) VALUES (?, ?)",
                     [email, hashedPassword]
@@ -129,6 +118,15 @@ async function initDatabase(){//function to initialize the database
             }
             catch(err){//if here, registration error was caught
                 console.error("Server error in registration!: ", err);//log error to console
+
+                if(err.code === "ER_DUP_ENTRY"){//if here, query failed because email taken
+                    return res.status(400).json({//indicate registration failure to client
+                        success: false,
+                        message: "Email already taken!"
+                    });
+                }
+                
+                //if here, some other error occured
                 return res.status(500).json({//indicate the error in response to client
                     success: false,
                     message: "Server error in registration!"
