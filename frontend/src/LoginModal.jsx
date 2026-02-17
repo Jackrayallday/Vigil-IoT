@@ -63,49 +63,31 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
     setInfoMessage("Check your email for the reset link once it is available.");
   }
 
-  async function handleSubmit(e) {//function handleSubmit(e) { KV edit
+  async function handleSubmit(e){//function handleSubmit(e) { KV edit
     e.preventDefault();
     
-    try {
+    try{
       const response = await axios.post(//Send request to /login on server
         "http://localhost:3000/login",
         {email, password},
         {headers: {"Content-Type": "application/json"}}
       );
 
-      const result = response.data;
+      //if here, login was sucessful (status 2XX)
+      resetLoginState();
 
-      if(result.success){//if here, login was sucessful (status 2XX)
-        const userInfo = result.user;//extract the user info
-
-        resetLoginState();
-
-        if (typeof onLoginSuccess === "function")
-          onLoginSuccess(userInfo);
-        else if (typeof onClose === "function")
-          onClose();
-      }
-      else//unlikely because 400/500 won't land here, but keep for safety
-        setError(result.message || "Login failed!");
+      if(typeof onLoginSuccess === "function")
+        onLoginSuccess(response.data.user);
+      else if (typeof onClose === "function")
+        onClose();
     }
-    catch (err){//400 and 500 responses are caught here
+    catch(err){//400 and 500 responses are caught here
       console.error("Login error!: ", err);
       
-      if(err.response){//Axios attaches backend response here for 400/500 errors
-        const {status, data} = err.response;//extract the error data
-
-        if(status === 400){//handle 400-level errors (e.g., wrong password)
-          setError(data.message || "Invalid email or password!");
-          return;
-        }
-
-        if(status === 500){//handle 500-level errors 
-          setError(data.message || "Server error in login!");
-          return; 
-        }
-      }
-
-      setError("Unable to connect to server!");//network error or no response from server
+      if(err.response)//Axios attaches backend response here for 400/500 errors
+        setError(err.response.data?.message || "Login Failed!");
+      else
+	    setError("Unable to connect to server!");//network error or no response from server
     }
   }
 

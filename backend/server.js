@@ -114,6 +114,7 @@ async function initDatabase(){//function to initialize the database
                     [email, hashedPassword]
                 );
 
+                //if here, registration succeeded
                 return res.status(201).json({success: true});//indicate successful registration
             }
             catch(err){//if here, registration error was caught
@@ -155,10 +156,7 @@ async function initDatabase(){//function to initialize the database
                     });
                 
                 //if here, email was found. Proceed with password check
-                //hash the entered password and compare it with the hash in the database
-                const passwordMatch = await bcrypt.compare(password, users[0].hashed_password);
-
-                if(passwordMatch){//if here, passwords match: login sucessful
+                if(await bcrypt.compare(password, users[0].hashed_password)){//if here, success
                     const sessionUser = {user_id: users[0].user_id, email: users[0].email};
                     req.session.user = sessionUser;//store user info in session
                     return res.json({//indicate login success
@@ -166,11 +164,12 @@ async function initDatabase(){//function to initialize the database
                         user: sessionUser
                     });
                 } 
-                else//if here, passwords don't match
-                    return res.status(400).json({//indicate unsucessful login in response
-                        success: false,
-                        message: "Wrong Password!"
-                    });
+                
+                //if here, passwords don't match
+                return res.status(400).json({//indicate unsucessful login in response
+                    success: false,
+                    message: "Wrong Password!"
+                });
             }
             catch (err)
             {//if here, login error was caught
