@@ -39,39 +39,19 @@ export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister
         {headers: {"Content-Type": "application/json"}}
       );
 
-      const result = response.data;//extract data from response
-
-      if(result.success){//if here, registration was sucessful (status 2XX)
-        setFormSuccess("Registration successful!");
-        setFormError("");
-        resetForm();
-      }
-      else{//unlikely because 400/500 won't land here, but keep for safety
-        setFormError(result.message || "Registration failed!");
-        setFormSuccess("");
-      }
+      //if here, registration was sucessful (status 2XX)
+      setFormSuccess("Registration successful!");
+      setFormError("");
+      resetForm();
     }
-    catch (err){//400 and 500 responses are caught here
+    catch (err){//if here, registration failed
       console.error("Registration error!: ", err);
 
-      if(err.response){//Axios attaches backend response here for 400/500 errors
-        const {status, data} = err.response;//extract the error data
-
-        if(status === 400){//handle 400-level errors (e.g., email already taken)  
-          setFormError(data.message || "Invalid input!");
-          setFormSuccess(""); 
-          return;
-        } 
-          
-        if(status === 500){//handle 500-level errors 
-          setFormError(data.message || "Server error in registration!");
-          setFormSuccess(""); 
-          return; 
-        }
-      }
+      if(err.response)//Axios attaches backend response here for 400/500 errors
+        setFormError(err.response.data?.message || "Registration failed!");//extract error message
+      else//if here, no response at all (network error, server down, CORS, timeout)
+        setFormError("Unable to connect to server!");
       
-      //if here, no response at all (network error, server down, CORS, timeout)
-      setFormError("Unable to connect to server!");
       setFormSuccess("");
     }
   }
