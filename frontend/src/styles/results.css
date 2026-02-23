@@ -176,6 +176,23 @@ programmer: Jack Ray
   color: #fca5a5;
 }
 
+.results-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+.results-loadError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: 1px solid var(--surface-border);
+  border-radius: 0.85rem;
+  background: var(--surface-2);
+  padding: var(--space-3);
+}
+
 .results-tableWrap {
   border: 1px solid var(--surface-border);
   border-radius: 0.85rem;

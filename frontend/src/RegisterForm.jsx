@@ -8,6 +8,20 @@ import React, { useState } from "react";
 import axios from "axios";//KV add
 import PasswordField from "./PasswordField"; // Shared press-to-reveal password input
 
+const PASSWORD_COMPLEXITY_RULE =
+  "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol.";
+
+function getPasswordComplexityError(password) {
+  if (typeof password !== "string" || password.length < 8) {
+    return PASSWORD_COMPLEXITY_RULE;
+  }
+  if (!/[a-z]/.test(password)) return PASSWORD_COMPLEXITY_RULE;
+  if (!/[A-Z]/.test(password)) return PASSWORD_COMPLEXITY_RULE;
+  if (!/\d/.test(password)) return PASSWORD_COMPLEXITY_RULE;
+  if (!/[^A-Za-z0-9]/.test(password)) return PASSWORD_COMPLEXITY_RULE;
+  return "";
+}
+
 export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +44,12 @@ export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister
       return;
     }
 
-    //KV: maybe later add password strength validation here
+    const complexityError = getPasswordComplexityError(password);
+    if (complexityError) {
+      setFormError(complexityError);
+      setFormSuccess("");
+      return;
+    }
 
     try{
       await axios.post(//send request to /register on server
@@ -101,6 +120,7 @@ export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister
         }}
         required
       />
+      <div className="login-info">{PASSWORD_COMPLEXITY_RULE}</div>
       {formError && <div className="login-error">{formError}</div>}
       {formSuccess && <div className="login-success">{formSuccess}</div>/*KV add*/}
       <div className="login-actions is-register">

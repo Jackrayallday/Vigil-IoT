@@ -163,7 +163,22 @@ function createId(prefix) {
   return `${prefix}-${Date.now()}-${random}`;
 }
 
-function mapReportToScan(report, devices = []) {
+function mapDevicesToFindings(scanId, devices = [], targets = []) {
+  if (!Array.isArray(devices) || devices.length === 0) return [];
+  return devices.map((device, index) => ({
+    id: `${scanId}-device-${index + 1}`,
+    position: index,
+    deviceName: device.device_name || device.ip_address || `Device ${index + 1}`,
+    itemDiscovered: device.device_name || device.ip_address || targets[index] || `Target ${index + 1}`,
+    ipAddress: device.ip_address || "N/A",
+    services: device.services || "N/A",
+    protocolWarnings: device.protocol_warnings || "N/A",
+    remediationTips: device.remediation_tips || "Review configuration",
+    notes: device.notes || "",
+  }));
+}
+
+function mapReportToScan(report, devices = null) {
   if (!report) return null;
   const targets = safeParseJsonArray(report.targets);
   const exclusions = safeParseJsonArray(report.exclusions);
@@ -171,20 +186,8 @@ function mapReportToScan(report, devices = []) {
   const submittedAtISO = submittedAt.toISOString();
   const submittedAtLabel = submittedAt.toLocaleString();
   const scanId = String(report.report_id ?? createId("scan"));
-
-  const findings = Array.isArray(devices) && devices.length > 0
-    ? devices.map((device, index) => ({
-        id: `${scanId}-device-${index + 1}`,
-        position: index,
-        deviceName: device.device_name || device.ip_address || `Device ${index + 1}`,
-        itemDiscovered: device.device_name || device.ip_address || targets[index] || `Target ${index + 1}`,
-        ipAddress: device.ip_address || "N/A",
-        services: device.services || "N/A",
-        protocolWarnings: device.protocol_warnings || "N/A",
-        remediationTips: device.remediation_tips || "Review configuration",
-        notes: device.notes || "",
-      }))
-    : null;
+  const hasDevicePayload = Array.isArray(devices);
+  const findings = hasDevicePayload ? mapDevicesToFindings(scanId, devices, targets) : null;
 
   return {
     id: scanId,
@@ -195,7 +198,10 @@ function mapReportToScan(report, devices = []) {
     moduleSummary: report.detection_options || "Not specified",
     targets,
     exclusions,
-    findings: findings && findings.length > 0 ? findings : buildFindings(scanId, targets, {}),
+    findings,
+    detailsLoaded: hasDevicePayload,
+    detailsLoading: false,
+    detailsError: null,
   };
 }
 
@@ -389,6 +395,8 @@ export default function App() {
   const [isSavingScan, setIsSavingScan] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(null);
   const [historyFeedback, setHistoryFeedback] = useState(null);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
   const [deletingScanId, setDeletingScanId] = useState(null);
   const [radarPings, setRadarPings] = useState([]);
   const [isRadarActive, setIsRadarActive] = useState(false);
@@ -580,64 +588,122 @@ export default function App() {
     }
   }
 
-  useEffect(() => {
-    if(isViewingFreshScan) return;//KV add: prevent override
+  async function loadHistoryForUser(userId, { force = false } = {}) {
+    if (!userId) return;
+    if (isHistoryLoading) return;
+    if (hasLoadedHistory && !force) return;
 
-    let isActive = true;
+    setHistoryFeedback(null);
+    setIsHistoryLoading(true);
+    try {
+      const reportsRes = await axios.get("http://localhost:3000/scan-reports");
+      const reports = reportsRes?.data?.success ? reportsRes.data.reports || [] : [];
+      const mapped = pruneScans(
+        reports
+          .map((report) => mapReportToScan(report))
+          .filter(Boolean),
+        settings.retentionDays
+      );
 
-    async function loadHistoryForUser(userId) {
-      setHistoryFeedback(null);
-      try {
-        const reportsRes = await axios.get(`http://localhost:3000/scan-reports`);///${userId}`);//KV: no longer accepted by backend
-        if (!isActive) return;
-        const reports = reportsRes?.data?.success ? reportsRes.data.reports || [] : [];
-        const reportsWithDevices = await Promise.all(
-          reports.map(async (report) => {
-            try {
-              const devicesRes = await axios.get(`http://localhost:3000/scan-reports/${report.report_id}/devices`);
-              const devices = devicesRes?.data?.success ? devicesRes.data.devices || [] : [];
-              return mapReportToScan(report, devices);
-            } catch (err) {
-              console.error("Failed to load devices for report", report.report_id, err);
-              return mapReportToScan(report, []);
-            }
-          })
-        );
-        const cleaned = pruneScans(reportsWithDevices.filter(Boolean), settings.retentionDays);
-        setScans(cleaned);
-        setSelectedScanId((prev) => {
-          if (prev && cleaned.some((scan) => scan.id === prev)) return prev;
-          if (unsavedScan?.id) return unsavedScan.id;
-          return cleaned[0]?.id ?? null;
-        });
-      } catch (err) {
-        if (!isActive) return;
-        console.error("Failed to load scan history for user", userId, err);
-        const status = getApiErrorStatus(err);
-        if (status === 401 || status === 403) {
-          setUser(null);
-          setHistoryFeedback({ type: "error", message: "Session expired. Please log in again." });
-        } else {
-          setHistoryFeedback({ type: "error", message: getApiErrorMessage(err, "Failed to load scan history.") });
-        }
-        setScans([]);
-        setSelectedScanId(null);
+      setScans(mapped);
+      setHasLoadedHistory(true);
+      setSelectedScanId((prev) => {
+        if (prev && mapped.some((scan) => scan.id === prev)) return prev;
+        if (unsavedScan?.id) return unsavedScan.id;
+        return mapped[0]?.id ?? null;
+      });
+    } catch (err) {
+      console.error("Failed to load scan history for user", userId, err);
+      const status = getApiErrorStatus(err);
+      if (status === 401 || status === 403) {
+        setUser(null);
+        setHistoryFeedback({ type: "error", message: "Session expired. Please log in again." });
+      } else {
+        setHistoryFeedback({ type: "error", message: getApiErrorMessage(err, "Failed to load scan history.") });
       }
-    }
-
-    if (user?.user_id) {
-      loadHistoryForUser(user.user_id);
-    } else {
       setScans([]);
-      if (!unsavedScan) {
-        setSelectedScanId(null);
-      }
+      setSelectedScanId(null);
+    } finally {
+      setIsHistoryLoading(false);
     }
+  }
 
-    return () => {
-      isActive = false;
-    };
-  }, [user?.user_id, settings.retentionDays, unsavedScan, isViewingFreshScan]);//KV edit: added isViewingFreshScan
+  async function loadScanDetails(scanId, actor = user) {
+    if (!scanId || !actor?.user_id) return;
+    const scanToLoad = scans.find((scan) => scan.id === scanId);
+    if (!scanToLoad || scanToLoad.detailsLoaded || scanToLoad.detailsLoading) return;
+
+    setScans((prev) =>
+      prev.map((scan) =>
+        scan.id === scanId
+          ? { ...scan, detailsLoading: true, detailsError: null }
+          : scan
+      )
+    );
+
+    try {
+      const devicesRes = await axios.get(`http://localhost:3000/scan-reports/${scanId}/devices`);
+      const devices = devicesRes?.data?.success ? devicesRes.data.devices || [] : [];
+      setScans((prev) =>
+        prev.map((scan) =>
+          scan.id === scanId
+            ? {
+                ...scan,
+                findings: mapDevicesToFindings(scan.id, devices, scan.targets),
+                detailsLoaded: true,
+                detailsLoading: false,
+                detailsError: null,
+              }
+            : scan
+        )
+      );
+    } catch (err) {
+      console.error("Failed to load scan details", scanId, err);
+      const status = getApiErrorStatus(err);
+      if (status === 404) {
+        setScans((prev) =>
+          prev.map((scan) =>
+            scan.id === scanId
+              ? {
+                  ...scan,
+                  findings: [],
+                  detailsLoaded: true,
+                  detailsLoading: false,
+                  detailsError: null,
+                }
+              : scan
+          )
+        );
+        return;
+      }
+      if (status === 401 || status === 403) {
+        setUser(null);
+        setHistoryFeedback({ type: "error", message: "Session expired. Please log in again." });
+      }
+      setScans((prev) =>
+        prev.map((scan) =>
+          scan.id === scanId
+            ? {
+                ...scan,
+                detailsLoading: false,
+                detailsError: getApiErrorMessage(err, "Failed to load scan report details."),
+              }
+            : scan
+        )
+      );
+    }
+  }
+
+  useEffect(() => {
+    if (user?.user_id) return;
+    setScans([]);
+    setHistoryFeedback(null);
+    setIsHistoryLoading(false);
+    setHasLoadedHistory(false);
+    if (!unsavedScan) {
+      setSelectedScanId(null);
+    }
+  }, [user?.user_id, unsavedScan]);
 
   async function handleLogout(){
     try{
@@ -669,6 +735,7 @@ export default function App() {
     if (!action) return;
     if (action.type === LOGIN_ACTIONS.HISTORY) {
       showHistoryView();
+      loadHistoryForUser(actor?.user_id);
     } else if (action.type === LOGIN_ACTIONS.SAVE_SCAN) {
       const scanToPersist = action.scan || selectedScan;
       if (scanToPersist) {
@@ -691,6 +758,7 @@ export default function App() {
       return;
     }
     showHistoryView();
+    loadHistoryForUser(user.user_id);
   }
 
   async function handleDeleteScan(scanId) {
@@ -758,6 +826,7 @@ export default function App() {
       setIsViewingFreshScan(true);
     } else {
       setIsViewingFreshScan(false);
+      loadScanDetails(id);
     }
   }
 
@@ -845,22 +914,32 @@ export default function App() {
         devices: Array.isArray(scanData.findings) ? scanData.findings : []//scanData.findings||[],
       };
 
-      await axios.post(//Send request to /save-scan on server
+      const response = await axios.post(//Send request to /save-scan on server
         "http://localhost:3000/save-scan",
         payload,
         {withCredentials: true}
       );
 
       //if here, scan was successfully saved
-      const savedScan = snapshotScan(scanData);
+      const savedReportId = String(response?.data?.report_id || scanData.id);
+      const savedScan = {
+        ...snapshotScan(scanData),
+        id: savedReportId,
+        detailsLoaded: true,
+        detailsLoading: false,
+        detailsError: null,
+      };
 
       setScans((prev) => {
-        const withoutCurrent = prev.filter((entry) => entry.id !== savedScan.id);
+        const withoutCurrent = prev.filter(
+          (entry) => entry.id !== scanData.id && entry.id !== savedReportId
+        );
         return pruneScans([savedScan, ...withoutCurrent], settings.retentionDays);
       });
 
-      setUnsavedScan((current) => (current?.id === savedScan.id ? null : current));
+      setUnsavedScan((current) => (current?.id === scanData.id ? null : current));
       setSelectedScanId(savedScan.id);
+      setHasLoadedHistory(false);
       setSaveFeedback({type: "success", message: "Scan report saved."});
       //setIsViewingFreshScan(false);//KV: removed to fix UI bug
     }
@@ -896,12 +975,22 @@ export default function App() {
     persistScanReport(selectedScan/*, user*/);//user no longer needed
   }
 
-  const hasScans = scans.length > 0 || Boolean(unsavedScan);
+  const hasScans = scans.length > 0;
   
   //KV add: fix bug that prevents "save scan" buttom from disappearing
   const showSaveButton = 
     unsavedScan?.id === selectedScanId &&
     view === VIEW_RESULTS && !isSavingScan;
+
+  const selectedScanItemsLoading =
+    Boolean(selectedScan) &&
+    !isViewingFreshScan &&
+    Boolean(selectedScan?.detailsLoading);
+
+  const selectedScanItemsError =
+    !isViewingFreshScan && selectedScan?.detailsError
+      ? selectedScan.detailsError
+      : null;
 
 //the elements for each view and modal are laid out here
   return (
@@ -1025,7 +1114,9 @@ export default function App() {
                 {historyFeedback.message}
               </p>
             )}
-            {hasScans ? (
+            {isHistoryLoading ? (
+              <p className="history-empty">Loading scan history...</p>
+            ) : hasScans ? (
               <ul className="history-list">
                 {scans.map((scan) => (
                   <li key={scan.id} className="history-item">
@@ -1070,6 +1161,13 @@ export default function App() {
               onSaveScan={handleSaveScanClick}
               isSavingScan={isSavingScan}
               saveFeedback={saveFeedback}
+              isLoadingItems={selectedScanItemsLoading}
+              itemsError={selectedScanItemsError}
+              onRetryLoadItems={() => {
+                if (selectedScan?.id) {
+                  loadScanDetails(selectedScan.id, user);
+                }
+              }}
             />
           </div>
         )}
