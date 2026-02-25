@@ -20,7 +20,7 @@ const app = express();//create the express object to represent the server app
 app.use(express.json());//parse incoming JSON request bodies and store them in req.body
 
 app.use(cors({//configure the server's CORS policy
-    origin: "http://localhost:5173",//allow cross-origin requests from only our frontend
+    origin: true,//allow cross-origin requests from any origin
     credentials: true//allow credentials to be sent in these requests
 }));
 
