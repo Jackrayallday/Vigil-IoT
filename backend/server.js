@@ -11,7 +11,9 @@ const cors = require("cors");//to allow cross-origin requests
 const session = require("express-session");//for user session management
 const bcrypt = require("bcrypt");//to hash passwords before storing them in the database
 const nodemailer = require("nodemailer");//for email-sending functionallity
-const crypto = require("crypto");//to generate the password reset token////////////////////////////
+const crypto = require("crypto");//to generate the password reset token
+const fs = require("fs");//to read and modify files
+const path = require("path");//to define the path of a file
 
 const app = express();//create the express object to represent the server app
 
@@ -100,8 +102,8 @@ async function initDatabase(){//function to initialize the database
         app.post("/register", async (req, res) => {//if here, client submitted registration form
             const {email, password} = req.body;//extract entered credentials from request body
 
-            if(!email || !password)//if here, username or password missing
-                return res.status(400).json({//indicate unsucessful registration in response
+            if(!email || !password)//if here, email or password missing
+                return res.status(400).json({//indicate registration failure in response
                     success: false,
                     message: "Email or password missing!"
                 });
@@ -115,20 +117,19 @@ async function initDatabase(){//function to initialize the database
                 );
 
                 //if here, registration succeeded
-                return res.status(201).json({success: true});//indicate successful registration
+                return res.status(201).json({success: true});//indicate success in response
             }
             catch(err){//if here, registration error was caught
-                console.error("Server error in registration!: ", err);//log error to console
+                console.error("Registration error!: ", err);//log error to console
 
-                if(err.code === "ER_DUP_ENTRY"){//if here, query failed because email taken
-                    return res.status(400).json({//indicate registration failure to client
+                if(err.code === "ER_DUP_ENTRY")//if here, query failed because email taken
+                    return res.status(400).json({//indicate registration failure in response
                         success: false,
                         message: "Email already taken!"
                     });
-                }
                 
                 //if here, some other error occured
-                return res.status(500).json({//indicate the error in response to client
+                return res.status(500).json({//indicate registration failure in response
                     success: false,
                     message: "Server error in registration!"
                 });
@@ -138,8 +139,8 @@ async function initDatabase(){//function to initialize the database
         app.post("/login", async (req, res) => {//if here, client submitted login form
             const {email, password} = req.body;//extract entered credentials from request body
 
-            if(!email || !password)//if here, username or password missing
-                return res.status(400).json({//indicate unsucessful registration in response
+            if(!email || !password)//if here, email or password missing
+                return res.status(400).json({//indicate login failure in response
                     success: false,
                     message: "Email or password missing!"
                 });
@@ -150,31 +151,30 @@ async function initDatabase(){//function to initialize the database
                 );
 
                 if(users.length === 0)//if here, entered email not found
-                    return res.status(400).json({//indicate unsucessful login in response
+                    return res.status(400).json({//indicate login failure in response
                         success: false,
                         message: "Email not found!"
                     });
                 
                 //if here, email was found. Proceed with password check
-                if(await bcrypt.compare(password, users[0].hashed_password)){//if here, success
-                    const sessionUser = {user_id: users[0].user_id, email: users[0].email};
-                    req.session.user = sessionUser;//store user info in session
-                    return res.json({//indicate login success
-                        success: true,
-                        user: sessionUser
+                if(!await bcrypt.compare(password, users[0].hashed_password))//if here, wrong pass
+                    return res.status(400).json({//indicate login failure in response
+                        success: false,
+                        message: "Wrong Password!"
                     });
-                } 
-                
-                //if here, passwords don't match
-                return res.status(400).json({//indicate unsucessful login in response
-                    success: false,
-                    message: "Wrong Password!"
+
+                //if here, passwords match
+                const sessionUser = {user_id: users[0].user_id, email: users[0].email};//user info
+                req.session.user = sessionUser;//store user info in session
+
+                return res.json({//indicate login success in response and return user info
+                    success: true,
+                    user: sessionUser
                 });
             }
-            catch (err)
-            {//if here, login error was caught
+            catch (err){//if here, login error was caught
                 console.error("Server error in login!: ", err);//log the error to the console
-                return res.status(500).json({//indicate the error in response to client
+                return res.status(500).json({//indicate login failure response
                     success: false,
                     message: "Server error in login!"
                 });
@@ -197,7 +197,7 @@ async function initDatabase(){//function to initialize the database
         });
 
         app.get("/check_login", (req, res) => {//if here, client requested login status
-            if(req.session.user)//if here, user logged in
+            if(req.session.user)//if here, user is logged in
                 res.json({//return true and user info
                     loggedIn: true,
                     user: req.session.user
@@ -210,9 +210,9 @@ async function initDatabase(){//function to initialize the database
             const user_id = req.session?.user?.user_id ?? null;//get user ID from session
 
             if(!user_id)//if here, user not logged in
-                return res.status(401).json({//indicate failure
+                return res.status(401).json({//indicate report-saving failure in response
                     success: false,
-                    message: "Not logged in!"
+                    message: "You must be logged in to save scan reports!"
                 });
 
             const {//get the scan report info from request body
@@ -225,7 +225,7 @@ async function initDatabase(){//function to initialize the database
             } = req.body;
             
             if(!title || !scanned_at || !targets)//if here, required fields missing
-		        return res.status(400).json({//indicate failure in response
+		        return res.status(400).json({//indicate scan saving failure in response
                     success: false, 
                     message: "Missing required fields!"
                 });
@@ -283,17 +283,17 @@ async function initDatabase(){//function to initialize the database
                         );
                     }
                 }
-		
-                res.status(201).json({//inform client of success
+		        
+                //if here, scan report successfully saved
+                return res.status(201).json({//indicate success in response
                     success: true,
                     report_id
                 });
             }
-	        catch (err)
-	        {//if here, error occured
+	        catch (err){//if here, error caught while trying to save scan
                 console.error("Server error in saving report!: ", err);//log the error
                 res.status(500).send({//indicate failure in saving report
-                    success:false,
+                    success: false,
                     message: "Server error in saving report!"});
             }
         });
@@ -303,9 +303,9 @@ async function initDatabase(){//function to initialize the database
             const reportId = req.params.id;//get the report id from the URL
 
             if(!user_id)//if here, user not logged in
-                return res.status(401).json({//indicate failure
+                return res.status(401).json({//indicate deletion failure in response
                     success: false,
-                    message: "Not logged in!"
+                    message: "You must be logged in to delete scan reports!"
                 });
 
             try{
@@ -314,29 +314,31 @@ async function initDatabase(){//function to initialize the database
                     [reportId, user_id]
                 );
 
-                if(result.affectedRows === 0) //no rows affected (deletion failed): inform client
-                    return res.status(404).send({
+                if(result.affectedRows === 0)//if here, report not found or belongs to someone else
+                    return res.status(404).json({//indicate deletion failure in response
                         success: false,
                         message: "Report not found or belongs to someone else!"});
-                        
-                res.json({success: true});//deletion successful: inform client
+                
+                //if here, deletion succeeded
+                res.json({success: true});//indicate deletion success in response
             } 
-            catch(err){//if here, error in deletion
-                console.error("Server error deleting report!: ", err);//log the error
-                res.status(500).json({//inform client
+            catch(err){//if here, error was caught in deletion
+                console.error("Server error in deleting report!: ", err);//log the error
+                res.status(500).json({//indicate deletion failure in response
                     success: false,
-                    message: "Server error deleting report!"
+                    message: "Server error in deleting report!"
                 });
             }
         });
 
         app.get("/scan-reports", async (req, res) => {//if here, client requested scan reports list
+            console.log("SCAN REPORTS");/////////////////
             const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
 
             if(!user_id)//if here, user not logged in
-                return res.status(401).json({//indicate failure
+                return res.status(401).json({//indicate retrieval failure in response
                     success: false,
-                    message: "Not logged in!"
+                    message: "You must be logged in to view your scan reports!"
                 });
 
             try{
@@ -347,15 +349,16 @@ async function initDatabase(){//function to initialize the database
                     ORDER BY scanned_at DESC`,
                     [user_id]
                 );
-
-                res.json({//query was successful: send reports to client
+                
+                //if here, retrieval successful
+                return res.json({//indicate retrieval success in resposne
                     success: true,
                     reports
                 });
             }
-            catch(err){//if here, error occured
+            catch(err){//if here, retrieval error was caught
                 console.error("Server error in getting scan reports!: ", err);//log the error
-                res.status(500).send({//inform client
+                return res.status(500).json({//indicate retrieval failure in response
                     success: false,
                     message: "Server error in getting scan reports!"
                 });
@@ -363,17 +366,18 @@ async function initDatabase(){//function to initialize the database
         });
 
         app.get("/scan-reports/:report_id/devices", async (req, res) =>{//if here, devices request
+            console.log("DEVICES");/////////////////
             const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
             const report_id = req.params.report_id;//get the report id from the URL
 
              if(!user_id)//if here, user not logged in
-                return res.status(401).json({//indicate failure
+                return res.status(401).json({//indicate retrieval failure in response
                     success: false,
-                    message: "Not logged in!"
+                    message: "You must be logged in to view your scanned devices!"
                 });
 
             try{
-                const [devices] = await db.query(//get devices from report of logged-in user
+                const [devices] = await db.query(//get devices from report of the logged-in user
                     `SELECT d.device_id, d.device_name, d.ip_address, d.services,
                             d.protocol_warnings, d.notes, d.remediation_tips
                      FROM devices d
@@ -383,186 +387,139 @@ async function initDatabase(){//function to initialize the database
                      [report_id, user_id]
                 );
 
-                if(devices.length === 0){//if here, no report found or it belongs to someone else
-                    return res.status(404).json({//indicate failure in response
+                if(devices.length === 0)//if here, no report found or it belongs to someone else
+                    return res.status(404).json({//indicate retrieval failure in response
                         success: false,
                         message: "Report not found or belongs to someone else!"
                     });
-                }
                 
-                res.json({//if here, success: send the devices to client
+                //if here, devices successfullt retrieved
+                return res.json({//indicate retrieval success in response
                     success: true,
                     devices
                 });
             } 
-            catch(err){//if here, error in retrieving devices
-                console.error("Error retrieving devices: ", err);//log the error
-                res.status(500).json({//inform client
+            catch(err){//if here, error caught in retrieving devices
+                console.error("Server error retrieving devices!: ", err);//log the error
+                res.status(500).json({//indicate retrieval failure in response
                     success: false,
                     message: "Server error in retrieving devices!"
                 });
             }
         });
-    /////////////////////////////////////////////////////////////////////////////////////
-        //set the routes that send responses according to client requests
-        app.get("/get-reset-page", async (req, res) => {
-            const {token} = req.query;
-            if(!token)
-                return res.status(400).send("Missing token.");
+
+        app.post("/send-email", async (req, res) => {//if here, client requested email to be sent 
+            const {email} = req.body;//extract entered email address from request body
+            
+            if(!email)//if here, email missing
+                return res.status(400).json({//indicate email-sending failure in response
+                    success: false,
+                    message: "Email address missing!"
+                });
+
+            const token = crypto.randomBytes(32).toString("hex");//generate the reset token
+            const hashedToken = crypto.createHash("sha256").update(token).digest("hex");//hash it
+
+            try{
+                const [result] = await db.query(//insert the new reset token into the database
+                    "UPDATE users SET resetToken = ?, resetTokenExpiry = ? WHERE email = ?", [
+                        hashedToken,
+                        Date.now() + 3600000,//1 hour expiry
+                        email
+                    ]
+                );
+
+                if(result.affectedRows === 0)//if here, email not found
+                    return res.status(404).json({//indicate email-sending failure in response
+                        success: false,
+                        message: "Email address not found!"
+                    });
+                
+                const resetURL = `http://localhost:3000/get-reset-page?token=${token}`;//reset URL
+                
+                const info = await transporter.sendMail({//send the email through the transporter
+                    from: "vigil.iot.app@gmail.com",
+                    to: email,
+                    subject: "Password Reset Requested",
+                    html: ` <p>Click the following link to reset your password:</p>
+                            <p> <a href="${resetURL}"> Reset Password </a> </p> `,
+                    text: `Visit the following URL to reset your password:\n\n${resetURL}`
+                });
+                
+                //if here, email successfully sent
+                return res.json({success: true});//indicate email-sending success in response
+            }
+            catch(err){//if here, email-sending error caught
+                console.error("Server error sending email!: ", err);//log the error
+                res.status(500).json({//indicate email-sending failure in response
+                    success: false,
+                    message: "Server error in sending email!"
+                });
+            }
+        });
+
+        app.get("/get-reset-page", async (req, res) => {//if here, password reset page requested
+            const {token} = req.query;//extract the reset token from the request
+
+            if(!token)//if here, token missing
+                return res.status(400).send("Missing reset token!");//indicate failure in response
   
-            try
-            {
+            try{
                 // Hash the token (since we store hashed values in DB)
                 const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-                // Look up user with matching token
-                const [results] = await db.query
-                (
+                const [results] = await db.query(//search for user with matching token
                     "SELECT * FROM users WHERE resetToken = ? AND resetTokenExpiry > ?",
                     [hashedToken, Date.now()]
                 );
-                if(results.length === 0) 
-                    return res.status(400).send("Invalid or expired reset link.");
+                if(results.length === 0)//if here, invalid reset token: indicate failure 
+                    return res.status(400).send("Invalid or expired reset link!");
+
+                //define the reset page HTML file that will be sent to the client's browser
+                let resetPage = fs.readFileSync(path.join(__dirname, "reset-page.html"), "utf8");
+                resetPage = resetPage.replace("__TOKEN__", token);//inject the token into the file
     
-                res.send
-                (`
-                    <!DOCTYPE html>
-                    <html>
-                        <head>
-                            <title>Reset Password</title>
-                        </head>
-                        <body>
-                            <h2>Reset Your Password</h2>
-
-                            <label for="new-password">New Password:</label>
-                            <input type="password" id="new-password" required />
-
-                            <button id="reset-btn">Reset Password</button>
-
-                            <p id="message"></p>
-
-                            <script>
-                                document.getElementById("reset-btn").addEventListener("click", async () => {
-                                    const newPassword = document.getElementById("new-password").value;
-
-                                    const response = await fetch("/reset-password", {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({
-                                            token: "${token}",
-                                            newPassword
-                                        })
-                                    });
-
-                                    const text = await response.text();
-                                    document.getElementById("message").innerText = text;
-                                });
-                            </script>
-                        </body>
-                    </html>
-                `);
+                return res.send(resetPage);//return the reset page in the response
             }
-            catch(err)
-            {
-                console.error("Error validating token:", err);
-                res.status(500).send("Server error.");
+            catch(err){//if here, error caught in page retrieval
+                console.error("Server error in retrieving password reset form!: ", err);//log error
+                return res.status(500).send("Server error in retrieving password reset form!");
             }
         });
        
-        app.post("/send-email", async (req, res) =>{//if herem client requested email 
-            const {email} = req.body;//get the recipiant's email from the request body
-            
-            if(!email)//no recipient email: return false
-                return res.status(400).send({success: false, message: "Recipient email required!"});
+        app.post("/reset-password", async (req, res) => {//if here, user wants to reset password
+            const {token, newPassword} = req.body;//extract the token and new password from request body
 
-            const [results] = await db.query(//find email in database
-                "SELECT * FROM users WHERE email = ?",
-                [email]);
-                
-            if(results.length === 0) 
-                return res.status(404).send({success: false, message: "Email address not found!"});
+            if(!token || !newPassword)//if here, token or password missing
+                return res.status(400).send("Missing token or new password!");//indicate failure
 
-            const token = crypto.randomBytes(32).toString("hex");//generate the token
-            const hashedToken = crypto.createHash("sha256").update(token).digest("hex");//hash the token
+            try{
+                const hashedToken = crypto.createHash("sha256").update(token).digest("hex");//hash token
+                const hashedPassword = await bcrypt.hash(newPassword, 10);//hash the new password
 
-            await db.query("UPDATE users SET resetToken = ?, resetTokenExpiry = ? WHERE email = ?",
-            [//store the token
-                hashedToken,
-                Date.now() + 3600000,//1 hour expiry
-                email,
-            ]);
-            
-            try
-            {
-                const info = await transporter.sendMail//send the email through the transporter 
-                ({
-                    from: "vigil.iot.app@gmail.com",//sender address
-                    to: email,//recipient address
-                    subject: "Password Reset Requested",
-                    html: `<p>Click the following link to reset your password:</p>
-                           <p>
-                               <a href="http://localhost:3000/get-reset-page?token=${token}">
-                                   Reset Password
-                            </a>
-                        </p>`,
-                    text: "Visit the following URL to reset your password:\n\n" +
-                          `http://localhost:3000/get-reset-page?token=${token}`//plain text fallback
-                }); 
-                
-                console.log("Email sent:", info.messageId);//log the email
-                res.send({success: true});//return true
-            }
-            catch(err)
-            {//if here, error in sending email
-                console.error("Error sending email:", err);//log the error
-                res.status(500).send({success: false, message: "Server error"});//return false
-            }
-        });
-        app.post("/reset-password", async (req, res) =>
-        {
-            const {token, newPassword} = req.body;
-            if(!token || !newPassword)
-                return res.status(400).send("Missing token or new password."); 
-
-            try
-            {
-                // Hash the token (since we store hashed tokens in DB)
-                const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-
-                // Look up user with matching token and valid expiry
-                const [results] = await db.query
-                (
-                    "SELECT * FROM users WHERE resetToken = ? AND resetTokenExpiry > ?",
-                    [hashedToken, Date.now()]
+                const [result] = await db.query(//update the password and reset tokewn in database
+                    `UPDATE users
+                    SET hashed_password = ?,
+                    resetToken = NULL,
+                    resetTokenExpiry = NULL WHERE resetToken = ? AND resetTokenExpiry > ?`,
+                    [hashedPassword, hashedToken, Date.now()]
                 );
 
-                if(results.length === 0)
-                    return res.status(400).send("Invalid or expired reset token.");
-    
-                const user = results[0];
-
-                // Hash the new password securely
-                const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-                 // Update user’s password and clear reset token fields
-                await db.query(
-                    "UPDATE users SET hashed_password = ?, resetToken = NULL, resetTokenExpiry = NULL WHERE user_id = ?",
-                    [hashedPassword, user.user_id]
-                );
-
-                res.send("Password has been successfully reset.");
+                if(result.affectedRows === 0)//if here, token invalid or expired
+                    return res.status(400).send("Invalid or expired reset token!");//indicate failure
+                
+                //if here, password updated succeeded
+                return res.send("Password reset successful!");//indicate success in response
             }
-            catch (err)
-            {
-                console.error("Error resetting password:", err);
-                res.status(500).send("Server error.");
+            catch (err){//if here, error caught in reseting password
+                console.error("Server error in resetting password!: ", err);//log the error
+                return res.status(500).send("Server error in resetting password!");//indicate fail
             }
         });
    
         app.listen(3000, () => console.log("Server running on port 3000"));//start server: prt 3000
     } 
-    catch (err)
-    {//if here, error in MySQL database initialization
-        console.error("Database initialization failed:", err);//log the error to the console
+    catch (err){//if here, error in MySQL database initialization
+        console.error("Database initialization failed: ", err);//log the error to the console
     }
 })();

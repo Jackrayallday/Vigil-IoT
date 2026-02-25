@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+    <html>
+        <head>
+            <title>Vigil IoT Password Reset</title>
+        </head>
+        <body>
+            <h2>Reset Your Password</h2>
+
+            <label for="new-password">New Password:</label>
+            <input type="password" id="new-password" required />
+
+            <button id="reset-btn">Reset Password</button>
+
+            <p id="message"></p>
+
+            <script>
+                const RESET_TOKEN = "__TOKEN__";
+
+                document.getElementById("reset-btn").addEventListener("click", async () => {
+                    const newPassword = document.getElementById("new-password").value;
+
+                    const response = await fetch("/reset-password", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            token: RESET_TOKEN,
+                            newPassword
+                        })
+                    });
+
+                    const text = await response.text();
+                    document.getElementById("message").innerText = text;
+                });
+            </script>
+        </body>
+    </html>
