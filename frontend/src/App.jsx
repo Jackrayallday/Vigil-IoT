@@ -595,8 +595,14 @@ export default function App() {
 
     setHistoryFeedback(null);
     setIsHistoryLoading(true);
-    try {
-      const reportsRes = await axios.get("http://localhost:3000/scan-reports");
+
+    try{
+      const reportsRes = await axios.get(//send request to /scan-reports on the server
+        "http://localhost:3000/scan-reports",
+        {withCredentials: true}
+      );
+
+      //if here, scan reports successfully retrieved
       const reports = reportsRes?.data?.success ? reportsRes.data.reports || [] : [];
       const mapped = pruneScans(
         reports
@@ -612,18 +618,25 @@ export default function App() {
         if (unsavedScan?.id) return unsavedScan.id;
         return mapped[0]?.id ?? null;
       });
-    } catch (err) {
-      console.error("Failed to load scan history for user", userId, err);
-      const status = getApiErrorStatus(err);
-      if (status === 401 || status === 403) {
-        setUser(null);
-        setHistoryFeedback({ type: "error", message: "Session expired. Please log in again." });
-      } else {
-        setHistoryFeedback({ type: "error", message: getApiErrorMessage(err, "Failed to load scan history.") });
-      }
+    }
+    catch(err){
+      console.error("Failed to load scan scan reports for user ", userId, err);
+
+      if(err.response)//Axios attaches backend response here for 400/500 errors
+        setHistoryFeedback({
+          type: "error",
+          message: err.response.data?.message || "Failed to load scan history!"
+        });
+      else//if here, no response at all (network error, server down, CORS, timeout)
+        setHistoryFeedback({
+          type: "error",
+          message: "Unable to connect to server!"
+        });
+ 
       setScans([]);
       setSelectedScanId(null);
-    } finally {
+    }
+    finally{
       setIsHistoryLoading(false);
     }
   }
@@ -641,8 +654,13 @@ export default function App() {
       )
     );
 
-    try {
-      const devicesRes = await axios.get(`http://localhost:3000/scan-reports/${scanId}/devices`);
+    try{
+      const devicesRes = await axios.get(//send request to /scan_reports/id/devices on server
+        `http://localhost:3000/scan-reports/${scanId}/devices`,
+        {withCredentials: true}
+      );
+
+      //if here, devices successfully retrieved
       const devices = devicesRes?.data?.success ? devicesRes.data.devices || [] : [];
       setScans((prev) =>
         prev.map((scan) =>
@@ -657,40 +675,34 @@ export default function App() {
             : scan
         )
       );
-    } catch (err) {
-      console.error("Failed to load scan details", scanId, err);
-      const status = getApiErrorStatus(err);
-      if (status === 404) {
+    }
+    catch(err){//if here, device retrieval failed
+      console.error("Failed to load scan details ", scanId, err);//log the error
+
+      if(err.response)//Axios attaches backend response here for 400/500 errors
         setScans((prev) =>
           prev.map((scan) =>
             scan.id === scanId
               ? {
                   ...scan,
-                  findings: [],
-                  detailsLoaded: true,
                   detailsLoading: false,
-                  detailsError: null,
+                  detailsError: err.response.data?.message || "Failed to load scan report details."
                 }
               : scan
           )
         );
-        return;
-      }
-      if (status === 401 || status === 403) {
-        setUser(null);
-        setHistoryFeedback({ type: "error", message: "Session expired. Please log in again." });
-      }
-      setScans((prev) =>
-        prev.map((scan) =>
-          scan.id === scanId
-            ? {
-                ...scan,
-                detailsLoading: false,
-                detailsError: getApiErrorMessage(err, "Failed to load scan report details."),
-              }
-            : scan
-        )
-      );
+      else//if here, no response at all (network error, server down, CORS, timeout)
+        setScans((prev) => 
+          prev.map((scan) => 
+            scan.id === scanId 
+              ? {
+                  ...scan,
+                  detailsLoading: false,
+                  detailsError: "Unable to connect to server!",
+                } 
+              : scan
+          )
+        );
     }
   }
 

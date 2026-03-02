@@ -10,10 +10,11 @@ const mysql = require("mysql2/promise");//for connecting to MySQL database and u
 const cors = require("cors");//to allow cross-origin requests
 const session = require("express-session");//for user session management
 const bcrypt = require("bcrypt");//to hash passwords before storing them in the database
-const nodemailer = require("nodemailer");//for email-sending functionallity
+const sgMail = require("@sendgrid/mail");//for updated email-sending functionallity with SendGrid
 const crypto = require("crypto");//to generate the password reset token
 const fs = require("fs");//to read and modify files
 const path = require("path");//to define the path of a file
+require("dotenv").config();//to read variables from the .env file
 
 const app = express();//create the express object to represent the server app
 
@@ -25,8 +26,8 @@ app.use(cors({//configure the server's CORS policy
 }));
 
 app.use(session({//configure the session management
-    secret: "d50b70c9e0ceb011db93c851cdfc365128995575ae25dcb87cc838e6afc34b0a",//secret key to sign
-    resave: false,//don't resave the session unless it was modified            //session ID cookie
+    secret: process.env.SESSION_SECRET,//secret key to sign the session ID cookie
+    resave: false,//don't resave the session unless it was modified      
     saveUninitialized: false,//don't save uninitialized sessions to the session store
     cookie: {//configure the cookie that will be stored on the client
         maxAge: 3600000,//3600000 ms = 1 hour max age of the session (it expires after this limit)
@@ -36,20 +37,13 @@ app.use(session({//configure the session management
     rolling: true,//reset the expiration countdown after every request
 }));
 
-const transporter = nodemailer.createTransport({//configure the mail transporter
-    service: "gmail",//Use Gmail’s SMTP servers
-    auth: {//set the sender's credentials
-        user: "vigil.iot.app@gmail.com",//sender email address
-        pass: "bkdohtklsmilwbym"//app password to access the gmail account through an app
-    },
-    tls: {rejectUnauthorized: false}//to fix recent bug with cerification (temporary)//////////////
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);//set the API key for SendGrid
 
 async function initDatabase(){//function to initialize the database
     const connection = await mysql.createConnection({//configure the MySQL connection
-        host: "localhost",//process.env.DB_HOST || 'localhost',////////////////////////////////////
-        user: "root",//process.env.DB_USER || 'root',//////////////////////////////////////////////
-        password: "comp440"//process.env.DB_PASSWORD || '',////////////////////////////////////////
+        host: process.env.DB_HOST,/////////////////////////////////////////////////////////////////
+        user: process.env.DB_USER,/////////////////////////////////////////////////////////////////
+        password: process.env.DB_PASSWORD,/////////////////////////////////////////////////////////
         //database: process.env.DB_NAME || 'vigil_iot',////////////////////////////////////////////
         //port: process.env.DB_PORT || 3306,*//////////////////////////////////////////////////////
     });
@@ -332,7 +326,6 @@ async function initDatabase(){//function to initialize the database
         });
 
         app.get("/scan-reports", async (req, res) => {//if here, client requested scan reports list
-            console.log("SCAN REPORTS");/////////////////
             const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
 
             if(!user_id)//if here, user not logged in
@@ -366,7 +359,6 @@ async function initDatabase(){//function to initialize the database
         });
 
         app.get("/scan-reports/:report_id/devices", async (req, res) =>{//if here, devices request
-            console.log("DEVICES");/////////////////
             const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
             const report_id = req.params.report_id;//get the report id from the URL
 
@@ -437,7 +429,7 @@ async function initDatabase(){//function to initialize the database
                 
                 const resetURL = `http://localhost:3000/get-reset-page?token=${token}`;//reset URL
                 
-                const info = await transporter.sendMail({//send the email through the transporter
+                const info = await sgMail.send({//send the email through the transporter
                     from: "vigil.iot.app@gmail.com",
                     to: email,
                     subject: "Password Reset Requested",
