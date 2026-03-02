@@ -9,10 +9,10 @@ import axios from "axios";//KV add
 import PasswordField from "./PasswordField"; // Shared press-to-reveal password input
 
 const PASSWORD_COMPLEXITY_RULE =
-  "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol.";
+  "Password must include uppercase, lowercase, a number, and a symbol.";
 
 function getPasswordComplexityError(password) {
-  if (typeof password !== "string" || password.length < 8) {
+  if (typeof password !== "string") {
     return PASSWORD_COMPLEXITY_RULE;
   }
   if (!/[a-z]/.test(password)) return PASSWORD_COMPLEXITY_RULE;
@@ -22,12 +22,29 @@ function getPasswordComplexityError(password) {
   return "";
 }
 
+function getPasswordValidationChecks(password) {
+  const nextPassword = typeof password === "string" ? password : "";
+  return [
+    { label: "At least 1 uppercase letter", passed: /[A-Z]/.test(nextPassword) },
+    { label: "At least 1 lowercase letter", passed: /[a-z]/.test(nextPassword) },
+    { label: "At least 1 number", passed: /\d/.test(nextPassword) },
+    { label: "At least 1 symbol", passed: /[^A-Za-z0-9]/.test(nextPassword) },
+  ];
+}
+
 export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");//KV add
+  const passwordValidationChecks = getPasswordValidationChecks(password);
+  const confirmValidationChecks = [
+    {
+      label: "Matches password",
+      passed: Boolean(confirmPassword) && confirmPassword === password,
+    },
+  ];
 
   function resetForm() {
     setEmail("");
@@ -100,6 +117,8 @@ export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister
         name="password"
         autoComplete="new-password"
         value={password}
+        validationChecks={passwordValidationChecks}
+        validationLabel="Password requirements status"
         onChange={(e) => {
           setPassword(e.target.value);
           setFormError("");
@@ -113,6 +132,8 @@ export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister
         name="confirmPassword"
         autoComplete="new-password"
         value={confirmPassword}
+        validationChecks={confirmValidationChecks}
+        validationLabel="Confirm password match status"
         onChange={(e) => {
           setConfirmPassword(e.target.value);
           setFormError("");
@@ -120,7 +141,6 @@ export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister
         }}
         required
       />
-      <div className="login-info">{PASSWORD_COMPLEXITY_RULE}</div>
       {formError && <div className="login-error">{formError}</div>}
       {formSuccess && <div className="login-success">{formSuccess}</div>/*KV add*/}
       <div className="login-actions is-register">

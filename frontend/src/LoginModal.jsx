@@ -10,7 +10,7 @@ import React, { useRef, useState } from "react"; //import React from "react"; KV
 import axios from "axios"; //KV add
 import "./styles/modal.css";
 import "./styles/login.css";
-import logoImage from "./assets/logo.png";
+import logoImage from "./assets/logo.svg";
 import RegisterForm from "./RegisterForm";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import PasswordField from "./PasswordField";
