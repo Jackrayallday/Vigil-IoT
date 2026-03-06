@@ -410,6 +410,21 @@ async function initDatabase(){//function to initialize the database
             }
         });
 
+        app.get("/", (req, res) => {//if here, client requested the website home page
+            try{
+                const homePage = fs.readFileSync(
+                    path.join(__dirname, "views", "home.html"),
+                    "utf8"
+                );
+
+                return res.send(homePage);
+            }
+           catch (err){
+                console.error("Error loading home page:", err);
+                return res.status(500).send("Error loading home page.");
+            }
+        });
+
         app.post("/send-email", async (req, res) => {//if here, client requested email to be sent 
             const {email} = req.body;//extract entered email address from request body
             
@@ -491,7 +506,10 @@ async function initDatabase(){//function to initialize the database
                     return res.status(400).send("Invalid or expired reset link!");
 
                 //define the reset page HTML file that will be sent to the client's browser
-                let resetPage = fs.readFileSync(path.join(__dirname, "reset-page.html"), "utf8");
+                let resetPage = fs.readFileSync(
+                    path.join(__dirname, "views", "reset-page.html"),
+                    "utf8"
+                );
                 resetPage = resetPage.replace("__TOKEN__", token);//inject the token into the file
     
                 return res.send(resetPage);//return the reset page in the response
