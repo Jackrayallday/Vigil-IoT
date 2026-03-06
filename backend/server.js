@@ -10,7 +10,7 @@ const mysql = require("mysql2/promise");//for connecting to MySQL database and u
 const cors = require("cors");//to allow cross-origin requests
 const session = require("express-session");//for user session management
 const bcrypt = require("bcrypt");//to hash passwords before storing them in the database
-const sgMail = require("@sendgrid/mail");//for updated email-sending functionallity with SendGrid
+const {google} = require("googleapis");//for updated email-sending functionallity with OAuth
 const crypto = require("crypto");//to generate the password reset token
 const fs = require("fs");//to read and modify files
 const path = require("path");//to define the path of a file
@@ -27,7 +27,7 @@ app.use(cors({//configure the server's CORS policy
 
 app.use(session({//configure the session management
     secret: process.env.SESSION_SECRET,//secret key to sign the session ID cookie
-    resave: false,//don't resave the session unless it was modified      
+    resave: false,//don't resave the session unless it was modified
     saveUninitialized: false,//don't save uninitialized sessions to the session store
     cookie: {//configure the cookie that will be stored on the client
         maxAge: 3600000,//3600000 ms = 1 hour max age of the session (it expires after this limit)
@@ -37,7 +37,17 @@ app.use(session({//configure the session management
     rolling: true,//reset the expiration countdown after every request
 }));
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);//set the API key for SendGrid
+const oauth2Client = new google.auth.OAuth2(//define the OAuth client that will access Gmail's API
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI
+);
+
+oauth2Client.setCredentials({//set the refresh token of this client
+  refresh_token: process.env.GOOGLE_REFRESH_TOKEN
+});
+
+const gmail = google.gmail({version: "v1", auth: oauth2Client});//create the Gmail API client
 
 async function initDatabase(){//function to initialize the database
     const connection = await mysql.createConnection({//configure the MySQL connection
@@ -429,13 +439,26 @@ async function initDatabase(){//function to initialize the database
                 
                 const resetURL = `http://localhost:3000/get-reset-page?token=${token}`;//reset URL
                 
-                const info = await sgMail.send({//send the email through the transporter
-                    from: "vigil.iot.app@gmail.com",
-                    to: email,
-                    subject: "Password Reset Requested",
-                    html: ` <p>Click the following link to reset your password:</p>
-                            <p> <a href="${resetURL}"> Reset Password </a> </p> `,
-                    text: `Visit the following URL to reset your password:\n\n${resetURL}`
+                const messageParts = [//define the message to be sent
+                    `To: ${email}`,
+                    "Subject: Password Reset Requested",
+                    "Content-Type: text/html; charset=UTF-8",
+                    "",
+                    `<p>Click the following link to reset your password:</p>
+                    <p><a href="${resetURL}">Reset Password</a></p>`
+                ];
+
+                const encodedMessage = Buffer.from(messageParts.join("\n"))
+                    .toString("base64")
+                    .replace(/\+/g, "-")
+                    .replace(/\//g, "_")
+                    .replace(/=+$/, "");
+
+                await gmail.users.messages.send({//send the email through Gmail's API
+                    userId: "me",
+                    requestBody: {
+                        raw: encodedMessage
+                    }
                 });
                 
                 //if here, email successfully sent
