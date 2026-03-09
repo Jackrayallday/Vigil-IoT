@@ -9,6 +9,7 @@ const express = require("express");//minimal framework for building backend APIs
 const mysql = require("mysql2/promise");//for connecting to MySQL database and using promises
 const cors = require("cors");//to allow cross-origin requests
 const session = require("express-session");//for user session management
+const MySQLStore = require("express-mysql-session")(session);//to store sessions in the database
 const bcrypt = require("bcrypt");//to hash passwords before storing them in the database
 const {google} = require("googleapis");//for updated email-sending functionallity with OAuth
 const crypto = require("crypto");//to generate the password reset token
@@ -25,14 +26,28 @@ app.use(cors({//configure the server's CORS policy
     credentials: true//allow credentials to be sent in these requests
 }));
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+const sessionStore = new MySQLStore({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: "vigil_iot", // make sure you have this in .env
+  clearExpired: true,
+  checkExpirationInterval: 900000, // 15 minutes
+  expiration: 86400000 // 1 day
+});
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 app.use(session({//configure the session management
     secret: process.env.SESSION_SECRET,//secret key to sign the session ID cookie
     resave: false,//don't resave the session unless it was modified
     saveUninitialized: false,//don't save uninitialized sessions to the session store
+    store: sessionStore,
     cookie: {//configure the cookie that will be stored on the client
         maxAge: 3600000,//3600000 ms = 1 hour max age of the session (it expires after this limit)
         httpOnly: true,//prevent Javascript from reading, writing, or deleting the cookie
-        secure: false//send the cookie over HTTP for now, not HTTPS
+        sameSite: "lax",////////////////////////////////////////////////////////////////////////////
+        secure: false,//send the cookie over HTTP for now, not HTTPS
     },
     rolling: true,//reset the expiration countdown after every request
 }));

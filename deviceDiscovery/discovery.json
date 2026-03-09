@@ -1,8 +1,8 @@
 {
   "meta": {
     "os": "Windows) 11",
-    "started_at": 1772757732.0510774,
-    "finished_at": 1772757749.4552052
+    "started_at": 1773003387.1150792,
+    "finished_at": 1773003409.4405963
   },
   "interfaces": [
     {
@@ -18,18 +18,18 @@
       "mac": "50:3d:d1:50:b5:c0",
       "vendor": "TP-LINK/TP-LINK UPnP/1.1 MiniUPnPd/2.2.2",
       "services": [
-        "USN:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac13",
+        "SSDP:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac13",
+        "SSDP:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac11",
         "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:1",
-        "SSDP:urn:schemas-upnp-org:service:Layer3Forwarding:1",
+        "SSDP:upnp:rootdevice",
         "SSDP:urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
-        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:1",
         "SSDP:urn:schemas-upnp-org:service:WANIPConnection:1",
         "SSDP:urn:schemas-upnp-org:device:WANDevice:1",
-        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1",
-        "SSDP:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac13",
+        "SSDP:urn:schemas-upnp-org:service:Layer3Forwarding:1",
         "SSDP:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac12",
-        "SSDP:upnp:rootdevice",
-        "SSDP:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac11"
+        "USN:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac13",
+        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:1",
+        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1"
       ],
       "iface": "Wi-Fi",
       "discovered_via": [
@@ -49,6 +49,17 @@
       ]
     },
     {
+      "ip": "192.168.0.198",
+      "hostname": null,
+      "mac": "4c:c9:5e:96:cd:dc",
+      "vendor": "Samsung Electronics Co.,Ltd",
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
       "ip": "192.168.0.255",
       "hostname": null,
       "mac": "ff:ff:ff:ff:ff:ff",
@@ -61,9 +72,9 @@
     }
   ],
   "summary": {
-    "total_devices": 3,
+    "total_devices": 4,
     "with_hostnames": 1,
-    "with_macs": 3,
-    "with_vendor": 2
+    "with_macs": 4,
+    "with_vendor": 3
   }
 }
