@@ -1,35 +1,41 @@
 {
   "meta": {
-    "os": "Windows) 11",
-    "started_at": 1773003387.1150792,
-    "finished_at": 1773003409.4405963
+    "os": "Windows) 10",
+    "started_at": 1773094269.022538,
+    "finished_at": 1773094298.2326956
   },
   "interfaces": [
     {
+      "name": "Ethernet",
+      "ip": "192.168.1.140",
+      "network": "192.168.1.0/24"
+    },
+    {
       "name": "Wi-Fi",
-      "ip": "192.168.0.235",
-      "network": "192.168.0.0/24"
+      "ip": "192.168.1.13",
+      "network": "192.168.1.0/24"
     }
   ],
   "devices": [
     {
-      "ip": "192.168.0.1",
-      "hostname": "TP-LINK/TP-LINK UPnP/1.1 MiniUPnPd/2.2.2",
-      "mac": "50:3d:d1:50:b5:c0",
-      "vendor": "TP-LINK/TP-LINK UPnP/1.1 MiniUPnPd/2.2.2",
+      "ip": "192.168.1.1",
+      "hostname": "Ubuntu/xenial UPnP/1.1 MiniUPnPd/2.1",
+      "mac": "84:1e:a3:cf:01:b2",
+      "vendor": "Ubuntu/xenial UPnP/1.1 MiniUPnPd/2.1",
       "services": [
-        "SSDP:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac13",
-        "SSDP:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac11",
-        "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:1",
-        "SSDP:upnp:rootdevice",
+        "SSDP:uuid:841ea3cf01b1",
+        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1",
+        "SSDP:urn:schemas-upnp-org:service:DeviceProtection:1",
         "SSDP:urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
-        "SSDP:urn:schemas-upnp-org:service:WANIPConnection:1",
-        "SSDP:urn:schemas-upnp-org:device:WANDevice:1",
-        "SSDP:urn:schemas-upnp-org:service:Layer3Forwarding:1",
-        "SSDP:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac12",
-        "USN:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac13",
-        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:1",
-        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1"
+        "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:2",
+        "USN:uuid:841ea3cf01b2",
+        "SSDP:uuid:841ea3cf01b0",
+        "SSDP:urn:schemas-upnp-org:service:WANIPConnection:2",
+        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:2",
+        "SSDP:upnp:rootdevice",
+        "SSDP:uuid:841ea3cf01b2",
+        "SSDP:urn:schemas-upnp-org:device:WANDevice:2",
+        "SSDP:urn:schemas-upnp-org:service:Layer3Forwarding:1"
       ],
       "iface": "Wi-Fi",
       "discovered_via": [
@@ -38,10 +44,10 @@
       ]
     },
     {
-      "ip": "192.168.0.59",
-      "hostname": null,
-      "mac": "f0:f0:a4:04:e4:bd",
-      "vendor": "Amazon Technologies Inc.",
+      "ip": "192.168.1.140",
+      "hostname": "JacksPC.lan",
+      "mac": "1c:69:7a:9a:dc:3c",
+      "vendor": "EliteGroup Computer Systems Co., LTD",
       "services": [],
       "iface": "Wi-Fi",
       "discovered_via": [
@@ -49,10 +55,10 @@
       ]
     },
     {
-      "ip": "192.168.0.198",
-      "hostname": null,
-      "mac": "4c:c9:5e:96:cd:dc",
-      "vendor": "Samsung Electronics Co.,Ltd",
+      "ip": "192.168.1.19",
+      "hostname": "EPSON208997.lan",
+      "mac": "e0:bb:9e:20:89:97",
+      "vendor": "Seiko Epson Corporation",
       "services": [],
       "iface": "Wi-Fi",
       "discovered_via": [
@@ -60,21 +66,67 @@
       ]
     },
     {
-      "ip": "192.168.0.255",
-      "hostname": null,
-      "mac": "ff:ff:ff:ff:ff:ff",
+      "ip": "192.168.1.90",
+      "hostname": "500-64dba0f2f56c.lan",
+      "mac": "64:db:a0:f2:f5:6c",
+      "vendor": "Select Comfort",
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
+      "ip": "192.168.1.135",
+      "hostname": "Rachio-FDF8A9.lan",
+      "mac": "38:7c:76:fd:f8:a9",
+      "vendor": "Universal Global Scientific Industrial Co., Ltd.",
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
+      "ip": "192.168.1.44",
+      "hostname": "iPhone.lan",
+      "mac": "c2:8c:75:14:e5:6d",
       "vendor": null,
       "services": [],
+      "iface": "Ethernet",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
+      "ip": "192.168.1.143",
+      "hostname": "TCL-RokuTV-310.lan",
+      "mac": "9c:95:61:41:64:03",
+      "vendor": "Hui Zhou Gaoshengda Technology Co.,LTD",
+      "services": [],
       "iface": "Wi-Fi",
       "discovered_via": [
         "ARP"
+      ]
+    },
+    {
+      "ip": "b'\\xc0\\xa8\\x01\\x13'",
+      "hostname": "EPSON ET-2850 Series",
+      "mac": null,
+      "vendor": null,
+      "services": [
+        "_http._tcp.local."
+      ],
+      "iface": null,
+      "discovered_via": [
+        "mDNS"
       ]
     }
   ],
   "summary": {
-    "total_devices": 4,
-    "with_hostnames": 1,
-    "with_macs": 4,
-    "with_vendor": 3
+    "total_devices": 8,
+    "with_hostnames": 8,
+    "with_macs": 7,
+    "with_vendor": 6
   }
 }
