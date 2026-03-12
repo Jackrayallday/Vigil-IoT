@@ -1,8 +1,8 @@
 {
   "meta": {
     "os": "Windows) 10",
-    "started_at": 1773094269.022538,
-    "finished_at": 1773094298.2326956
+    "started_at": 1773332037.3704565,
+    "finished_at": 1773332066.5451515
   },
   "interfaces": [
     {
@@ -23,35 +23,24 @@
       "mac": "84:1e:a3:cf:01:b2",
       "vendor": "Ubuntu/xenial UPnP/1.1 MiniUPnPd/2.1",
       "services": [
-        "SSDP:uuid:841ea3cf01b1",
-        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1",
-        "SSDP:urn:schemas-upnp-org:service:DeviceProtection:1",
-        "SSDP:urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
-        "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:2",
-        "USN:uuid:841ea3cf01b2",
-        "SSDP:uuid:841ea3cf01b0",
         "SSDP:urn:schemas-upnp-org:service:WANIPConnection:2",
-        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:2",
-        "SSDP:upnp:rootdevice",
-        "SSDP:uuid:841ea3cf01b2",
+        "SSDP:uuid:841ea3cf01b0",
         "SSDP:urn:schemas-upnp-org:device:WANDevice:2",
-        "SSDP:urn:schemas-upnp-org:service:Layer3Forwarding:1"
+        "SSDP:urn:schemas-upnp-org:service:DeviceProtection:1",
+        "USN:uuid:841ea3cf01b2",
+        "SSDP:uuid:841ea3cf01b1",
+        "SSDP:urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",
+        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:2",
+        "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:2",
+        "SSDP:upnp:rootdevice",
+        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1",
+        "SSDP:urn:schemas-upnp-org:service:Layer3Forwarding:1",
+        "SSDP:uuid:841ea3cf01b2"
       ],
       "iface": "Wi-Fi",
       "discovered_via": [
         "ARP",
         "SSDP"
-      ]
-    },
-    {
-      "ip": "192.168.1.140",
-      "hostname": "JacksPC.lan",
-      "mac": "1c:69:7a:9a:dc:3c",
-      "vendor": "EliteGroup Computer Systems Co., LTD",
-      "services": [],
-      "iface": "Wi-Fi",
-      "discovered_via": [
-        "ARP"
       ]
     },
     {
@@ -66,34 +55,23 @@
       ]
     },
     {
+      "ip": "192.168.1.140",
+      "hostname": "JacksPC.lan",
+      "mac": "1c:69:7a:9a:dc:3c",
+      "vendor": "EliteGroup Computer Systems Co., LTD",
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
       "ip": "192.168.1.90",
       "hostname": "500-64dba0f2f56c.lan",
       "mac": "64:db:a0:f2:f5:6c",
       "vendor": "Select Comfort",
       "services": [],
       "iface": "Wi-Fi",
-      "discovered_via": [
-        "ARP"
-      ]
-    },
-    {
-      "ip": "192.168.1.135",
-      "hostname": "Rachio-FDF8A9.lan",
-      "mac": "38:7c:76:fd:f8:a9",
-      "vendor": "Universal Global Scientific Industrial Co., Ltd.",
-      "services": [],
-      "iface": "Wi-Fi",
-      "discovered_via": [
-        "ARP"
-      ]
-    },
-    {
-      "ip": "192.168.1.44",
-      "hostname": "iPhone.lan",
-      "mac": "c2:8c:75:14:e5:6d",
-      "vendor": null,
-      "services": [],
-      "iface": "Ethernet",
       "discovered_via": [
         "ARP"
       ]
@@ -124,9 +102,9 @@
     }
   ],
   "summary": {
-    "total_devices": 8,
-    "with_hostnames": 8,
-    "with_macs": 7,
-    "with_vendor": 6
+    "total_devices": 6,
+    "with_hostnames": 6,
+    "with_macs": 5,
+    "with_vendor": 5
   }
 }
