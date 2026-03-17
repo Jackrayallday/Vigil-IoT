@@ -53,7 +53,7 @@ const MYSQL_CONFIG = //specify the MySQL connection configuration (replace the u
 {                    //values with your own)
     host: process.env.DB_HOST || 'localhost',//"localhost",//specify the host
     user: process.env.DB_USER || 'root',//"root",//set the username
-    password: process.env.DB_PASSWORD || '',//"comp440"//set the password
+    password: process.env.DB_PASSWORD || 'root',//"comp440"//set the password
     database: process.env.DB_NAME || 'vigil_iot',///////////
     port: process.env.DB_PORT || 3306,
 };
