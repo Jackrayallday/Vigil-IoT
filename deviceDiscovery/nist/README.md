@@ -28,3 +28,11 @@ __Parameter list__
 
 4) cveId
 ```
+
+__NOTES__
+    
+3/29/2026: 1) Since it poor practice to hardcode api keys, store your own nist api key in your local OS by running one of the commands below in your terminal.
+
+Windows: ```$env:NIST_KEY="your_actual_key_here" ```
+
+Mac/Linux: ```export NIST_KEY="your_actual_key_here"```
