@@ -28,6 +28,20 @@ def fetch_nvd_data(params):
     except Exception as e:
         print(f"An error occurred: {e}")
     return None
+    
+def get_device_vulnerabilities(cpe_string, limit=5):
+    """
+    Takes a CPE string and returns the vulnerability data.
+    """
+    dynamic_params = {
+        "cpeName": cpe_string,
+        "resultsPerPage": limit
+    }
+    
+    # Example logic:
+    # response = requests.get(BASE_URL, headers=headers, params=dynamic_params)
+    # return response.json()
+    return dynamic_params # For demonstration
 
 # --- IMPLEMENTING THE 4 USE CASES ---
 
