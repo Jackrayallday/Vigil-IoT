@@ -12,10 +12,11 @@ import socket
 from typing import List, Dict, Optional
 
 try:
-    from scapy.all import ARP, Ether, srp
+    from scapy.all import ARP, Ether, srp, conf
     SCAPY_AVAILABLE = True
 except ImportError:
     SCAPY_AVAILABLE = False
+    conf = None  # type: ignore
 
 import psutil
 import netaddr
@@ -29,7 +30,7 @@ except ImportError:
 
 from base import DeviceDiscoveryAdapter, Device
 from discovery_store import DiscoveryStore
-from discovery_common import discover_ssdp
+from discovery_common import discover_ssdp, ipv4_strings_from_zeroconf_addresses
 
 
 class LinuxAdapter(DeviceDiscoveryAdapter):
@@ -94,16 +95,25 @@ class LinuxAdapter(DeviceDiscoveryAdapter):
         iface_name: Optional[str] = None,
         timeout: int = 2,
     ) -> List[Device]:
-        """Scan a network: active ARP if Scapy/root available, else ARP table."""
-        devices: List[Device] = []
+        """Scan a network: merge ARP table with active ARP (Scapy uses iface_name on multi-homed hosts)."""
+        merged_by_ip: Dict[str, Device] = {}
+
+        arp_table_devices = self._scan_network_arp_table(network, iface_name=iface_name)
+        for d in arp_table_devices:
+            merged_by_ip[d.ip_address] = d
 
         if SCAPY_AVAILABLE:
             try:
+                if iface_name and conf is not None:
+                    try:
+                        conf.iface = iface_name
+                    except Exception:
+                        pass
                 print(f"  Attempting active ARP scan (may require root/cap_net_raw)...")
                 arp_request = ARP(pdst=network)
                 broadcast = Ether(dst="ff:ff:ff:ff:ff:ff")
                 arp_request_broadcast = broadcast / arp_request
-                answered_list, unanswered_list = srp(
+                answered_list, _unanswered = srp(
                     arp_request_broadcast,
                     timeout=timeout,
                     verbose=False,
@@ -123,7 +133,7 @@ class LinuxAdapter(DeviceDiscoveryAdapter):
                         vendor=vendor,
                         os_type=None,
                     )
-                    devices.append(device)
+                    merged_by_ip[ip] = device
                     self.store.upsert_device(
                         ip=ip,
                         hostname=hostname,
@@ -133,19 +143,19 @@ class LinuxAdapter(DeviceDiscoveryAdapter):
                         discovered_via=["ARP"],
                     )
 
-                if devices:
-                    print(f"  Active ARP scan successful! Found {len(devices)} device(s)")
-                    return devices
-                print(f"  Active scan found no devices, falling back to ARP table...")
+                if answered_list:
+                    print(
+                        f"  Merged ARP table + active scan: {len(merged_by_ip)} device(s) on this segment"
+                    )
             except PermissionError:
-                print(f"  Active scan failed: Requires root/cap_net_raw. Falling back to ARP table...")
+                print(f"  Active scan failed: Requires root/cap_net_raw. Using ARP table only...")
             except Exception as e:
-                print(f"  Active scan failed: {e}. Falling back to ARP table...")
+                print(f"  Active scan failed: {e}. Using ARP table only...")
 
         if not SCAPY_AVAILABLE:
-            print(f"  Scapy not available. Using ARP table method...")
+            print(f"  Scapy not available. Using ARP table only...")
 
-        return self._scan_network_arp_table(network, iface_name=iface_name)
+        return list(merged_by_ip.values())
 
     def _scan_network_arp_table(
         self,
@@ -226,7 +236,13 @@ class LinuxAdapter(DeviceDiscoveryAdapter):
 
         print("\nDiscovering SSDP services (M-SEARCH broadcast)...")
         try:
-            ssdp_devices = discover_ssdp(timeout=3, store=self.store, verbose=True)
+            iface_ips = [i["ip"] for i in interfaces]
+            ssdp_devices = discover_ssdp(
+                timeout=3,
+                store=self.store,
+                verbose=True,
+                multicast_iface_ips=iface_ips,
+            )
             print(f"  Found {len(ssdp_devices)} device(s) via SSDP")
             for device in ssdp_devices:
                 if device.ip_address not in all_devices:
@@ -325,8 +341,9 @@ class LinuxAdapter(DeviceDiscoveryAdapter):
 
             def add_service(self, zeroconf, service_type, name):
                 info = zeroconf.get_service_info(service_type, name)
-                if info and info.addresses:
-                    ip = str(info.addresses[0])
+                if not info or not info.addresses:
+                    return
+                for ip in ipv4_strings_from_zeroconf_addresses(info.addresses):
                     if ip not in self.services:
                         self.services[ip] = {"hostname": name.split(".")[0], "services": []}
                     if service_type not in self.services[ip]["services"]:
