@@ -29,3 +29,40 @@ def fetch_nvd_data(params):
         print(f"An error occurred: {e}")
     return None
 
+# --- IMPLEMENTING THE 4 USE CASES ---
+
+# 1. Device Scanner (Search by CPE)
+params_device = {
+    "cpeName": "cpe:2.3:o:tp-link:archer_c7_firmware:v2:*:*:*:*:*:*:*",
+    "resultsPerPage": 5
+}
+
+# 2. Severity Filter (Critical only)
+params_severity = {
+    "cvssV3Severity": "CRITICAL",
+    "resultsPerPage": 5
+}
+
+# 3. Exploit Radar (Known Exploited Vulnerabilities)
+params_active = {
+    "hasKev": "", # NIST just needs the parameter to exist
+    "resultsPerPage": 5
+}
+
+# 4. New Threats (Last 30 days)
+# Note: Dates must be in ISO 8601 format
+params_recent = {
+    "pubStartDate": "2024-01-01T00:00:00.000", 
+    "pubEndDate": "2024-01-31T23:59:59.999",
+    "resultsPerPage": 5
+}
+
+# --- TEST RUN ---
+print("Fetching Critical IoT Vulnerabilities...")
+data = fetch_nvd_data(params_severity)
+
+if data and "vulnerabilities" in data:
+    for item in data["vulnerabilities"]:
+        cve_id = item["cve"]["id"]
+        description = item["cve"]["descriptions"][0]["value"]
+        print(f"\n[{cve_id}]\nDescription: {description[:150]}...")
