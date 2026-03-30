@@ -8,11 +8,15 @@
     "test": "echo \"No tests specified\" && exit 1"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-mysql-session": "^3.0.3",
     "express-session": "^1.18.2",
+    "googleapis": "^171.4.0",
     "mysql2": "^3.15.3",
     "nodemailer": "^7.0.10"
   },

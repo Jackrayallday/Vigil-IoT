@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+    <html>
+        <head>
+            <title>Vigil IoT Password Reset</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    max-width: 500px;
+                    margin: 40px auto;
+                }
+                #message {
+                    margin-top: 12px;
+                    font-weight: bold;
+                }
+                #message.error {
+                    color: red;
+                }
+                #message.success {
+                    color: green;
+                }
+            </style>
+        </head>
+        <body>
+            <h2>Reset Your Password</h2>
+
+            <label for="new-password">New Password:</label>
+            <input type="password" id="new-password" required />
+
+            <button id="reset-btn">Reset Password</button>
+
+            <p id="message"></p>
+
+            <script>
+                const RESET_TOKEN = "__TOKEN__";
+
+                const PASSWORD_COMPLEXITY_RULE =
+                    "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol.";
+                
+                function getPasswordComplexityError(password){
+                    if (typeof password !== "string" || password.length < 8) {
+                        return PASSWORD_COMPLEXITY_RULE;
+                    }
+                    if (!/[a-z]/.test(password)) return PASSWORD_COMPLEXITY_RULE;
+                    if (!/[A-Z]/.test(password)) return PASSWORD_COMPLEXITY_RULE;
+                    if (!/\d/.test(password)) return PASSWORD_COMPLEXITY_RULE;
+                    if (!/[^A-Za-z0-9]/.test(password)) return PASSWORD_COMPLEXITY_RULE; return "";
+                }
+
+                document.getElementById("reset-btn").addEventListener("click", async () => {
+                    const newPassword = document.getElementById("new-password").value;
+                    const messageEl = document.getElementById("message");
+
+                    // Clear previous message
+                    messageEl.textContent = "";
+                    messageEl.className = "";
+                    
+                    // Validate password strength
+                    const complexityError = getPasswordComplexityError(newPassword);
+                    if (complexityError) {
+                        messageEl.textContent = complexityError;
+                        messageEl.className = "error";
+                        return;
+                    }
+                    
+                    // Send request to backend
+                    const response = await fetch("/reset-password", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            token: RESET_TOKEN,
+                            newPassword
+                        })
+                    });
+
+                    const text = await response.text();
+
+                    // Display backend response
+                    if (response.ok) {
+                        messageEl.textContent = text;
+                        messageEl.className = "success";
+                    }
+                    else{
+                        messageEl.textContent = text;
+                        messageEl.className = "error";
+                    }
+                });
+            </script>
+        </body>
+    </html>

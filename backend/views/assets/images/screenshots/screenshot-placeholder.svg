@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Screenshot Placeholder</title>
+  <desc id="desc">Wireframe style image placeholder for project screenshots.</desc>
+  <rect width="1280" height="720" fill="#0a2233"/>
+  <rect x="40" y="40" width="1200" height="640" rx="22" fill="#12344a" stroke="#5dc9c0" stroke-opacity="0.55"/>
+  <rect x="88" y="94" width="320" height="24" rx="8" fill="#4db6bf" fill-opacity="0.8"/>
+  <rect x="88" y="144" width="720" height="16" rx="8" fill="#6fb2c4" fill-opacity="0.7"/>
+  <rect x="88" y="174" width="640" height="16" rx="8" fill="#6fb2c4" fill-opacity="0.55"/>
+  <rect x="88" y="228" width="520" height="350" rx="18" fill="#0a1c2a" stroke="#86ded0" stroke-opacity="0.35"/>
+  <rect x="632" y="228" width="520" height="160" rx="18" fill="#0a1c2a" stroke="#86ded0" stroke-opacity="0.35"/>
+  <rect x="632" y="418" width="520" height="160" rx="18" fill="#0a1c2a" stroke="#86ded0" stroke-opacity="0.35"/>
+  <text x="640" y="632" text-anchor="middle" fill="#cbeff0" font-family="Arial, sans-serif" font-size="42">
+    Screenshot Placeholder
+  </text>
+</svg>
