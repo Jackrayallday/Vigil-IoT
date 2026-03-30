@@ -7,10 +7,24 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies and build output
 node_modules
 dist
 dist-ssr
 *.local
+
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Generated device discovery output
+deviceDiscovery/discovery.json
+
+# Optional: ignore lockfile if your team isn't using it consistently
+package-lock.json
 
 # Editor directories and files
 .vscode/*
