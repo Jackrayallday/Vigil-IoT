@@ -34,7 +34,9 @@ function startFastAPIServer() {
   // __dirname is frontend/electron, so we need to go up two levels to reach project root
   const apiPath = path.join(__dirname, '..', '..', 'deviceDiscovery', 'api_server.py');
 
-  fastAPIServer = spawn('python', [apiPath], {
+  const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+
+  fastAPIServer = spawn(pythonCmd, [apiPath], {
     cwd: path.dirname(apiPath),
     shell: false,
   });
