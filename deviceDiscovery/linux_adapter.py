@@ -1,208 +1,203 @@
 """
-programmer: Richie Delgado
--------------------------------------------------------
 Linux-specific device discovery adapter.
 Uses ARP scanning, mDNS, and network interface detection.
-NEEDS MORE RESEARCH INTO OS SPECIFIC NETWORKING
-
 """
-import subprocess
+
 import socket
-import platform
 from typing import List, Dict, Optional
-from scapy.all import ARP, Ether, srp, get_if_list, get_if_addr
-from zeroconf import ServiceBrowser, Zeroconf, ServiceListener
 import psutil
-import netaddr
 from netaddr import IPNetwork, EUI
+
+try:
+    from scapy.all import ARP, Ether, srp
+    SCAPY_AVAILABLE = True
+except ImportError:
+    SCAPY_AVAILABLE = False
+    print("Warning: Scapy not available on Linux")
+
+try:
+    from zeroconf import ServiceBrowser, Zeroconf, ServiceListener
+    ZEROCONF_AVAILABLE = True
+except ImportError:
+    ZEROCONF_AVAILABLE = False
+    print("Warning: Zeroconf not available on Linux")
+
 from base import DeviceDiscoveryAdapter, Device
 
 
 class LinuxAdapter(DeviceDiscoveryAdapter):
-    """Linux implementation of device discovery."""
-    
+
     def __init__(self):
-        self.zeroconf = Zeroconf()
-        self.discovered_services = {}
-    
+        self.zeroconf = Zeroconf() if ZEROCONF_AVAILABLE else None
+
     def get_local_network_interfaces(self) -> List[Dict[str, str]]:
-        """Get all network interfaces and their IP addresses/subnets on Linux."""
         interfaces = []
-        
-        for interface_name, addrs in psutil.net_if_addrs().items():
-            for addr in addrs:
-                if addr.family == socket.AF_INET:  # IPv4
-                    ip = addr.address
-                    netmask = addr.netmask
-                    
-                    try:
-                        # Calculate network CIDR
-                        network = IPNetwork(f"{ip}/{netmask}", flags=netaddr.ZEROFILL)
-                        interfaces.append({
-                            'interface': interface_name,
-                            'ip': ip,
-                            'netmask': netmask,
-                            'network': str(network.network) + '/' + str(network.prefixlen)
-                        })
-                    except Exception:
-                        continue
-        
-        return interfaces
-    
-    def scan_network(self, network: str, timeout: int = 2) -> List[Device]:
-        """Scan a network using ARP requests on Linux."""
-        devices = []
-        
+
         try:
-            # Create ARP request packet
-            arp_request = ARP(pdst=network)
-            broadcast = Ether(dst="ff:ff:ff:ff:ff:ff")
-            arp_request_broadcast = broadcast / arp_request
-            
-            # Send ARP requests and receive responses
-            answered_list = srp(arp_request_broadcast, timeout=timeout, verbose=False)[0]
-            
-            for element in answered_list:
-                ip = element[1].psrc
-                mac = element[1].hwsrc
-                
-                # Get vendor from MAC address OUI
-                vendor = self._get_vendor_from_mac(mac)
-                
-                # Try to get hostname
-                hostname = self._get_hostname(ip)
-                
+            for name, addrs in psutil.net_if_addrs().items():
+                for addr in addrs:
+                    if addr.family == socket.AF_INET:
+                        ip = addr.address
+                        netmask = addr.netmask
+
+                        try:
+                            network = IPNetwork(f"{ip}/{netmask}")
+                            interfaces.append({
+                                'interface': name,
+                                'ip': ip,
+                                'network': f"{network.network}/{network.prefixlen}"
+                            })
+                        except Exception:
+                            continue
+        except Exception as e:
+            print(f"Interface detection error: {e}")
+
+        return interfaces
+
+    def scan_network(self, network: str, timeout: int = 2) -> List[Device]:
+        devices = []
+
+        if not SCAPY_AVAILABLE:
+            print("Scapy not available, skipping ARP scan")
+            return devices
+
+        try:
+            arp = ARP(pdst=network)
+            ether = Ether(dst="ff:ff:ff:ff:ff:ff")
+            packet = ether / arp
+
+            result = srp(packet, timeout=timeout, verbose=False)[0]
+
+            for _, received in result:
+                ip = received.psrc
+                mac = received.hwsrc
+
                 device = Device(
                     ip_address=ip,
                     mac_address=mac,
-                    hostname=hostname,
-                    vendor=vendor,
-                    os_type=None  # Can be enhanced with OS detection
+                    hostname=self._get_hostname(ip),
+                    vendor=self._get_vendor_from_mac(mac)
                 )
+
                 devices.append(device)
-        
+
         except Exception as e:
-            print(f"Error scanning network {network}: {e}")
-        
+            print(f"Scan error on {network}: {e}")
+
         return devices
-    
+
     def discover_devices(self, timeout: int = 2) -> List[Device]:
-        """Discover all devices on all local networks."""
         all_devices = {}
-        
-        # Get all network interfaces
+
         interfaces = self.get_local_network_interfaces()
-        
-        # Scan each network
-        for iface_info in interfaces:
-            network = iface_info['network']
-            print(f"Scanning network: {network} on interface {iface_info['interface']}")
-            devices = self.scan_network(network, timeout)
-            
-            # Use IP as key to avoid duplicates
-            for device in devices:
-                all_devices[device.ip_address] = device
-        
-        # Discover mDNS/Bonjour services
-        mDNS_devices = self._discover_mdns_services()
-        for device in mDNS_devices:
-            if device.ip_address not in all_devices:
-                all_devices[device.ip_address] = device
-            else:
-                # Merge service information
-                existing = all_devices[device.ip_address]
-                if device.hostname and not existing.hostname:
-                    existing.hostname = device.hostname
-                existing.services.extend(device.services)
-        
+
+        for iface in interfaces:
+            network = iface['network']
+            print(f"Scanning {network} on {iface['interface']}")
+
+            try:
+                devices = self.scan_network(network, timeout)
+            except Exception as e:
+                print(f"ERROR scanning {network}: {e}")
+                devices = []
+
+            for d in devices:
+                all_devices[d.ip_address] = d
+
+        # mDNS SAFE
+        if self.zeroconf:
+            try:
+                mdns_devices = self._discover_mdns_services()
+
+                for d in mdns_devices:
+                    if d.ip_address not in all_devices:
+                        all_devices[d.ip_address] = d
+                    else:
+                        existing = all_devices[d.ip_address]
+                        existing.merge_from(d)
+
+            except Exception as e:
+                print(f"mDNS error: {e}")
+
         return list(all_devices.values())
-    
+
     def get_device_info(self, ip_address: str) -> Optional[Device]:
-        """Get detailed information about a specific device."""
-        # Try to get hostname
         hostname = self._get_hostname(ip_address)
-        
-        # Try ARP lookup for MAC address
         mac = self._get_mac_from_arp(ip_address)
-        
-        vendor = None
-        if mac:
-            vendor = self._get_vendor_from_mac(mac)
-        
+
         if hostname or mac:
             return Device(
                 ip_address=ip_address,
                 mac_address=mac,
                 hostname=hostname,
-                vendor=vendor
+                vendor=self._get_vendor_from_mac(mac) if mac else None
             )
-        
+
         return None
-    
-    def _get_hostname(self, ip_address: str) -> Optional[str]:
-        """Get hostname from IP address using reverse DNS."""
+
+    def _get_hostname(self, ip: str) -> Optional[str]:
         try:
-            hostname, _, _ = socket.gethostbyaddr(ip_address)
-            return hostname
+            return socket.gethostbyaddr(ip)[0]
         except Exception:
             return None
-    
-    def _get_mac_from_arp(self, ip_address: str) -> Optional[str]:
-        """Get MAC address from ARP table."""
+
+    def _get_mac_from_arp(self, ip: str) -> Optional[str]:
         try:
             with open('/proc/net/arp', 'r') as f:
-                for line in f.readlines()[1:]:  # Skip header
+                for line in f.readlines()[1:]:
                     parts = line.split()
-                    if len(parts) >= 4 and parts[0] == ip_address:
+                    if len(parts) >= 4 and parts[0] == ip:
                         return parts[3]
         except Exception:
             pass
-        
         return None
-    
-    def _get_vendor_from_mac(self, mac_address: str) -> Optional[str]:
-        """Get vendor name from MAC address OUI."""
+
+    def _get_vendor_from_mac(self, mac: str) -> Optional[str]:
         try:
-            mac = EUI(mac_address)
-            oui = mac.oui
-            return str(oui.registration().org) if oui.registration() else None
+            return str(EUI(mac).oui.registration().org)
         except Exception:
             return None
-    
+
     def _discover_mdns_services(self) -> List[Device]:
-        """Discover devices via mDNS/Bonjour."""
         devices = []
-        
-        class DeviceListener(ServiceListener):
+
+        class Listener(ServiceListener):
             def __init__(self):
                 self.services = {}
-            
-            def add_service(self, zeroconf, service_type, name):
-                info = zeroconf.get_service_info(service_type, name)
-                if info:
-                    addresses = [str(addr) for addr in info.addresses]
-                    if addresses:
-                        self.services[addresses[0]] = {
-                            'hostname': name.split('.')[0],
-                            'services': [service_type]
-                        }
-        
-        listener = DeviceListener()
-        
-        # Browse common service types
-        browser = ServiceBrowser(self.zeroconf, "_http._tcp.local.", listener)
-        browser2 = ServiceBrowser(self.zeroconf, "_ssh._tcp.local.", listener)
-        browser3 = ServiceBrowser(self.zeroconf, "_workstation._tcp.local.", listener)
-        
+
+            def add_service(self, zc, type_, name):
+                try:
+                    info = zc.get_service_info(type_, name)
+                    if info and info.addresses:
+                        ip = ".".join(map(str, info.addresses[0]))
+
+                        if ip not in self.services:
+                            self.services[ip] = {
+                                "hostname": name.split('.')[0],
+                                "services": []
+                            }
+
+                        if type_ not in self.services[ip]["services"]:
+                            self.services[ip]["services"].append(type_)
+                except Exception:
+                    pass
+
+            def remove_service(self, *args): pass
+            def update_service(self, *args): pass
+
+        listener = Listener()
+
+        ServiceBrowser(self.zeroconf, "_http._tcp.local.", listener)
+        ServiceBrowser(self.zeroconf, "_ssh._tcp.local.", listener)
+
         import time
-        time.sleep(3)  # Give services time to respond
-        
+        time.sleep(3)
+
         for ip, info in listener.services.items():
             devices.append(Device(
                 ip_address=ip,
-                hostname=info['hostname'],
-                services=info['services']
+                hostname=info["hostname"],
+                services=info["services"]
             ))
-        
-        return devices
 
+        return devices

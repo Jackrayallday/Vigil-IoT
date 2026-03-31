@@ -1,69 +1,21 @@
 {
   "meta": {
-    "os": "Windows) 11",
-    "started_at": 1765225793.3948796,
-    "finished_at": 1765225923.744865
+    "os": "Windows 11",
+    "started_at": 1774983356.211527,
+    "finished_at": 1774983372.1512012
   },
   "interfaces": [
     {
-      "name": "Ethernet 2",
-      "ip": "192.168.5.66",
-      "network": "192.168.5.0/24"
-    },
-    {
-      "name": "vEthernet (WSL (Hyper-V firewall))",
-      "ip": "172.31.192.1",
-      "network": "172.31.192.0/20"
-    },
-    {
-      "name": "Ethernet 3",
-      "ip": "192.168.56.1",
-      "network": "192.168.56.0/24"
-    },
-    {
       "name": "Wi-Fi",
-      "ip": "192.168.1.136",
-      "network": "192.168.1.0/24"
+      "ip": "192.168.12.104",
+      "network": "192.168.12.104/24"
     }
   ],
   "devices": [
     {
-      "ip": "172.31.207.219",
-      "hostname": null,
-      "mac": "00:15:5d:99:ed:8a",
-      "vendor": "Microsoft Corporation",
-      "services": [],
-      "iface": "vEthernet (WSL (Hyper-V firewall))",
-      "discovered_via": [
-        "ARP"
-      ]
-    },
-    {
-      "ip": "172.31.207.255",
-      "hostname": null,
-      "mac": "ff:ff:ff:ff:ff:ff",
-      "vendor": null,
-      "services": [],
-      "iface": "vEthernet (WSL (Hyper-V firewall))",
-      "discovered_via": [
-        "ARP"
-      ]
-    },
-    {
-      "ip": "192.168.56.255",
-      "hostname": null,
-      "mac": "ff:ff:ff:ff:ff:ff",
-      "vendor": null,
-      "services": [],
-      "iface": "Ethernet 3",
-      "discovered_via": [
-        "ARP"
-      ]
-    },
-    {
-      "ip": "192.168.1.1",
-      "hostname": null,
-      "mac": "44:d4:53:85:6c:a2",
+      "ip": "192.168.12.1",
+      "hostname": "f5688w.lan",
+      "mac": "94:98:8f:42:6d:71",
       "vendor": "Sagemcom Broadband SAS",
       "services": [],
       "iface": "Wi-Fi",
@@ -72,10 +24,10 @@
       ]
     },
     {
-      "ip": "192.168.1.180",
-      "hostname": null,
-      "mac": "3c:6d:66:24:69:6c",
-      "vendor": "NVIDIA Corporation",
+      "ip": "224.0.0.2",
+      "hostname": "all-routers.mcast.net",
+      "mac": "01:00:5e:00:00:02",
+      "vendor": null,
       "services": [],
       "iface": "Wi-Fi",
       "discovered_via": [
@@ -83,7 +35,51 @@
       ]
     },
     {
-      "ip": "192.168.1.255",
+      "ip": "224.0.0.22",
+      "hostname": "igmp.mcast.net",
+      "mac": "01:00:5e:00:00:16",
+      "vendor": null,
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
+      "ip": "224.0.0.251",
+      "hostname": "mdns.mcast.net",
+      "mac": "01:00:5e:00:00:fb",
+      "vendor": null,
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
+      "ip": "224.0.0.252",
+      "hostname": null,
+      "mac": "01:00:5e:00:00:fc",
+      "vendor": null,
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
+      "ip": "239.255.255.250",
+      "hostname": null,
+      "mac": "01:00:5e:7f:ff:fa",
+      "vendor": null,
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
+      "ip": "255.255.255.255",
       "hostname": null,
       "mac": "ff:ff:ff:ff:ff:ff",
       "vendor": null,
@@ -95,9 +91,9 @@
     }
   ],
   "summary": {
-    "total_devices": 6,
-    "with_hostnames": 0,
-    "with_macs": 6,
-    "with_vendor": 3
+    "total_devices": 7,
+    "with_hostnames": 4,
+    "with_macs": 7,
+    "with_vendor": 1
   }
 }
