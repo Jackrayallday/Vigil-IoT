@@ -23,9 +23,6 @@ __pycache__/
 # Generated device discovery output
 deviceDiscovery/discovery.json
 
-# Optional: ignore lockfile if your team isn't using it consistently
-package-lock.json
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
