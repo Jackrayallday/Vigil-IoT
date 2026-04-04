@@ -10,7 +10,7 @@ import React, { useRef, useState } from "react"; //import React from "react"; KV
 import axios from "axios"; //KV add
 import "./styles/modal.css";
 import "./styles/login.css";
-import logoImage from "./assets/logo.png";
+import logoImage from "./assets/logo.svg";
 import RegisterForm from "./RegisterForm";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import PasswordField from "./PasswordField";
@@ -63,32 +63,32 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
     setInfoMessage("Check your email for the reset link once it is available.");
   }
 
-  async function handleSubmit(e) { //function handleSubmit(e) { KV edit
+  async function handleSubmit(e){//function handleSubmit(e) { KV edit
     e.preventDefault();
-    // Stub for now; could hook into auth later
-    //KV add --------------------------------------------------------
-    try {
-      const res = await axios.post("http://localhost:3001/login", {
-        email,
-        password,
-      });
+    
+    try{
+      const response = await axios.post(//Send request to /login on server
+        "http://localhost:3000/login",
+        {email, password},
+        {headers: {"Content-Type": "application/json"}}
+      );
 
-      if (res.data.success) {
-        const userInfo = res?.data?.user ?? { email };
-        resetLoginState();
-        if (typeof onLoginSuccess === "function")
-          onLoginSuccess(userInfo);
-        else if (typeof onClose === "function")
-          onClose();
-        return;
-      } else {
-        setError("Invalid email or password.");
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Server error. Please try again later.");
+      //if here, login was sucessful (status 2XX)
+      resetLoginState();
+
+      if(typeof onLoginSuccess === "function")
+        onLoginSuccess(response.data.user);
+      else if (typeof onClose === "function")
+        onClose();
     }
-    //---------------------------------------------------------------
+    catch(err){//400 and 500 responses are caught here
+      console.error("Login error!: ", err);
+      
+      if(err.response)//Axios attaches backend response here for 400/500 errors
+        setError(err.response.data?.message || "Login Failed!");
+      else
+	    setError("Unable to connect to server!");//network error or no response from server
+    }
   }
 
   function handleBackdropPointerDown(event) {
