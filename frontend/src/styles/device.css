@@ -7,13 +7,13 @@ programmer: Jack Ray
 
 .device-shell {
   width: min(64rem, 100%);
-  border: 0.25rem solid var(--border);
-  border-radius: 0.85rem;
-  background: #ffffff;
+  border: 1px solid var(--surface-border);
+  border-radius: 0.95rem;
+  background: var(--surface-1);
   padding: var(--space-5);
   display: grid;
   gap: var(--space-5);
-  box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1.8rem 3.4rem rgba(4, 8, 14, 0.55);
 }
 
 .device-header {
@@ -24,10 +24,11 @@ programmer: Jack Ray
 }
 
 .device-backBtn {
-  border: 0.125rem solid #d1d5db;
+  border: 1px solid var(--surface-border-strong);
   cursor: pointer;
-  border-radius: 0.5rem;
-  background: #f9fafb;
+  border-radius: 0.65rem;
+  background: rgba(12, 24, 38, 0.8);
+  color: var(--ink);
   padding: var(--space-2) var(--space-4);
   font-size: var(--fs-sm);
   font-weight: 700;
@@ -38,8 +39,8 @@ programmer: Jack Ray
 
 .device-backBtn:hover,
 .device-backBtn:focus-visible {
-  border-color: var(--blue);
-  background: #eef3ff;
+  border-color: rgba(111, 209, 255, 0.6);
+  background: rgba(20, 34, 50, 0.85);
   outline: none;
 }
 
@@ -49,12 +50,12 @@ programmer: Jack Ray
 }
 
 .device-card {
-  border: 0.2rem solid var(--border);
-  border-radius: 0.75rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 0.85rem;
   padding: var(--space-5);
   display: grid;
   gap: var(--space-4);
-  background: #ffffff;
+  background: var(--surface-2);
 }
 
 .device-grid {
@@ -69,12 +70,12 @@ programmer: Jack Ray
 
 .device-grid dt {
   font-weight: 700;
-  color: #111;
+  color: var(--ink);
 }
 
 .device-grid dd {
   margin: 0;
-  color: #1f2937;
+  color: var(--text-muted);
   font-size: var(--fs-sm);
   line-height: 1.4;
 }
@@ -83,10 +84,10 @@ programmer: Jack Ray
 .device-printBtn {
   justify-self: flex-start;
   cursor: pointer;
-  border: 0.125rem solid var(--red-border);
-  border-radius: 0.6rem;
-  background: var(--red-bg);
-  color: var(--red);
+  border: 1px solid rgba(111, 209, 255, 0.6);
+  border-radius: 0.7rem;
+  background: rgba(14, 26, 40, 0.85);
+  color: var(--ink);
   font-weight: 700;
   padding: var(--space-2) var(--space-4);
   font-size: var(--fs-sm);
@@ -106,5 +107,5 @@ programmer: Jack Ray
 .device-empty {
   margin: 0;
   font-style: italic;
-  color: #555;
+  color: var(--text-muted);
 }
