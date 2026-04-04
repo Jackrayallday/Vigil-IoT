@@ -1,70 +1,47 @@
 {
   "meta": {
     "os": "Windows) 11",
-    "started_at": 1765225793.3948796,
-    "finished_at": 1765225923.744865
+    "started_at": 1775329410.4826417,
+    "finished_at": 1775329466.2953055
   },
   "interfaces": [
     {
-      "name": "Ethernet 2",
-      "ip": "192.168.5.66",
-      "network": "192.168.5.0/24"
-    },
-    {
-      "name": "vEthernet (WSL (Hyper-V firewall))",
-      "ip": "172.31.192.1",
-      "network": "172.31.192.0/20"
-    },
-    {
-      "name": "Ethernet 3",
-      "ip": "192.168.56.1",
-      "network": "192.168.56.0/24"
-    },
-    {
       "name": "Wi-Fi",
-      "ip": "192.168.1.136",
-      "network": "192.168.1.0/24"
+      "ip": "192.168.0.235",
+      "network": "192.168.0.0/24"
     }
   ],
   "devices": [
     {
-      "ip": "172.31.207.219",
-      "hostname": null,
-      "mac": "00:15:5d:99:ed:8a",
-      "vendor": "Microsoft Corporation",
-      "services": [],
-      "iface": "vEthernet (WSL (Hyper-V firewall))",
+      "ip": "192.168.0.1",
+      "hostname": "TP-LINK/TP-LINK UPnP/1.1 MiniUPnPd/2.2.2",
+      "mac": "50:3d:d1:50:b5:c0",
+      "vendor": "TP-LINK/TP-LINK UPnP/1.1 MiniUPnPd/2.2.2",
+      "services": [
+        "USN:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac13",
+        "SSDP:urn:schemas-upnp-org:service:WANIPConnection:1",
+        "SSDP:urn:schemas-upnp-org:device:WANDevice:1",
+        "SSDP:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac12",
+        "SSDP:urn:schemas-upnp-org:service:WANPPPConnection:1",
+        "SSDP:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac11",
+        "SSDP:uuid:c27f7b1a-f271-4a57-9a96-ee175b2bac13",
+        "SSDP:urn:schemas-upnp-org:service:Layer3Forwarding:1",
+        "SSDP:upnp:rootdevice",
+        "SSDP:urn:schemas-upnp-org:device:InternetGatewayDevice:1",
+        "SSDP:urn:schemas-upnp-org:device:WANConnectionDevice:1",
+        "SSDP:urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1"
+      ],
+      "iface": "Wi-Fi",
       "discovered_via": [
-        "ARP"
+        "ARP",
+        "SSDP"
       ]
     },
     {
-      "ip": "172.31.207.255",
+      "ip": "192.168.0.78",
       "hostname": null,
-      "mac": "ff:ff:ff:ff:ff:ff",
+      "mac": "5a:90:cc:1f:aa:fd",
       "vendor": null,
-      "services": [],
-      "iface": "vEthernet (WSL (Hyper-V firewall))",
-      "discovered_via": [
-        "ARP"
-      ]
-    },
-    {
-      "ip": "192.168.56.255",
-      "hostname": null,
-      "mac": "ff:ff:ff:ff:ff:ff",
-      "vendor": null,
-      "services": [],
-      "iface": "Ethernet 3",
-      "discovered_via": [
-        "ARP"
-      ]
-    },
-    {
-      "ip": "192.168.1.1",
-      "hostname": null,
-      "mac": "44:d4:53:85:6c:a2",
-      "vendor": "Sagemcom Broadband SAS",
       "services": [],
       "iface": "Wi-Fi",
       "discovered_via": [
@@ -72,10 +49,10 @@
       ]
     },
     {
-      "ip": "192.168.1.180",
+      "ip": "192.168.0.34",
       "hostname": null,
-      "mac": "3c:6d:66:24:69:6c",
-      "vendor": "NVIDIA Corporation",
+      "mac": "cc:a7:c1:16:a0:74",
+      "vendor": "Google, Inc.",
       "services": [],
       "iface": "Wi-Fi",
       "discovered_via": [
@@ -83,9 +60,75 @@
       ]
     },
     {
-      "ip": "192.168.1.255",
+      "ip": "192.168.0.235",
+      "hostname": "KevinDELL-laptop",
+      "mac": "3c:0a:f3:8b:4f:9d",
+      "vendor": "CLOUD NETWORK TECHNOLOGY SINGAPORE PTE. LTD.",
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
+      "ip": "192.168.0.149",
       "hostname": null,
-      "mac": "ff:ff:ff:ff:ff:ff",
+      "mac": "30:fc:eb:42:be:5e",
+      "vendor": "LG Electronics (Mobile Communications)",
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
+      "ip": "192.168.0.225",
+      "hostname": null,
+      "mac": "04:13:7a:97:a0:a1",
+      "vendor": null,
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
+      "ip": "192.168.0.184",
+      "hostname": null,
+      "mac": "a2:1b:ad:cd:db:70",
+      "vendor": null,
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
+      "ip": "192.168.0.244",
+      "hostname": "MyNewDELLxps15",
+      "mac": "04:6c:59:0b:ca:de",
+      "vendor": "Intel Corporate",
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
+      "ip": "192.168.0.234",
+      "hostname": null,
+      "mac": "b0:19:21:62:29:eb",
+      "vendor": null,
+      "services": [],
+      "iface": "Wi-Fi",
+      "discovered_via": [
+        "ARP"
+      ]
+    },
+    {
+      "ip": "192.168.0.148",
+      "hostname": null,
+      "mac": "76:d6:8d:0c:fb:6a",
       "vendor": null,
       "services": [],
       "iface": "Wi-Fi",
@@ -95,9 +138,9 @@
     }
   ],
   "summary": {
-    "total_devices": 6,
-    "with_hostnames": 0,
-    "with_macs": 6,
-    "with_vendor": 3
+    "total_devices": 10,
+    "with_hostnames": 3,
+    "with_macs": 10,
+    "with_vendor": 5
   }
 }
