@@ -15,19 +15,17 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
+import { getApiErrorMessage, getApiErrorStatus } from "./apiErrors";
 import "./styles/base.css";
 import "./styles/app-shell.css";
 import "./styles/modal.css";
 import "./styles/history.css";
-import "./styles/theme-dark.css";
 import NewScanWizard from "./NewScanWizard.jsx";
 import ScanResults from "./ScanResults.jsx";
 import LoginModal from "./LoginModal.jsx";
 import SettingsModal from "./SettingsModal.jsx";
 import DeviceDetails from "./DeviceDetails.jsx";
-import logoImage from "./assets/logo.png";
-import routerIllustration from "./assets/router.svg";
-import powerPlugIllustration from "./assets/power-plug.svg";
+import logoImage from "./assets/logo.svg";
 import trashIcon from "./assets/trash.svg";
 
 axios.defaults.withCredentials = true;
@@ -68,6 +66,11 @@ const SAMPLE_SERVICE_PROFILES = [
   "SMB :445, RDP :3389",
   "SNMP :161, NTP :123",
 ];
+
+const RADAR_SWEEP_MS = 2200;
+const RADAR_PING_COUNT = 3;
+const RADAR_PING_FADE_MS = 1800;
+const RADAR_SWEEP_CENTER_OFFSET_DEG = 45;
 
 
 const SETTINGS_STORAGE_KEY = "appSettings";
@@ -160,7 +163,22 @@ function createId(prefix) {
   return `${prefix}-${Date.now()}-${random}`;
 }
 
-function mapReportToScan(report, devices = []) {
+function mapDevicesToFindings(scanId, devices = [], targets = []) {
+  if (!Array.isArray(devices) || devices.length === 0) return [];
+  return devices.map((device, index) => ({
+    id: `${scanId}-device-${index + 1}`,
+    position: index,
+    deviceName: device.device_name || device.ip_address || `Device ${index + 1}`,
+    itemDiscovered: device.device_name || device.ip_address || targets[index] || `Target ${index + 1}`,
+    ipAddress: device.ip_address || "N/A",
+    services: device.services || "N/A",
+    protocolWarnings: device.protocol_warnings || "N/A",
+    remediationTips: device.remediation_tips || "Review configuration",
+    notes: device.notes || "",
+  }));
+}
+
+function mapReportToScan(report, devices = null) {
   if (!report) return null;
   const targets = safeParseJsonArray(report.targets);
   const exclusions = safeParseJsonArray(report.exclusions);
@@ -168,20 +186,8 @@ function mapReportToScan(report, devices = []) {
   const submittedAtISO = submittedAt.toISOString();
   const submittedAtLabel = submittedAt.toLocaleString();
   const scanId = String(report.report_id ?? createId("scan"));
-
-  const findings = Array.isArray(devices) && devices.length > 0
-    ? devices.map((device, index) => ({
-        id: `${scanId}-device-${index + 1}`,
-        position: index,
-        deviceName: device.device_name || device.ip_address || `Device ${index + 1}`,
-        itemDiscovered: device.device_name || device.ip_address || targets[index] || `Target ${index + 1}`,
-        ipAddress: device.ip_address || "N/A",
-        services: device.services || "N/A",
-        protocolWarnings: device.protocol_warnings || "N/A",
-        remediationTips: device.remediation_tips || "Review configuration",
-        notes: device.notes || "",
-      }))
-    : null;
+  const hasDevicePayload = Array.isArray(devices);
+  const findings = hasDevicePayload ? mapDevicesToFindings(scanId, devices, targets) : null;
 
   return {
     id: scanId,
@@ -192,7 +198,10 @@ function mapReportToScan(report, devices = []) {
     moduleSummary: report.detection_options || "Not specified",
     targets,
     exclusions,
-    findings: findings && findings.length > 0 ? findings : buildFindings(scanId, targets, {}),
+    findings,
+    detailsLoaded: hasDevicePayload,
+    detailsLoading: false,
+    detailsError: null,
   };
 }
 
@@ -327,6 +336,31 @@ function createScanRecord(payload) {
     findings: buildFindings(id, payload.targets, options),
   };
 }
+
+function createRadarPings(count = RADAR_PING_COUNT, now = Date.now()) {
+  return Array.from({ length: count }, () => {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 6 + Math.sqrt(Math.random()) * 22;
+    const cx = 32 + Math.cos(angle) * radius;
+    const cy = 32 + Math.sin(angle) * radius;
+    const size = 1.3 + Math.random() * 0.7;
+    const dx = cx - 32;
+    const dy = cy - 32;
+    const rawAngleDeg = (Math.atan2(dx, -dy) * 180) / Math.PI;
+    const normalizedAngle = (rawAngleDeg + 360) % 360;
+    const revealAngle = (normalizedAngle - RADAR_SWEEP_CENTER_OFFSET_DEG + 360) % 360;
+    const delayMs = (revealAngle / 360) * RADAR_SWEEP_MS;
+    const expiresAt = now + delayMs + RADAR_PING_FADE_MS + 120;
+    return {
+      id: createId("ping"),
+      cx: Number(cx.toFixed(2)),
+      cy: Number(cy.toFixed(2)),
+      r: Number(size.toFixed(2)),
+      delayMs: Number(delayMs.toFixed(0)),
+      expiresAt,
+    };
+  });
+}
 // Main shell puts together the scan wizard modal, history list, and results details.
 // The backbone React component that holds the modals, history list, and results screen together.
 export default function App() {
@@ -361,8 +395,36 @@ export default function App() {
   const [isSavingScan, setIsSavingScan] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(null);
   const [historyFeedback, setHistoryFeedback] = useState(null);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
   const [deletingScanId, setDeletingScanId] = useState(null);
+  const [radarPings, setRadarPings] = useState([]);
+  const [isRadarActive, setIsRadarActive] = useState(false);
   const wizardBackdropPointerDownRef = useRef(false); // Prevents dismiss when dragging selections outside the modal.
+  const driftDots = useMemo(() => (
+    Array.from({ length: 54 }, (_, index) => {
+      const sizeRem = 0.12 + Math.random() * 0.28;
+      const opacity = 0.25 + Math.random() * 0.55;
+      const duration = 18 + Math.random() * 32;
+      const delay = Math.random() * 6;
+      const x = Math.random() * 100;
+      const y = Math.random() * 100;
+      const lightness = 52 + Math.random() * 24;
+      const blur = Math.random() * 0.6;
+      return {
+        id: `dot-${index}`,
+        sizeRem,
+        opacity,
+        duration,
+        delay,
+        x,
+        y,
+        lightness,
+        blur,
+      };
+    })
+  ), []);
+
 
   // On first render, apply the stored theme so the UI does not flash light/dark.
   useEffect(() => {
@@ -373,7 +435,10 @@ export default function App() {
     let isActive = true;
     async function hydrateSession() {
       try {
-        const res = await axios.get("http://localhost:3001/check_login");
+        const res = await axios.get(
+          "http://localhost:3000/check_login",
+          {withCredentials: true}
+        );
         if (!isActive) return;
         if (res?.data?.loggedIn && res?.data?.user) {
           setUser(res.data.user);
@@ -381,7 +446,7 @@ export default function App() {
           setUser(null);
         }
       } catch (err) {
-        console.error("Session check failed:", err);
+        console.error("Session check failed!: ", err);
       }
     }
     hydrateSession();
@@ -408,6 +473,23 @@ export default function App() {
   useEffect(() => {
     setSaveFeedback(null);
   }, [selectedScanId]);
+
+  useEffect(() => {
+    if (view !== VIEW_HOME || !isRadarActive) {
+      setRadarPings([]);
+      return undefined;
+    }
+    const spawnPings = () => {
+      const now = Date.now();
+      setRadarPings((prev) => {
+        const active = prev.filter((ping) => ping.expiresAt > now);
+        return [...active, ...createRadarPings(RADAR_PING_COUNT, now)];
+      });
+    };
+    spawnPings();
+    const intervalId = window.setInterval(spawnPings, RADAR_SWEEP_MS);
+    return () => window.clearInterval(intervalId);
+  }, [view, isRadarActive]);
 
   // Handy pointer to whichever scan is selected in the history/results views.
   const selectedScan = useMemo(() => {
@@ -506,61 +588,156 @@ export default function App() {
     }
   }
 
-  useEffect(() => {
-    let isActive = true;
+  async function loadHistoryForUser(userId, { force = false } = {}) {
+    if (!userId) return;
+    if (isHistoryLoading) return;
+    if (hasLoadedHistory && !force) return;
 
-    async function loadHistoryForUser(userId) {
-      try {
-        const reportsRes = await axios.get(`http://localhost:3001/scan-reports/${userId}`);
-        if (!isActive) return;
-        const reports = reportsRes?.data?.success ? reportsRes.data.reports || [] : [];
-        const reportsWithDevices = await Promise.all(
-          reports.map(async (report) => {
-            try {
-              const devicesRes = await axios.get(`http://localhost:3001/scan-reports/${report.report_id}/devices`);
-              const devices = devicesRes?.data?.success ? devicesRes.data.devices || [] : [];
-              return mapReportToScan(report, devices);
-            } catch (err) {
-              console.error("Failed to load devices for report", report.report_id, err);
-              return mapReportToScan(report, []);
-            }
-          })
-        );
-        const cleaned = pruneScans(reportsWithDevices.filter(Boolean), settings.retentionDays);
-        setScans(cleaned);
-        setSelectedScanId((prev) => {
-          if (prev && cleaned.some((scan) => scan.id === prev)) return prev;
-          if (unsavedScan?.id) return unsavedScan.id;
-          return cleaned[0]?.id ?? null;
+    setHistoryFeedback(null);
+    setIsHistoryLoading(true);
+
+    try{
+      const reportsRes = await axios.get(//send request to /scan-reports on the server
+        "http://localhost:3000/scan-reports",
+        {withCredentials: true}
+      );
+
+      //if here, scan reports successfully retrieved
+      const reports = reportsRes?.data?.success ? reportsRes.data.reports || [] : [];
+      const mapped = pruneScans(
+        reports
+          .map((report) => mapReportToScan(report))
+          .filter(Boolean),
+        settings.retentionDays
+      );
+
+      setScans(mapped);
+      setHasLoadedHistory(true);
+      setSelectedScanId((prev) => {
+        if (prev && mapped.some((scan) => scan.id === prev)) return prev;
+        if (unsavedScan?.id) return unsavedScan.id;
+        return mapped[0]?.id ?? null;
+      });
+    }
+    catch(err){
+      console.error("Failed to load scan scan reports for user ", userId, err);
+
+      if(err.response)//Axios attaches backend response here for 400/500 errors
+        setHistoryFeedback({
+          type: "error",
+          message: err.response.data?.message || "Failed to load scan history!"
         });
-      } catch (err) {
-        if (!isActive) return;
-        console.error("Failed to load scan history for user", userId, err);
-        setScans([]);
-        setSelectedScanId(null);
-      }
-    }
-
-    if (user?.user_id) {
-      loadHistoryForUser(user.user_id);
-    } else {
+      else//if here, no response at all (network error, server down, CORS, timeout)
+        setHistoryFeedback({
+          type: "error",
+          message: "Unable to connect to server!"
+        });
+ 
       setScans([]);
-      if (!unsavedScan) {
-        setSelectedScanId(null);
-      }
+      setSelectedScanId(null);
     }
+    finally{
+      setIsHistoryLoading(false);
+    }
+  }
 
-    return () => {
-      isActive = false;
-    };
-  }, [user?.user_id, settings.retentionDays, unsavedScan]);
+  async function loadScanDetails(scanId, actor = user) {
+    if (!scanId || !actor?.user_id) return;
+    const scanToLoad = scans.find((scan) => scan.id === scanId);
+    if (!scanToLoad || scanToLoad.detailsLoaded || scanToLoad.detailsLoading) return;
 
-  async function handleLogout() {
-    try {
-      await axios.post("http://localhost:3001/logout");
-    } catch (err) {
-      console.error("Logout failed:", err);
-    } finally {
+    setScans((prev) =>
+      prev.map((scan) =>
+        scan.id === scanId
+          ? { ...scan, detailsLoading: true, detailsError: null }
+          : scan
+      )
+    );
+
+    try{
+      const devicesRes = await axios.get(//send request to /scan_reports/id/devices on server
+        `http://localhost:3000/scan-reports/${scanId}/devices`,
+        {withCredentials: true}
+      );
+
+      //if here, devices successfully retrieved
+      const devices = devicesRes?.data?.success ? devicesRes.data.devices || [] : [];
+      setScans((prev) =>
+        prev.map((scan) =>
+          scan.id === scanId
+            ? {
+                ...scan,
+                findings: mapDevicesToFindings(scan.id, devices, scan.targets),
+                detailsLoaded: true,
+                detailsLoading: false,
+                detailsError: null,
+              }
+            : scan
+        )
+      );
+    }
+    catch(err){//if here, device retrieval failed
+      console.error("Failed to load scan details ", scanId, err);//log the error
+
+      if(err.response)//Axios attaches backend response here for 400/500 errors
+        setScans((prev) =>
+          prev.map((scan) =>
+            scan.id === scanId
+              ? {
+                  ...scan,
+                  detailsLoading: false,
+                  detailsError: err.response.data?.message || "Failed to load scan report details."
+                }
+              : scan
+          )
+        );
+      else//if here, no response at all (network error, server down, CORS, timeout)
+        setScans((prev) => 
+          prev.map((scan) => 
+            scan.id === scanId 
+              ? {
+                  ...scan,
+                  detailsLoading: false,
+                  detailsError: "Unable to connect to server!",
+                } 
+              : scan
+          )
+        );
+    }
+  }
+
+  useEffect(() => {
+    if (user?.user_id) return;
+    setScans([]);
+    setHistoryFeedback(null);
+    setIsHistoryLoading(false);
+    setHasLoadedHistory(false);
+    if (!unsavedScan) {
+      setSelectedScanId(null);
+    }
+  }, [user?.user_id, unsavedScan]);
+
+  async function handleLogout(){
+    try{
+      await axios.post(//Send request to /logout on server
+        "http://localhost:3000/logout",
+        {},
+        {
+          withCredentials: true,
+          headers: {"Content-Type": "application/json"}
+        }
+      );
+    }
+    catch(err){//if here, logout failed
+      console.error("Logout failed!: ", err);//log the error
+
+      //uncomment and edit when you find a way to print logout failure message in UI
+      /*if(err.response)//Axios attaches backend response here for 400/500 errors
+        //print(err.response.data?.message || "Registration failed!");
+      else//if here, no response at all (network error, server down, CORS, timeout)
+	      //print("Unable to connect to server!");*/
+    } 
+    finally{//execute this no matter what
       setUser(null);
       setPendingLoginAction(null);
     }
@@ -570,10 +747,11 @@ export default function App() {
     if (!action) return;
     if (action.type === LOGIN_ACTIONS.HISTORY) {
       showHistoryView();
+      loadHistoryForUser(actor?.user_id);
     } else if (action.type === LOGIN_ACTIONS.SAVE_SCAN) {
       const scanToPersist = action.scan || selectedScan;
       if (scanToPersist) {
-        persistScanReport(scanToPersist, actor);
+        persistScanReport(scanToPersist/*, actor*/);//actor no longer needed
       }
     }
   }
@@ -592,6 +770,7 @@ export default function App() {
       return;
     }
     showHistoryView();
+    loadHistoryForUser(user.user_id);
   }
 
   async function handleDeleteScan(scanId) {
@@ -603,8 +782,10 @@ export default function App() {
     }
     setDeletingScanId(scanId);
     setHistoryFeedback(null);
-    try {
-      await axios.delete(`http://localhost:3001/delete-scan/${scanId}`);
+    try{
+      await axios.delete(`http://localhost:3000/delete-scan/${scanId}`);//send req to /delete-scan
+
+      //if here, deletion was successful
       setScans((prev) => {
         const next = prev.filter((entry) => entry.id !== scanId);
         if (prev.length !== next.length) {
@@ -616,10 +797,22 @@ export default function App() {
         }
         return next;
       });
-    } catch (err) {
-      console.error("Failed to delete scan", scanId, err);
-      setHistoryFeedback({ type: "error", message: "Could not delete scan. Please try again." });
-    } finally {
+    }
+    catch(err){//if here, deletion failed
+      console.error("Failed to delete scan!: ", scanId, err);//log the error
+
+      if(err.response)//Axios attaches backend response here for 400/500 errors
+         setHistoryFeedback({//indicate failure in response
+          type: "error",
+          message: err.response.data?.message || "Delete scan failed!"
+        });
+      else
+        setHistoryFeedback({//indicate failure in response
+          type: "error",
+          message: "Unable to connect to server!"
+        });
+    }
+    finally{
       setDeletingScanId(null);
     }
   }
@@ -645,6 +838,7 @@ export default function App() {
       setIsViewingFreshScan(true);
     } else {
       setIsViewingFreshScan(false);
+      loadScanDetails(id);
     }
   }
 
@@ -711,39 +905,71 @@ export default function App() {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   }
 
-  async function persistScanReport(scanData, actor = user) {
-    if (!scanData) return;
-    if (!actor?.user_id) {
+  async function persistScanReport(scanData/*, actor = user*/) {//KV: actor no longer needed
+    if(!scanData) return;
+    /*if (!actor?.user_id) {
       setSaveFeedback({ type: "error", message: "Log in to save scan reports." });
       return;
-    }
+    }*/
     setIsSavingScan(true);
     setSaveFeedback(null);
-    try {
+
+    try{
       const payload = {
-        user_id: actor.user_id,
+        //user_id: actor.user_id,//KV: no longer needed (not used by backend)
         title: scanData.name,
-        scanned_at: formatToMysqlDatetime(scanData.submittedAtISO || scanData.submittedAt) || formatToMysqlDatetime(new Date().toISOString()),
+        scanned_at: formatToMysqlDatetime(scanData.submittedAtISO || scanData.submittedAt) ||
+                    formatToMysqlDatetime(new Date().toISOString()),
         targets: JSON.stringify(scanData.targets || []),
         exclusions: JSON.stringify(scanData.exclusions || []),
         detection_options: scanData.moduleSummary,
-        //devices: JSON.stringify(scanData.findings || []),//KV: backend takes array, not string
-        devices: scanData.findings || [],//KV add: send as array, not string
+        devices: Array.isArray(scanData.findings) ? scanData.findings : []//scanData.findings||[],
       };
-      await axios.post("http://localhost:3001/save-scan", payload);
-      const savedScan = snapshotScan(scanData);
+
+      const response = await axios.post(//Send request to /save-scan on server
+        "http://localhost:3000/save-scan",
+        payload,
+        {withCredentials: true}
+      );
+
+      //if here, scan was successfully saved
+      const savedReportId = String(response?.data?.report_id || scanData.id);
+      const savedScan = {
+        ...snapshotScan(scanData),
+        id: savedReportId,
+        detailsLoaded: true,
+        detailsLoading: false,
+        detailsError: null,
+      };
+
       setScans((prev) => {
-        const withoutCurrent = prev.filter((entry) => entry.id !== savedScan.id);
+        const withoutCurrent = prev.filter(
+          (entry) => entry.id !== scanData.id && entry.id !== savedReportId
+        );
         return pruneScans([savedScan, ...withoutCurrent], settings.retentionDays);
       });
-      setUnsavedScan((current) => (current?.id === savedScan.id ? null : current));
+
+      setUnsavedScan((current) => (current?.id === scanData.id ? null : current));
       setSelectedScanId(savedScan.id);
-      setSaveFeedback({ type: "success", message: "Scan report saved." });
-      setIsViewingFreshScan(false);
-    } catch (err) {
-      console.error("Save scan failed:", err);
-      setSaveFeedback({ type: "error", message: "Could not save scan report. Please try again." });
-    } finally {
+      setHasLoadedHistory(false);
+      setSaveFeedback({type: "success", message: "Scan report saved."});
+      //setIsViewingFreshScan(false);//KV: removed to fix UI bug
+    }
+    catch(err){//if here, saving failed
+      console.error("Save scan error!: ", err);//log the error
+
+      if(err.response)//Axios attaches backend response here for 400/500 errors
+        setSaveFeedback({
+          type: "error",
+          message: err.response.data?.message || "Save scan failed!"
+        });
+      else
+        setSaveFeedback({
+          type: "error",
+          message: "Unable to connect to server!"
+        });
+    }
+    finally{
       setIsSavingScan(false);
     }
   }
@@ -758,13 +984,47 @@ export default function App() {
       openLogin();
       return;
     }
-    persistScanReport(selectedScan, user);
+    persistScanReport(selectedScan/*, user*/);//user no longer needed
   }
 
-  const hasScans = scans.length > 0 || Boolean(unsavedScan);
+  const hasScans = scans.length > 0;
+  
+  //KV add: fix bug that prevents "save scan" buttom from disappearing
+  const showSaveButton = 
+    unsavedScan?.id === selectedScanId &&
+    view === VIEW_RESULTS && !isSavingScan;
+
+  const selectedScanItemsLoading =
+    Boolean(selectedScan) &&
+    !isViewingFreshScan &&
+    Boolean(selectedScan?.detailsLoading);
+
+  const selectedScanItemsError =
+    !isViewingFreshScan && selectedScan?.detailsError
+      ? selectedScan.detailsError
+      : null;
+
 //the elements for each view and modal are laid out here
   return (
     <div className="frame">
+      <div className="drift-layer" aria-hidden="true">
+        {driftDots.map((dot) => (
+          <span
+            key={dot.id}
+            className="drift-dot"
+            style={{
+              "--dot-size": `${dot.sizeRem}rem`,
+              "--dot-opacity": dot.opacity,
+              "--dot-duration": `${dot.duration}s`,
+              "--dot-delay": `${dot.delay}s`,
+              "--dot-x": `${dot.x}%`,
+              "--dot-y": `${dot.y}%`,
+              "--dot-lightness": `${dot.lightness}%`,
+              "--dot-blur": `${dot.blur}px`,
+            }}
+          />
+        ))}
+      </div>
       <header className="header">
         <a
           className="logo"
@@ -774,6 +1034,7 @@ export default function App() {
           onClick={(e) => { e.preventDefault(); goHome(); }}
         >
           <img className="logo-img" src={logoImage} alt="Vigil IoT logo" />
+          
         </a>
 
         <nav className="top-actions" aria-label="Primary">
@@ -792,38 +1053,62 @@ export default function App() {
           {/* Home view redesigned to feature the start panel artwork flanking the primary call to action. */}
           {view === VIEW_HOME && (
           <section className="home-start-panel" aria-label="Start scan panel">
-            <img
-              src={routerIllustration}
-              alt="Stylized wireless router illustration"
-              className="home-start-panel__illustration home-start-panel__illustration--router"
-              draggable="false"
-            />
-
             <div className="home-start-panel__center">
               <a
                 href="/scan/new"
                 className="start-circle home-start-panel__start"
                 aria-label="Start Scan"
                 onClick={openWizard}
+                onMouseEnter={() => setIsRadarActive(true)}
+                onMouseLeave={() => setIsRadarActive(false)}
+                onFocus={() => setIsRadarActive(true)}
+                onBlur={() => setIsRadarActive(false)}
               >
-                <span className="start-text">Start{"\n"}Scan</span>
+                <span className="start-radar" aria-hidden="true">
+                  <svg viewBox="0 0 64 64" className="start-radar__svg">
+                    <circle className="start-radar__ring" cx="32" cy="32" r="30" />
+                    <g className="start-radar__sweep-group">
+                      <path className="start-radar__sweep" d="M32 32 L32 2 A30 30 0 0 1 62 32 Z" />
+                      <path className="start-radar__grid" d="M32 12 A20 20 0 0 1 52 32" />
+                      <path className="start-radar__grid" d="M32 18 A14 14 0 0 1 46 32" />
+                    </g>
+                    <g className="start-radar__pings">
+                      {radarPings.map((ping, index) => (
+                        <circle
+                          key={ping.id}
+                          className="start-radar__ping"
+                          cx={ping.cx}
+                          cy={ping.cy}
+                          r={ping.r}
+                          style={{
+                            "--ping-delay": `${ping.delayMs}ms`,
+                            "--ping-life": `${RADAR_PING_FADE_MS}ms`,
+                          }}
+                        />
+                      ))}
+                    </g>
+                  </svg>
+                </span>
+                <span className="start-text">Start Scan</span>
               </a>
+
+              <p className="home-start-panel__subtitle">
+                Scan your local network for vulnerable IoT devices
+              </p>
 
               <button
                 type="button"
-                className="prev-scans home-start-panel__history"
+                className="prev-scans"
                 onClick={handleHistoryButtonClick}
               >
-                Previous Scans
+                <span className="prev-scans__icon" aria-hidden="true" />
+                <span className="prev-scans__content">
+                  <span className="prev-scans__title">Previous Scans</span>
+                  <span className="prev-scans__subtitle">View past results</span>
+                </span>
+                <span className="prev-scans__arrow" aria-hidden="true">&gt;</span>
               </button>
             </div>
-
-            <img
-              src={powerPlugIllustration}
-              alt="Stylized power plug illustration"
-              className="home-start-panel__illustration home-start-panel__illustration--plug"
-              draggable="false"
-            />
           </section>
         )}
 
@@ -841,7 +1126,9 @@ export default function App() {
                 {historyFeedback.message}
               </p>
             )}
-            {hasScans ? (
+            {isHistoryLoading ? (
+              <p className="history-empty">Loading scan history...</p>
+            ) : hasScans ? (
               <ul className="history-list">
                 {scans.map((scan) => (
                   <li key={scan.id} className="history-item">
@@ -882,10 +1169,17 @@ export default function App() {
               onSelectScan={handleSelectScan}
               onSelectDevice={handleSelectDevice}
               onBackToHome={goHome}
-              showSaveButton={isViewingFreshScan}
+              showSaveButton={showSaveButton}//{isViewingFreshScan}//KV edit: fix non-disappearing "save scan" button
               onSaveScan={handleSaveScanClick}
               isSavingScan={isSavingScan}
               saveFeedback={saveFeedback}
+              isLoadingItems={selectedScanItemsLoading}
+              itemsError={selectedScanItemsError}
+              onRetryLoadItems={() => {
+                if (selectedScan?.id) {
+                  loadScanDetails(selectedScan.id, user);
+                }
+              }}
             />
           </div>
         )}
