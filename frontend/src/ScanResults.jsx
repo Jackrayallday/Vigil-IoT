@@ -28,6 +28,9 @@ export default function ScanResults({
   onSaveScan,
   isSavingScan = false,
   saveFeedback = null,
+  isLoadingItems = false,
+  itemsError = null,
+  onRetryLoadItems,
 }) {
   const [sortChoice, setSortChoice] = useState("input");
 
@@ -39,7 +42,7 @@ export default function ScanResults({
   }
 
   const findings = useMemo(() => {
-    if (!scan?.findings) return [];
+    if (!Array.isArray(scan?.findings)) return [];
     const base = [...scan.findings];
     if (sortChoice === "item-asc") {
       base.sort((a, b) => a.itemDiscovered.localeCompare(b.itemDiscovered));
@@ -160,61 +163,78 @@ export default function ScanResults({
         )}
       </header>
 
-      <div className="results-tableWrap">
-        {/* Table layout mirrors the mock with numbered items and key findings columns. */}
-        <table className="results-table">
-          <thead>
-            <tr>
-              <th scope="col" className="results-colIndex">#</th>
-              <th scope="col">Item Discovered</th>
-              <th scope="col">Protocol Warnings</th>
-              <th scope="col">Remediation Tips</th>
-            </tr>
-          </thead>
-          <tbody>
-            {findings.map((row, idx) => {
-              const devicePayload = {
-                ...row,
-                scanId: scan?.id,
-                scanName: scan?.name,
-                submittedAt: scan?.submittedAt,
-              };
-              const handleKey = (event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  handleDeviceActivate(devicePayload);
-                }
-              };
-
-              return (
-                <tr
-                  key={row.id || `${scan?.id || "scan"}-${idx}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`View details for ${row.itemDiscovered || `device ${idx + 1}`}`}
-                  onClick={() => handleDeviceActivate(devicePayload)}
-                  onKeyDown={handleKey}
-                >
-                  <td className="results-colIndex" data-title="#">{idx + 1}</td>
-                  <td data-title="Item Discovered">
-                    <div className="results-item">
-                      <span className="results-itemName">{row.itemDiscovered}</span>
-                      {row.notes && <span className="results-itemNotes">{row.notes}</span>}
-                    </div>
-                  </td>
-                  <td data-title="Protocol Warnings">{row.protocolWarnings}</td>
-                  <td data-title="Remediation Tips">{row.remediationTips}</td>
+      {isLoadingItems ? (
+        <p className="results-empty">Loading scan report items...</p>
+      ) : itemsError ? (
+        <div className="results-loadError">
+          <p className="results-empty">{itemsError}</p>
+          {typeof onRetryLoadItems === "function" && (
+            <button type="button" className="results-backBtn" onClick={onRetryLoadItems}>
+              Retry
+            </button>
+          )}
+        </div>
+      ) : findings.length === 0 ? (
+        <p className="results-empty">No items found for this scan report.</p>
+      ) : (
+        <>
+          <div className="results-tableWrap">
+            {/* Table layout mirrors the mock with numbered items and key findings columns. */}
+            <table className="results-table">
+              <thead>
+                <tr>
+                  <th scope="col" className="results-colIndex">#</th>
+                  <th scope="col">Item Discovered</th>
+                  <th scope="col">Protocol Warnings</th>
+                  <th scope="col">Remediation Tips</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {findings.map((row, idx) => {
+                  const devicePayload = {
+                    ...row,
+                    scanId: scan?.id,
+                    scanName: scan?.name,
+                    submittedAt: scan?.submittedAt,
+                  };
+                  const handleKey = (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleDeviceActivate(devicePayload);
+                    }
+                  };
 
-      <footer className="results-footer" aria-label="Pagination">
-        <span>Page 1</span>
-        <span>Showing {findings.length} item{findings.length === 1 ? "" : "s"}</span>
-      </footer>
+                  return (
+                    <tr
+                      key={row.id || `${scan?.id || "scan"}-${idx}`}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`View details for ${row.itemDiscovered || `device ${idx + 1}`}`}
+                      onClick={() => handleDeviceActivate(devicePayload)}
+                      onKeyDown={handleKey}
+                    >
+                      <td className="results-colIndex" data-title="#">{idx + 1}</td>
+                      <td data-title="Item Discovered">
+                        <div className="results-item">
+                          <span className="results-itemName">{row.itemDiscovered}</span>
+                          {row.notes && <span className="results-itemNotes">{row.notes}</span>}
+                        </div>
+                      </td>
+                      <td data-title="Protocol Warnings">{row.protocolWarnings}</td>
+                      <td data-title="Remediation Tips">{row.remediationTips}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <footer className="results-footer" aria-label="Pagination">
+            <span>Page 1</span>
+            <span>Showing {findings.length} item{findings.length === 1 ? "" : "s"}</span>
+          </footer>
+        </>
+      )}
     </section>
   );
 }
