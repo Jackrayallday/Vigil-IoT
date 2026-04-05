@@ -5,6 +5,8 @@ programmer: Jack Ray (Modified by Kevin to call corresponding backend route)
 Password reset request form shown inside the auth modal.
 */
 import React, { useState } from "react";
+//import { getApiErrorMessage, getApiResponseMessage } from "./apiErrors";//KV: no longer needed
+import axios from "axios"; //KV add
 
 export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV edit
   const [email, setEmail] = useState("");
@@ -22,48 +24,24 @@ export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV
       return;
     }
 
-    //KV add---------------------------------------------------------------------------------------
-    try
-    {
-        const response = await fetch("http://localhost:3001/send-email",//call backend route with following info:
-        {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: trimmedEmail }),
-        });
+    try{
+      await axios.post(//send request to /send-email on server
+        "http://localhost:3000/send-email",
+        {email: trimmedEmail},
+        {headers: {"Content-Type": "application/json"}}
+      );
 
-        const data = await response.json();//get the response from server
-
-        if(response.ok && data.success) 
-            setStatusMessage("Reset email sent successfully!");//email sent
-        else if(response.status === 404)
-            setErrorMessage("Email address not found!");//couldn't find email
-        else
-            setErrorMessage(data.message || "Something went wrong. Please try again later.");//fail
+      //if here, email sucessfully sent
+      setStatusMessage("Reset email successfully sent!");
     }
-    catch (err)
-    {//if here, server error
-      console.error(err);//log the error
-      setErrorMessage("Server error! Please try again later.");//inform user
-    }
-    //---------------------------------------------------------------------------------------------
+    catch(err){//if here, email sending failed
+      console.error("Failed to send email!: ", err);
 
-    /*if (typeof onRequestReset === "function") {
-      try {
-        const maybe = onRequestReset({ email: trimmedEmail });
-        if (maybe && typeof maybe.then === "function") {
-          maybe.catch(() => {
-            setErrorMessage("Something went wrong. Please try again later.");
-          });
-        }
-      } catch (err) {
-        console.error(err);
-        setErrorMessage("Something went wrong. Please try again later.");
-        return;
-      }
+      if(err.response)//Axios attaches backend response here for 400/500 errors
+        setErrorMessage(err.response.data?.message || "Registration failed!");//extract error message
+      else//if here, no response at all (network error, server down, CORS, timeout)
+        setErrorMessage("Unable to connect to server!");
     }
-
-    setStatusMessage("If that email is on file, we'll send a reset link shortly.");*/
     setEmail("");
   }
 

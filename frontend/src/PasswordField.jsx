@@ -16,40 +16,26 @@ export default function PasswordField({
   onChange,
   autoComplete,
   required = false,
+  validationChecks = [],
+  validationLabel = "Password rule status",
   ...rest
 }) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
+  const tooltipId = `${inputId}-validation-tooltip`;
   const [isRevealing, setIsRevealing] = useState(false);
+  const hasValidationChecks = Array.isArray(validationChecks) && validationChecks.length > 0;
+  const allValidationPassed =
+    hasValidationChecks && validationChecks.every((rule) => Boolean(rule?.passed));
 
-  // Press-and-hold toggle keeps behaviour identical across input methods.
-  function beginReveal(event) {
-    event.preventDefault();
-    setIsRevealing(true);
-  }
-
-  function endReveal() {
-    setIsRevealing(false);
-  }
-
-  function handleKeyDown(event) {
-    if (event.key === " " || event.key === "Enter") {
-      event.preventDefault();
-      setIsRevealing(true);
-    }
-  }
-
-  function handleKeyUp(event) {
-    if (event.key === " " || event.key === "Enter") {
-      event.preventDefault();
-      endReveal();
-    }
+  function toggleReveal() {
+    setIsRevealing((prev) => !prev);
   }
 
   return (
     <div className="login-field password-field">
       {label && <label htmlFor={inputId}>{label}</label>}
-      <div className="password-input-wrapper">
+      <div className={`password-input-wrapper${hasValidationChecks ? " has-validation" : ""}`}>
         <input
           id={inputId}
           name={name}
@@ -60,19 +46,38 @@ export default function PasswordField({
           required={required}
           {...rest}
         />
+        {hasValidationChecks && (
+          <button
+            type="button"
+            className={`password-validation-toggle ${allValidationPassed ? "is-valid" : "is-invalid"}`}
+            aria-label={validationLabel}
+            aria-describedby={tooltipId}
+          >
+            ?
+            <span id={tooltipId} role="tooltip" className="password-validation-tooltip">
+              <ul>
+                {validationChecks.map((rule, index) => {
+                  const isPassed = Boolean(rule?.passed);
+                  const labelText = rule?.label || "Requirement";
+                  return (
+                    <li
+                      key={`${labelText}-${index}`}
+                      className={isPassed ? "is-passed" : "is-failed"}
+                    >
+                      {isPassed ? "Done:" : "Missing:"} {labelText}
+                    </li>
+                  );
+                })}
+              </ul>
+            </span>
+          </button>
+        )}
         <button
           type="button"
-          className="password-toggle"
+          className={`password-toggle${isRevealing ? " is-revealing" : ""}`}
           aria-label={isRevealing ? "Hide password" : "Show password"}
-          onMouseDown={beginReveal}
-          onMouseUp={endReveal}
-          onMouseLeave={endReveal}
-          onTouchStart={beginReveal}
-          onTouchEnd={endReveal}
-          onTouchCancel={endReveal}
-          onKeyDown={handleKeyDown}
-          onKeyUp={handleKeyUp}
-          onBlur={endReveal}
+          aria-pressed={isRevealing}
+          onClick={toggleReveal}
         >
           {/* Eye glyph from Material Icons(not symbols) "visibility" (https://fonts.google.com/icons) */}
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">

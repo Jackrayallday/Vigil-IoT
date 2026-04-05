@@ -7,13 +7,13 @@ programmer: Jack Ray
 
 .results-shell {
   width: min(72rem, 100%);
-  border: 0.25rem solid var(--border);
-  border-radius: 0.85rem;
-  background: #ffffff;
+  border: 1px solid var(--surface-border);
+  border-radius: 0.95rem;
+  background: var(--surface-1);
   padding: var(--space-5);
   display: grid;
   gap: var(--space-5);
-  box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1.8rem 3.4rem rgba(4, 8, 14, 0.55);
 }
 
 .results-toolbar {
@@ -44,7 +44,7 @@ programmer: Jack Ray
 
 .results-subtitle {
   margin: 0;
-  color: #374151;
+  color: var(--text-muted);
   font-size: var(--fs-sm);
   line-height: 1;
 }
@@ -62,12 +62,12 @@ programmer: Jack Ray
 
 .results-summary dt {
   font-weight: 700;
-  color: #111;
+  color: var(--ink);
 }
 
 .results-summary dd {
   margin: 0;
-  color: #1f2937;
+  color: var(--text-muted);
   font-size: var(--fs-sm);
   line-height: 1;
 }
@@ -85,9 +85,10 @@ programmer: Jack Ray
 .results-pdfBtn,
 .results-sort select,
 .results-switcher select {
-  border: 0.125rem solid #d1d5db;
-  border-radius: 0.5rem;
-  background: #f9fafb;
+  border: 1px solid var(--surface-border-strong);
+  border-radius: 0.65rem;
+  background: rgba(10, 20, 32, 0.8);
+  color: var(--ink);
   padding: var(--space-2) var(--space-3);
   font-size: var(--fs-sm);
   line-height: 1;
@@ -104,9 +105,9 @@ programmer: Jack Ray
 }
 
 .results-saveBtn {
-  border: 0.125rem solid var(--blue);
-  border-radius: 0.5rem;
-  background: var(--blue);
+  border: 1px solid rgba(111, 209, 255, 0.6);
+  border-radius: 0.7rem;
+  background: linear-gradient(135deg, rgba(61, 151, 195, 0.95), rgba(38, 109, 148, 0.95));
   color: #ffffff;
   padding: var(--space-2) var(--space-3);
   font-size: var(--fs-sm);
@@ -123,8 +124,7 @@ programmer: Jack Ray
 
 .results-saveBtn:not(:disabled):hover,
 .results-saveBtn:not(:disabled):focus-visible {
-  background: #1e3a8a;
-  border-color: #1e3a8a;
+  filter: brightness(1.05);
   outline: none;
 }
 
@@ -137,8 +137,8 @@ programmer: Jack Ray
 .results-backBtn:focus-visible,
 .results-pdfBtn:hover,
 .results-pdfBtn:focus-visible {
-  border-color: var(--blue);
-  background: #eef3ff;
+  border-color: rgba(111, 209, 255, 0.6);
+  background: rgba(20, 34, 50, 0.85);
   outline: none;
 }
 
@@ -169,18 +169,35 @@ programmer: Jack Ray
 }
 
 .results-saveFeedback--success {
-  color: #047857;
+  color: #6ee7b7;
 }
 
 .results-saveFeedback--error {
-  color: #b91c1c;
+  color: #fca5a5;
+}
+
+.results-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+.results-loadError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: 1px solid var(--surface-border);
+  border-radius: 0.85rem;
+  background: var(--surface-2);
+  padding: var(--space-3);
 }
 
 .results-tableWrap {
-  border: 0.2rem solid var(--border);
-  border-radius: 0.75rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 0.85rem;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--surface-2);
 }
 
 .results-table {
@@ -190,26 +207,26 @@ programmer: Jack Ray
 }
 
 .results-table thead {
-  background: #eef3ff;
-  color: #111;
+  background: rgba(20, 34, 52, 0.9);
+  color: var(--ink);
 }
 
 .results-table th,
 .results-table td {
   padding: var(--space-3);
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid rgba(110, 130, 155, 0.25);
   vertical-align: top;
   font-size: var(--fs-sm);
   line-height: 1;
 }
 
 .results-table tbody tr:nth-child(odd) {
-  background: #f9fafb;
+  background: rgba(12, 22, 36, 0.85);
 }
 
 .results-table tbody tr:hover {
-  background: #eef3ff;
+  background: rgba(22, 36, 54, 0.9);
 }
 
 .results-colIndex {
@@ -230,14 +247,14 @@ programmer: Jack Ray
 
 .results-itemNotes {
   font-size: 0.85em;
-  color: #555;
+  color: var(--text-subtle);
 }
 
 .results-footer {
   display: flex;
   justify-content: space-between;
   font-size: var(--fs-sm);
-  color: #555;
+  color: var(--text-muted);
 }
 
 .results-footer span:last-child {
@@ -249,6 +266,6 @@ programmer: Jack Ray
 }
 
 .results-table tbody tr[role="button"]:focus-visible {
-  outline: 0.2rem solid var(--blue);
+  outline: 0.2rem solid rgba(111, 209, 255, 0.6);
   outline-offset: -0.1rem;
 }

@@ -9,53 +9,73 @@ programmer: Jack Ray
   box-sizing: border-box;
 }
 
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
+
 :root {
+  color-scheme: dark;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
   --space-5: 1.25rem;
   --space-6: 1.5rem;
+  --space-7: 1.75rem;
   --space-8: 2rem;
 
-  --canvas-bg: #fdf5eb;
-  --border: #f3dac2;
-  --ink: #2d1c0f;
-  --blue: #2f3bc6;
+  --canvas-bg: #0a0f1b;
+  --border: rgba(132, 150, 171, 0.25);
+  --ink: #e9f1fb;
+  --blue: #6fd1ff;
 
-  --red: #ffffff;
-  --red-border: #d92332;
-  --red-bg: #e73f4f;
+  --surface-0: rgba(8, 16, 26, 0.6);
+  --surface-1: rgba(12, 22, 34, 0.82);
+  --surface-2: rgba(16, 28, 44, 0.92);
+  --surface-border: rgba(134, 154, 176, 0.2);
+  --surface-border-strong: rgba(134, 154, 176, 0.35);
 
-  --settings-text: #ffffff;
-  --settings-border: #232887;
-  --settings-bg: #3b3fd1;
+  --text-muted: rgba(192, 207, 224, 0.78);
+  --text-subtle: rgba(161, 178, 196, 0.68);
 
-  --teal: #ffffff;
-  --teal-border: #0c8f76;
-  --teal-fill: #16b19a;
+  --red: #fff1f4;
+  --red-border: rgba(192, 100, 124, 0.75);
+  --red-bg: rgba(140, 58, 77, 0.92);
 
-  --orange: #f97316;
-  --orange-text: #c04c0d;
-  --orange-bg: #fff2e6;
+  --settings-text: #eaf2fb;
+  --settings-border: rgba(118, 145, 174, 0.6);
+  --settings-bg: rgba(20, 32, 48, 0.8);
 
-  --accent-gold: #d9a829;
-  --footer-bg: #d62459;
-  --footer-text: #ffffff;
-  --router-icon: #d9a829;
-  --plug-icon: #e63946;
+  --teal: #eafffb;
+  --teal-border: rgba(94, 232, 209, 0.82);
+  --teal-fill: radial-gradient(120% 120% at 30% 25%, #7ff5de 0%, #4cd9c2 45%, #1aa099 100%);
 
-  --fs-sm: clamp(0.9rem, 0.8rem + 0.3vw, 1rem);
+  --orange: rgba(124, 151, 178, 0.55);
+  --orange-text: #dbe6f4;
+  --orange-bg: rgba(14, 26, 40, 0.78);
+
+  --accent-gold: #a9c6df;
+  --footer-bg: rgba(7, 13, 22, 0.9);
+  --footer-text: rgba(188, 202, 220, 0.9);
+
+  --router-icon: #9cc5de;
+  --plug-icon: #9cc5de;
+
+  --fs-sm: clamp(0.9rem, 0.82rem + 0.3vw, 1rem);
   --fs-base: clamp(1rem, 0.95rem + 0.5vw, 1.125rem);
-  --fs-lg: clamp(1.125rem, 1rem + 1vw, 1.375rem);
-  --fs-xl: clamp(1.5rem, 1.1rem + 2.5vw, 2.25rem);
+  --fs-md: clamp(1.05rem, 0.98rem + 0.6vw, 1.25rem);
+  --fs-lg: clamp(1.15rem, 1rem + 1vw, 1.4rem);
+  --fs-xl: clamp(1.6rem, 1.15rem + 2.5vw, 2.4rem);
 }
 
 body {
   margin: 0;
   background: var(--canvas-bg);
+  background-image:
+    radial-gradient(900px circle at 28% 18%, rgba(70, 190, 232, 0.22), transparent 60%),
+    radial-gradient(820px circle at 70% 60%, rgba(55, 210, 190, 0.22), transparent 62%),
+    radial-gradient(480px circle at 50% 40%, rgba(86, 220, 210, 0.14), transparent 58%);
   color: var(--ink);
-  font-family: "Nunito", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  font-family: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
   font-size: var(--fs-base);
   line-height: 1.4;
+  min-height: 100svh;
 }
