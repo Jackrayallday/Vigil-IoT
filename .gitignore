@@ -14,7 +14,9 @@ dist-ssr
 *.local
 
 # Environment variables
-# .env
+.env
+backend/.env
+frontend/.env
 
 # Python cache
 __pycache__/
