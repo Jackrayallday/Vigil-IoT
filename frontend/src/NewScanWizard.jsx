@@ -14,6 +14,7 @@ const DEFAULT_OPTIONS = {
   weakCreds: false,
   safeMode: true,
 };
+const MAX_SCAN_NAME_LENGTH = 50;
 
 export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFAULT_OPTIONS }) {
   const [scanName, setScanName] = useState("");
@@ -281,16 +282,18 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
             id="scanName"
             type="text"
             value={scanName}
-            onChange={(e) => setScanName(e.target.value)}
+            onChange={(e) => setScanName(e.target.value.slice(0, MAX_SCAN_NAME_LENGTH))}
             onFocus={() => setShowNamePlaceholder(false)}
             onBlur={() => setShowNamePlaceholder(scanName.trim().length === 0)}
             className={`nsw-input nsw-input--title ${showValidation && isNameMissing ? "nsw-input--invalid" : ""}`}
             placeholder={showNamePlaceholder ? "New scan name here..." : ""}
+            maxLength={MAX_SCAN_NAME_LENGTH}
             disabled={submitting}
             aria-label="Scan name"
           />
         </div>
         {showValidation && isNameMissing && <p className="nsw-warning">Enter a scan name.</p>}
+        <p className="nsw-note">{scanName.length}/{MAX_SCAN_NAME_LENGTH} characters</p>
 
         <section className="nsw-card">
           <header className="nsw-card__header">
