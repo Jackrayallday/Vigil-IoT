@@ -1168,7 +1168,7 @@ export default function App() {
               allScans={scans}
               onSelectScan={handleSelectScan}
               onSelectDevice={handleSelectDevice}
-              onBackToHome={goHome}
+              onBackToHome={handleHistoryButtonClick}
               showSaveButton={showSaveButton}//{isViewingFreshScan}//KV edit: fix non-disappearing "save scan" button
               onSaveScan={handleSaveScanClick}
               isSavingScan={isSavingScan}
@@ -1231,7 +1231,7 @@ export default function App() {
 
       <footer className="footer">
         <a href="/legal" className="legal">LEGAL</a>
-        <a href="/intro" className="intro">Demo / Introduction</a>
+        <a href="https://jackrayallday.github.io/Vigil-IoT/" className="intro">Demo / Introduction</a>
       </footer>
     </div>
   );
