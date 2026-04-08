@@ -54,7 +54,7 @@ const gmail = google.gmail({version: "v1", auth: oauth2Client});//create the Gma
         //create the users table if it doesn't exist yet
         await bootstrap.query(`CREATE TABLE IF NOT EXISTS users (
             user_id INT AUTO_INCREMENT PRIMARY KEY,
-            email VARCHAR(100) UNIQUE NOT NULL,
+            email VARCHAR(254) UNIQUE NOT NULL,
             hashed_password VARCHAR(255) NOT NULL,
             resetToken VARCHAR(255),
             resetTokenExpiry BIGINT
