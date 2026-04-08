@@ -21,7 +21,7 @@ const app = express();//create the express object to represent the server app
 
 app.use(express.json());//parse incoming JSON request bodies and store them in req.body
 
-app.use(express.static(path.join(__dirname, "views")));//serve /backend/views files as static files
+app.use(express.static(path.join(__dirname, "../docs")));//serve ..//docs files as static files
 
 app.use(cors({//configure the server's CORS policy
     origin: true,//allow cross-origin requests from any origin
@@ -532,7 +532,7 @@ app.get("/get-reset-page", async (req, res) => {//if here, password reset page r
 
         //define the reset page HTML file that will be sent to the client's browser
         let resetPage = fs.readFileSync(
-            path.join(__dirname, "views", "reset-page.html"),
+            path.join(__dirname, "../docs/reset-page.html"),
             "utf8"
         );
         resetPage = resetPage.replace("__TOKEN__", token);//inject the token into the file
