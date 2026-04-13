@@ -400,6 +400,7 @@ export default function App() {
   const [deletingScanId, setDeletingScanId] = useState(null);
   const [radarPings, setRadarPings] = useState([]);
   const [isRadarActive, setIsRadarActive] = useState(false);
+  const [showUnsavedClosePrompt, setShowUnsavedClosePrompt] = useState(false);
   const wizardBackdropPointerDownRef = useRef(false); // Prevents dismiss when dragging selections outside the modal.
   const driftDots = useMemo(() => (
     Array.from({ length: 54 }, (_, index) => {
@@ -567,6 +568,10 @@ export default function App() {
 
   function closeSettings() {
     setShowSettings(false);
+  }
+
+  function closeUnsavedClosePrompt() {
+    setShowUnsavedClosePrompt(false);
   }
 
   function goHome() {
@@ -771,6 +776,31 @@ export default function App() {
     }
     showHistoryView();
     loadHistoryForUser(user.user_id);
+  }
+
+  function handleResultsBackClick() {
+    const isViewingUnsavedScan = Boolean(
+      unsavedScan &&
+      selectedScanId &&
+      unsavedScan.id === selectedScanId
+    );
+
+    if (isViewingUnsavedScan) {
+      setShowUnsavedClosePrompt(true);
+      return;
+    }
+
+    handleHistoryButtonClick();
+  }
+
+  function handleConfirmCloseWithoutSaving() {
+    const unsavedId = unsavedScan?.id ?? null;
+    setShowUnsavedClosePrompt(false);
+    if (unsavedId && selectedScanId === unsavedId) {
+      setSelectedScanId(null);
+    }
+    setUnsavedScan(null);
+    goHome();
   }
 
   async function handleDeleteScan(scanId) {
@@ -1168,7 +1198,7 @@ export default function App() {
               allScans={scans}
               onSelectScan={handleSelectScan}
               onSelectDevice={handleSelectDevice}
-              onBackToHome={handleHistoryButtonClick}
+              onBackToHome={handleResultsBackClick}
               showSaveButton={showSaveButton}//{isViewingFreshScan}//KV edit: fix non-disappearing "save scan" button
               onSaveScan={handleSaveScanClick}
               isSavingScan={isSavingScan}
@@ -1227,6 +1257,32 @@ export default function App() {
           onClose={closeLogin}
           onLoginSuccess={handleLoginSuccess}
         />
+      )}
+
+      {showUnsavedClosePrompt && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="close-unsaved-title"
+          className="modal-backdrop"
+          onClick={closeUnsavedClosePrompt}
+        >
+          <div className="modal-sheet confirm-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-body">
+              <h2 id="close-unsaved-title" className="confirm-title">
+                You are about to close without saving your Scan Report, would you like to close without saving?
+              </h2>
+              <div className="confirm-actions">
+                <button type="button" className="confirm-btn confirm-btn--secondary" onClick={closeUnsavedClosePrompt}>
+                  No
+                </button>
+                <button type="button" className="confirm-btn confirm-btn--primary" onClick={handleConfirmCloseWithoutSaving}>
+                  Yes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       <footer className="footer">
