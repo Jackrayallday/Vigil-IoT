@@ -8,6 +8,9 @@ import React, { useState } from "react";
 //import { getApiErrorMessage, getApiResponseMessage } from "./apiErrors";//KV: no longer needed
 import axios from "axios"; //KV add
 
+const EMAIL_MAX_LENGTH = 254;
+const EMAIL_FORMAT_REGEX = /^[^\s@]+@[^\s@]+\.[A-Za-z][^\s@]*$/;
+
 export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV edit
   const [email, setEmail] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
@@ -21,6 +24,10 @@ export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
       setErrorMessage("Please enter the email associated with your account.");
+      return;
+    }
+    if (!EMAIL_FORMAT_REGEX.test(trimmedEmail)) {
+      setErrorMessage("Please enter a valid email address (example@domain.com).");
       return;
     }
 
@@ -54,9 +61,12 @@ export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV
           name="email"
           type="email"
           autoComplete="email"
+          pattern="^[^\s@]+@[^\s@]+\.[A-Za-z][^\s@]*$"
+          title="Please enter an email like name@example.com."
+          maxLength={EMAIL_MAX_LENGTH}
           value={email}
           onChange={(e) => {
-            setEmail(e.target.value);
+            setEmail(e.target.value.slice(0, EMAIL_MAX_LENGTH));
             setErrorMessage("");
             setStatusMessage("");
           }}
