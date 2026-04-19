@@ -276,7 +276,158 @@ app.get("/check_login", (req, res) => {//if here, client requested login status
         res.json({loggedIn: false});//return false  
 });
 
-app.post("/save-scan", async (req, res) => {//if here, client requested to save scan report
+///////////////////////////////////////////////////////////////////////////////////////////////////
+app.post("/save-scan", async (req, res) => {
+    const user_id = req.session?.user?.user_id ?? null;
+
+    if (!user_id) {
+        return res.status(401).json({
+            success: false,
+            message: "You must be logged in to save scan reports!"
+        });
+    }
+
+    const {
+        scanName,
+        scannedAt,
+        status,
+        devices
+    } = req.body;
+
+    if (!scanName || !scannedAt || !status) {
+        return res.status(400).json({
+            success: false,
+            message: "Missing required fields!"
+        });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // Insert scan report
+        const [scanResult] = await connection.query(
+            `INSERT INTO scan_reports (
+                scan_name,
+                scanned_at,
+                status,
+                owner_id
+            ) VALUES (?, ?, ?, ?)`,
+            [scanName, scannedAt, status, user_id]
+        );
+
+        const scan_id = scanResult.insertId;
+
+        // Insert devices
+        if (Array.isArray(devices) && devices.length > 0) {
+            for (const device of devices) {
+                const {
+                    ip,
+                    hostname,
+                    vendor,
+                    type,
+                    riskLevel,
+                    status,
+                    findings
+                } = device;
+
+                const [deviceResult] = await connection.query(
+                    `INSERT INTO devices (
+                        scan_id,
+                        ip,
+                        hostname,
+                        vendor,
+                        type,
+                        risk_level,
+                        finding_count,
+                        status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        scan_id,
+                        ip || null,
+                        hostname || null,
+                        vendor || null,
+                        type || null,
+                        riskLevel || null,
+                        Array.isArray(findings) ? findings.length : 0,
+                        status || "COMPLETE"
+                    ]
+                );
+
+                const device_id = deviceResult.insertId;
+
+                // Insert findings for this device
+                if (Array.isArray(findings) && findings.length > 0) {
+                    for (const f of findings) {
+                        const {
+                            title,
+                            severity,
+                            description,
+                            impact,
+                            recommendation,
+                            source,
+                            protocol,
+                            port,
+                            service,
+                            state,
+                            cveIds
+                        } = f;
+
+                        await connection.query(
+                            `INSERT INTO findings (
+                                device_id,
+                                title,
+                                severity,
+                                description,
+                                impact,
+                                recommendation,
+                                source,
+                                protocol,
+                                port,
+                                service,
+                                state,
+                                cve_ids
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            [
+                                device_id,
+                                title,
+                                severity,
+                                description || null,
+                                impact || null,
+                                recommendation || null,
+                                source || null,
+                                protocol || null,
+                                port || null,
+                                service || null,
+                                state || null,
+                                Array.isArray(cveIds) ? cveIds.join(",") : null
+                            ]
+                        );
+                    }
+                }
+            }
+        }
+
+        await connection.commit();
+
+        return res.status(201).json({
+            success: true,
+            scan_id
+        });
+
+    } catch (err) {
+        await connection.rollback();
+        console.error("Error saving scan:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error while saving scan!"
+        });
+    } finally {
+        connection.release();
+    }
+});
+///////////////////////////////////////////////////////////////////////////////////////////////////
+/*app.post("/save-scan", async (req, res) => {//if here, client requested to save scan report
     const user_id = req.session?.user?.user_id ?? null;//get user ID from session
 
     if(!user_id)//if here, user not logged in
@@ -366,11 +517,11 @@ app.post("/save-scan", async (req, res) => {//if here, client requested to save 
             success: false,
             message: "Server error in saving report!"});
     }
-});
+});*/
 
 app.delete("/delete-scan/:id", async (req, res) =>{//if here, report deletion requested
     const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
-    const reportId = req.params.id;//get the report id from the URL
+    const scanId/*reportId*/ = req.params.id;//get the report id from the URL
 
     if(!user_id)//if here, user not logged in
         return res.status(401).json({//indicate deletion failure in response
@@ -400,8 +551,68 @@ app.delete("/delete-scan/:id", async (req, res) =>{//if here, report deletion re
         });
     }
 });
+///////////////////////////////////////////////////////////////////////////////////////////////////
+app.get("/scan-reports", async (req, res) => {
+    const user_id = req.session?.user?.user_id ?? null;
 
-app.get("/scan-reports", async (req, res) => {//if here, client requested scan reports list
+    if (!user_id) {
+        return res.status(401).json({
+            success: false,
+            message: "You must be logged in to view your scan reports!"
+        });
+    }
+
+    try {
+        const [rows] = await pool.query(`
+            SELECT 
+                sr.scan_id,
+                sr.scan_name,
+                sr.scanned_at,
+                sr.status,
+                COUNT(DISTINCT d.device_id) AS deviceCount,
+                COUNT(f.finding_id) AS totalFindingCount,
+                SUM(CASE WHEN f.severity = 'LOW' THEN 1 ELSE 0 END) AS lowCount,
+                SUM(CASE WHEN f.severity = 'MEDIUM' THEN 1 ELSE 0 END) AS mediumCount,
+                SUM(CASE WHEN f.severity = 'HIGH' THEN 1 ELSE 0 END) AS highCount,
+                SUM(CASE WHEN f.severity = 'CRITICAL' THEN 1 ELSE 0 END) AS criticalCount
+            FROM scan_reports sr
+            LEFT JOIN devices d ON d.scan_id = sr.scan_id
+            LEFT JOIN findings f ON f.device_id = d.device_id
+            WHERE sr.owner_id = ?
+            GROUP BY sr.scan_id
+            ORDER BY sr.scanned_at DESC
+        `, [user_id]);
+
+        const scans = rows.map(row => ({
+            scanId: row.scan_id,
+            scanName: row.scan_name,
+            scannedAt: row.scanned_at,
+            status: row.status,
+            deviceCount: row.deviceCount || 0,
+            totalFindingCount: row.totalFindingCount || 0,
+            riskCounts: {
+                LOW: row.lowCount || 0,
+                MEDIUM: row.mediumCount || 0,
+                HIGH: row.highCount || 0,
+                CRITICAL: row.criticalCount || 0
+            }
+        }));
+
+        return res.json({
+            success: true,
+            scans
+        });
+
+    } catch (err) {
+        console.error("Server error in getting scan reports!: ", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error in getting scan reports!"
+        });
+    }
+});
+///////////////////////////////////////////////////////////////////////////////////////////////////
+/*app.get("/scan-reports", async (req, res) => {//if here, client requested scan reports list
     const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
 
     if(!user_id)//if here, user not logged in
@@ -432,9 +643,87 @@ app.get("/scan-reports", async (req, res) => {//if here, client requested scan r
             message: "Server error in getting scan reports!"
         });
     }
-});
+});*/
 
-app.get("/scan-reports/:report_id/devices", async (req, res) =>{//if here, devices request
+///////////////////////////////////////////////////////////////////////////////////////////////////
+app.get("/scan-reports/:scan_id/devices", async (req, res) => {
+    const user_id = req.session?.user?.user_id ?? null;
+    const scan_id = req.params.scan_id;
+
+    if (!user_id) {
+        return res.status(401).json({
+            success: false,
+            message: "You must be logged in to view your scanned devices!"
+        });
+    }
+
+    try {
+        // Verify the scan belongs to the logged-in user
+        const [scanRows] = await pool.query(
+            `SELECT scan_id, scan_name, scanned_at, status
+             FROM scan_reports
+             WHERE scan_id = ? AND owner_id = ?`,
+            [scan_id, user_id]
+        );
+
+        if (scanRows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Scan not found or belongs to someone else!"
+            });
+        }
+
+        const scan = scanRows[0];
+
+        // Retrieve devices for this scan
+        const [deviceRows] = await pool.query(
+            `SELECT 
+                d.device_id,
+                d.ip,
+                d.hostname,
+                d.vendor,
+                d.type,
+                d.risk_level,
+                d.finding_count,
+                d.status
+             FROM devices d
+             WHERE d.scan_id = ?
+             ORDER BY d.device_id ASC`,
+            [scan_id]
+        );
+
+        const devices = deviceRows.map(d => ({
+            deviceId: d.device_id,
+            ip: d.ip,
+            hostname: d.hostname,
+            vendor: d.vendor,
+            type: d.type,
+            riskLevel: d.risk_level,
+            findingCount: d.finding_count,
+            status: d.status
+        }));
+
+        return res.json({
+            success: true,
+            scanDetails: {
+                scanId: scan.scan_id,
+                scanName: scan.scan_name,
+                scannedAt: scan.scanned_at,
+                status: scan.status,
+                devices
+            }
+        });
+
+    } catch (err) {
+        console.error("Server error retrieving devices!: ", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error in retrieving devices!"
+        });
+    }
+});
+///////////////////////////////////////////////////////////////////////////////////////////////////
+/*app.get("/scan-reports/:report_id/devices", async (req, res) =>{//if here, devices request
     const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
     const report_id = req.params.report_id;//get the report id from the URL
 
@@ -474,7 +763,7 @@ app.get("/scan-reports/:report_id/devices", async (req, res) =>{//if here, devic
             message: "Server error in retrieving devices!"
         });
     }
-});
+});*/
 
 app.get("/", (req, res) => {//if here, client requested the website home page
     try{
