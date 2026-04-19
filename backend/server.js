@@ -59,8 +59,49 @@ const gmail = google.gmail({version: "v1", auth: oauth2Client});//create the Gma
             resetToken VARCHAR(255),
             resetTokenExpiry BIGINT
         )`);
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        await bootstrap.query(`CREATE TABLE IF NOT EXISTS scan_reports (
+            scan_id INT AUTO_INCREMENT PRIMARY KEY,
+            scan_name VARCHAR(100) NOT NULL,
+            scanned_at DATETIME NOT NULL,
+            status ENUM('PENDING','COMPLETE','FAILED') NOT NULL DEFAULT 'PENDING',
+            owner_id INT NOT NULL,
+            FOREIGN KEY (owner_id) REFERENCES users(user_id) ON DELETE CASCADE
+        );`);
+
+        await bootstrap.query(`CREATE TABLE IF NOT EXISTS devices (
+            device_id INT AUTO_INCREMENT PRIMARY KEY,
+            scan_id INT NOT NULL,
+            ip VARCHAR(45) NOT NULL,
+            hostname VARCHAR(100),
+            vendor VARCHAR(100),
+            type VARCHAR(100),
+            risk_level ENUM('LOW','MEDIUM','HIGH','CRITICAL'),
+            finding_count INT DEFAULT 0,
+            status ENUM('PENDING','COMPLETE','FAILED') DEFAULT 'PENDING',
+            FOREIGN KEY (scan_id) REFERENCES scan_reports(scan_id) ON DELETE CASCADE
+        );`);
+
+        await bootstrap.query(`CREATE TABLE IF NOT EXISTS findings (
+            finding_id INT AUTO_INCREMENT PRIMARY KEY,
+            device_id INT NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            severity ENUM('LOW','MEDIUM','HIGH','CRITICAL') NOT NULL,
+            description TEXT,
+            impact TEXT,
+            recommendation TEXT,
+            source ENUM('service-map','nvd','manual'),
+            protocol VARCHAR(50),
+            port INT,
+            service VARCHAR(100),
+            state VARCHAR(50),
+            cve_ids TEXT,  -- comma-separated list of CVEs
+            FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+        );`);
+        ///////////////////////////////////////////////////////////////////////////////////////////
         
-        //create the scan_reports table if it doesn't exist yet
+        /*//create the scan_reports table if it doesn't exist yet
         await bootstrap.query(`CREATE TABLE IF NOT EXISTS scan_reports (
             report_id INT AUTO_INCREMENT PRIMARY KEY,
             title VARCHAR(100) NOT NULL,
@@ -87,7 +128,7 @@ const gmail = google.gmail({version: "v1", auth: oauth2Client});//create the Gma
             FOREIGN KEY (associated_report)
                 REFERENCES scan_reports(report_id)
                 ON DELETE CASCADE
-        )`);
+        )`);*/
     }
     catch(err){//if here, error in MySQL database initialization
         console.error("Database initialization failed: ", err);//log the error to the console
