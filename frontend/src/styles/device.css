@@ -109,3 +109,127 @@ programmer: Jack Ray
   font-style: italic;
   color: var(--text-muted);
 }
+
+.device-cardHeader {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.device-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+.device-body {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.device-field {
+  border: 1px solid rgba(110, 130, 155, 0.25);
+  border-radius: 0.65rem;
+  background: rgba(10, 20, 32, 0.55);
+  padding: var(--space-3);
+  display: grid;
+  gap: 0.45rem;
+}
+
+.device-fieldLabel {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.device-fieldValue {
+  margin: 0;
+  line-height: 1.35;
+  font-size: var(--fs-sm);
+}
+
+.device-findings {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.device-findingsTitle {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.device-findingsEmpty {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.device-findingList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.device-findingCard {
+  border: 1px solid rgba(110, 130, 155, 0.25);
+  border-radius: 0.75rem;
+  background: rgba(12, 22, 36, 0.85);
+  padding: var(--space-3);
+  display: grid;
+  gap: 0.5rem;
+}
+
+.device-findingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.device-findingTitle {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.device-findingMeta {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.device-severityBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.device-severityBadge--critical {
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.5);
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.device-severityBadge--high {
+  color: #fed7aa;
+  background: rgba(124, 45, 18, 0.45);
+  border-color: rgba(251, 146, 60, 0.5);
+}
+
+.device-severityBadge--medium {
+  color: #fde68a;
+  background: rgba(113, 63, 18, 0.45);
+  border-color: rgba(250, 204, 21, 0.5);
+}
+
+.device-severityBadge--low {
+  color: #bbf7d0;
+  background: rgba(20, 83, 45, 0.4);
+  border-color: rgba(74, 222, 128, 0.45);
+}

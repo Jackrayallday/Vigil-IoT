@@ -45,9 +45,17 @@ export default function ScanResults({
     if (!Array.isArray(scan?.findings)) return [];
     const base = [...scan.findings];
     if (sortChoice === "item-asc") {
-      base.sort((a, b) => a.itemDiscovered.localeCompare(b.itemDiscovered));
+      base.sort((a, b) =>
+        String(a?.itemDiscovered || a?.deviceName || a?.ipAddress || "").localeCompare(
+          String(b?.itemDiscovered || b?.deviceName || b?.ipAddress || "")
+        )
+      );
     } else if (sortChoice === "item-desc") {
-      base.sort((a, b) => b.itemDiscovered.localeCompare(a.itemDiscovered));
+      base.sort((a, b) =>
+        String(b?.itemDiscovered || b?.deviceName || b?.ipAddress || "").localeCompare(
+          String(a?.itemDiscovered || a?.deviceName || a?.ipAddress || "")
+        )
+      );
     } else {
       base.sort((a, b) => a.position - b.position);
     }
@@ -184,8 +192,10 @@ export default function ScanResults({
               <thead>
                 <tr>
                   <th scope="col" className="results-colIndex">#</th>
-                  <th scope="col">Item Discovered</th>
-                  <th scope="col">Protocol Warnings</th>
+                  <th scope="col">Device</th>
+                  <th scope="col">Risk</th>
+                  <th scope="col">Findings</th>
+                  <th scope="col">Top Exposure</th>
                   <th scope="col">Remediation Tips</th>
                 </tr>
               </thead>
@@ -214,13 +224,21 @@ export default function ScanResults({
                       onKeyDown={handleKey}
                     >
                       <td className="results-colIndex" data-title="#">{idx + 1}</td>
-                      <td data-title="Item Discovered">
+                      <td data-title="Device">
                         <div className="results-item">
-                          <span className="results-itemName">{row.itemDiscovered}</span>
+                          <span className="results-itemName">{row.itemDiscovered || row.deviceName || row.ipAddress || "Unknown device"}</span>
+                          <span className="results-itemNotes">{row.ipAddress || "N/A"}</span>
+                          {row.vendor && <span className="results-itemNotes">Vendor: {row.vendor}</span>}
                           {row.notes && <span className="results-itemNotes">{row.notes}</span>}
                         </div>
                       </td>
-                      <td data-title="Protocol Warnings">{row.protocolWarnings}</td>
+                      <td data-title="Risk">
+                        <span className={`results-riskBadge results-riskBadge--${String(row.riskLevel || "unknown").toLowerCase()}`}>
+                          {row.riskLevel || "UNKNOWN"}
+                        </span>
+                      </td>
+                      <td data-title="Findings">{Number.isFinite(Number(row.findingCount)) ? Number(row.findingCount) : "N/A"}</td>
+                      <td data-title="Top Exposure">{row.topExposure || row.protocolWarnings || "N/A"}</td>
                       <td data-title="Remediation Tips">{row.remediationTips}</td>
                     </tr>
                   );

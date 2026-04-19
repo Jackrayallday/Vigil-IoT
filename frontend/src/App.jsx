@@ -32,6 +32,7 @@ axios.defaults.withCredentials = true;
 
 const VIEW_HOME = "home";
 const VIEW_HISTORY = "history";
+const VIEW_SCANNING = "scanning";
 const VIEW_RESULTS = "results";
 const VIEW_DEVICE = "device";
 
@@ -48,29 +49,24 @@ const MODULE_LABELS = {
   safeMode: "Safe mode",
 };
 
-// Sample data keeps the demo interesting without hitting real services. This will be removed later.
-const SAMPLE_DEVICE_NAMES = [
-  "TP-Link Archer AX55",
-  "Cisco Catalyst 9200",
-  "Raspberry Pi 4",
-  "Dell OptiPlex 7090",
-  "Synology DS920+",
-  "Juniper EX2200",
-];
-
-const SAMPLE_SERVICE_PROFILES = [
-  "HTTP :80, HTTPS :443",
-  "SSH :22, SFTP :22",
-  "Telnet :23, FTP :21",
-  "MQTT :1883, HTTPS :8883",
-  "SMB :445, RDP :3389",
-  "SNMP :161, NTP :123",
-];
-
 const RADAR_SWEEP_MS = 2200;
 const RADAR_PING_COUNT = 3;
 const RADAR_PING_FADE_MS = 1800;
 const RADAR_SWEEP_CENTER_OFFSET_DEG = 45;
+
+const RUN_SCAN_STATUS = {
+  IDLE: "idle",
+  RUNNING: "running",
+  SUCCESS: "success",
+  ERROR: "error",
+};
+
+const SEVERITY_RANK = {
+  CRITICAL: 4,
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+};
 
 
 const SETTINGS_STORAGE_KEY = "appSettings";
@@ -137,8 +133,8 @@ function pruneScans(scans, retentionDays) {
   });
 }
 
-// Read any stored scans and bring them back into the shape the UI expects. This helps with any missing fields from older versions.
-function loadStoredScans(retentionDays = DEFAULT_SETTINGS.retentionDays) {
+// Read any stored scans and bring them back into the shape the UI expects.
+function loadStoredScans() {
   // Scan data is no longer persisted locally now that SQL handles storage.
   return [];
 }
@@ -149,7 +145,7 @@ function safeParseJsonArray(raw) {
   try {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
+  } catch {
     return [];
   }
 }
@@ -163,6 +159,135 @@ function createId(prefix) {
   return `${prefix}-${Date.now()}-${random}`;
 }
 
+function isValidIpv4(ip) {
+  if (typeof ip !== "string") return false;
+  const parts = ip.split(".");
+  if (parts.length !== 4) return false;
+  return parts.every((part) => {
+    if (!/^\d+$/.test(part)) return false;
+    const value = Number(part);
+    return value >= 0 && value <= 255;
+  });
+}
+
+function ipv4ToInt(ip) {
+  if (!isValidIpv4(ip)) return null;
+  const [a, b, c, d] = ip.split(".").map((part) => Number(part));
+  return ((((a << 24) >>> 0) | (b << 16) | (c << 8) | d) >>> 0);
+}
+
+function ipMatchesTarget(ip, target) {
+  if (!isValidIpv4(ip) || typeof target !== "string") return false;
+  const trimmedTarget = target.trim();
+  if (!trimmedTarget) return false;
+  if (!trimmedTarget.includes("/")) return ip === trimmedTarget;
+
+  const [baseIp, prefixRaw] = trimmedTarget.split("/");
+  const prefix = Number(prefixRaw);
+  if (!isValidIpv4(baseIp) || !Number.isInteger(prefix) || prefix < 0 || prefix > 32) return false;
+
+  const ipInt = ipv4ToInt(ip);
+  const baseInt = ipv4ToInt(baseIp);
+  if (ipInt === null || baseInt === null) return false;
+
+  const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
+  return (ipInt & mask) === (baseInt & mask);
+}
+
+function normalizeSeverity(rawSeverity) {
+  const normalized = typeof rawSeverity === "string" ? rawSeverity.toUpperCase() : "";
+  return SEVERITY_RANK[normalized] ? normalized : "LOW";
+}
+
+function getHighestSeverity(findings = []) {
+  if (!Array.isArray(findings) || findings.length === 0) return "LOW";
+  return findings.reduce((currentHighest, finding) => {
+    const next = normalizeSeverity(finding?.severity);
+    return SEVERITY_RANK[next] > SEVERITY_RANK[currentHighest] ? next : currentHighest;
+  }, "LOW");
+}
+
+function summarizeServices(findings = []) {
+  if (!Array.isArray(findings) || findings.length === 0) return "No exposed services detected";
+  const serviceLabels = [];
+  for (const finding of findings) {
+    const evidence = finding?.evidence || {};
+    const service = evidence?.service || "unknown";
+    const port = evidence?.port ?? "?";
+    const protocol = evidence?.protocol || "";
+    const label = protocol ? `${service}:${port}/${protocol}` : `${service}:${port}`;
+    if (!serviceLabels.includes(label)) serviceLabels.push(label);
+  }
+  return serviceLabels.length > 0 ? serviceLabels.join(", ") : "No exposed services detected";
+}
+
+function summarizeExposure(findings = []) {
+  if (!Array.isArray(findings) || findings.length === 0) return "No CVE references found";
+  const cveIds = [];
+  for (const finding of findings) {
+    const ids = Array.isArray(finding?.cveIds) ? finding.cveIds : [];
+    for (const cveId of ids) {
+      if (typeof cveId === "string" && cveId.trim() && !cveIds.includes(cveId)) {
+        cveIds.push(cveId);
+      }
+    }
+  }
+  if (cveIds.length === 0) return "No CVE references found";
+  return cveIds.slice(0, 3).join(", ");
+}
+
+function summarizeRemediation(findings = []) {
+  if (!Array.isArray(findings) || findings.length === 0) return "Review device configuration and rerun the scan.";
+  const recommendations = [];
+  for (const finding of findings) {
+    const recommendation = finding?.recommendation;
+    if (typeof recommendation === "string" && recommendation.trim() && !recommendations.includes(recommendation)) {
+      recommendations.push(recommendation);
+    }
+  }
+  if (recommendations.length === 0) return "Review device configuration and rerun the scan.";
+  return recommendations.slice(0, 2).join(" | ");
+}
+
+function mapContractDeviceToFinding(scanId, device, index) {
+  const findings = Array.isArray(device?.findings) ? device.findings : [];
+  const ipAddress = device?.ip || "N/A";
+  const hostname = device?.hostname || null;
+  const vendor = device?.vendor || null;
+  const highestSeverity = getHighestSeverity(findings);
+  const riskLevel = typeof device?.riskLevel === "string" ? device.riskLevel.toUpperCase() : highestSeverity;
+  const findingCount = Number.isFinite(Number(device?.findingCount)) ? Number(device.findingCount) : findings.length;
+  const services = summarizeServices(findings);
+  const topExposure = summarizeExposure(findings);
+  const remediationTips = summarizeRemediation(findings);
+  const itemLabel = hostname || ipAddress || `Device ${index + 1}`;
+
+  const noteParts = [];
+  if (vendor) noteParts.push(`Vendor: ${vendor}`);
+  noteParts.push(`Risk: ${riskLevel}`);
+  noteParts.push(`Findings: ${findingCount}`);
+
+  return {
+    id: device?.deviceId || `${scanId}-device-${index + 1}`,
+    position: index,
+    deviceName: hostname || itemLabel,
+    itemDiscovered: itemLabel,
+    hostname,
+    ip: ipAddress,
+    ipAddress,
+    vendor,
+    services,
+    riskLevel,
+    findingCount,
+    status: device?.status || "COMPLETE",
+    topExposure,
+    protocolWarnings: topExposure,
+    remediationTips,
+    notes: noteParts.join(" | "),
+    findingsDetailed: findings,
+  };
+}
+
 function mapDevicesToFindings(scanId, devices = [], targets = []) {
   if (!Array.isArray(devices) || devices.length === 0) return [];
   return devices.map((device, index) => ({
@@ -171,10 +296,18 @@ function mapDevicesToFindings(scanId, devices = [], targets = []) {
     deviceName: device.device_name || device.ip_address || `Device ${index + 1}`,
     itemDiscovered: device.device_name || device.ip_address || targets[index] || `Target ${index + 1}`,
     ipAddress: device.ip_address || "N/A",
+    ip: device.ip_address || "N/A",
+    hostname: device.device_name || null,
+    vendor: device.vendor || null,
     services: device.services || "N/A",
+    riskLevel: device.riskLevel || "UNKNOWN",
+    findingCount: Number.isFinite(Number(device.findingCount)) ? Number(device.findingCount) : 0,
+    status: device.status || "COMPLETE",
+    topExposure: device.protocol_warnings || "N/A",
     protocolWarnings: device.protocol_warnings || "N/A",
     remediationTips: device.remediation_tips || "Review configuration",
     notes: device.notes || "",
+    findingsDetailed: Array.isArray(device.findingsDetailed) ? device.findingsDetailed : [],
   }));
 }
 
@@ -205,35 +338,6 @@ function mapReportToScan(report, devices = null) {
   };
 }
 
-// normalizeScan is used to ensure any scan loaded from storage has all required fields
-// This avoids crashes and maybe should be phased out later when data is for sure from db?
-function normalizeScan(scan) {
-  if (!scan || typeof scan !== "object") return null;
-  const id = scan.id || createId("scan");
-  const options = { ...scan.options };
-  const targets = Array.isArray(scan.targets) ? scan.targets : [];
-  const findings = Array.isArray(scan.findings) && scan.findings.length > 0
-    ? scan.findings.map((finding, index) => hydrateFinding(id, finding, index, options, targets))
-    : buildFindings(id, targets, options);
-
-  let submittedAtISO = scan.submittedAtISO;
-  if (!submittedAtISO) {
-    const parsedTs = scan.submittedAt ? Date.parse(scan.submittedAt) : NaN;
-    submittedAtISO = Number.isNaN(parsedTs) ? new Date().toISOString() : new Date(parsedTs).toISOString();
-  }
-  const submittedAt = scan.submittedAt || new Date(submittedAtISO).toLocaleString();
-
-  return {
-    ...scan,
-    id,
-    status: scan.status || "complete",
-    submittedAt,
-    submittedAtISO,
-    moduleSummary: scan.moduleSummary || formatModuleSummary(options),
-    findings,
-  };
-}
-
 function formatModuleSummary(options) {
   const enabled = Object.entries(options)
     .filter(([, value]) => Boolean(value))
@@ -241,99 +345,55 @@ function formatModuleSummary(options) {
   return enabled.length > 0 ? enabled.join(", ") : "No modules selected";
 }
 
-// This function creates the fake findings used in the demo based on the scan options and target info. This will be removed later after testing UI
-//It uses the sample data defined earlier to make things look more interesting.
-function fakeFindings(scanId, target, index, options = {}) {
-  const vendorName = SAMPLE_DEVICE_NAMES[index % SAMPLE_DEVICE_NAMES.length];
-  const deviceName = options.discover ? vendorName : `Target ${index + 1}`;
-  const services = options.serviceDetection
-    ? SAMPLE_SERVICE_PROFILES[index % SAMPLE_SERVICE_PROFILES.length]
-    : "Service detection disabled";
-
-  const protocolWarnings = options.legacyProtocols
-    ? "Legacy protocol handshake observed."
-    : "No deprecated protocols detected.";
-  const remediationTips = options.weakCreds
-    ? "Rotate credentials and enforce strong password policy."
-    : "Review host configuration and rerun the scan on schedule.";
-  const notes = options.safeMode
-    ? "Scan ran in safe mode; intrusive checks were skipped."
-    : undefined;
-
-  return {
-    id: `${scanId}-finding-${index + 1}`,
-    position: index,
-    deviceName,
-    itemDiscovered: target,
-    ipAddress: target,
-    services,
-    protocolWarnings,
-    remediationTips,
-    notes,
-  };
-}
-
-// Merge stored findings with the fake placeholders so missing fields get filled in.
-function hydrateFinding(scanId, finding, index, options = {}, targets = []) {
-  const fallbackTarget =
-    (Array.isArray(targets) && targets[index]) ||
-    (finding && typeof finding === "object" && finding.itemDiscovered) ||
-    (finding && typeof finding === "object" && finding.ipAddress) ||
-    `Target ${index + 1}`;
-
-  const placeholder = fakeFindings(scanId, fallbackTarget, index, options);
-
-  if (!finding || typeof finding !== "object") {
-    return placeholder;
-  }
-  // Mix our template data with whatever was saved earlier so each finding still shows the info we expect.
-  return {
-    ...placeholder,
-    ...finding,
-    id: finding.id || placeholder.id,
-    position: typeof finding.position === "number" ? finding.position : placeholder.position,
-    itemDiscovered: finding.itemDiscovered || placeholder.itemDiscovered,
-    ipAddress: finding.ipAddress || placeholder.ipAddress,
-    deviceName: finding.deviceName || finding.name || placeholder.deviceName,
-    services: finding.services || finding.serviceSummary || placeholder.services,
-    protocolWarnings: finding.protocolWarnings || placeholder.protocolWarnings,
-    remediationTips: finding.remediationTips || placeholder.remediationTips,
-    notes: finding.notes || placeholder.notes,
-  };
-}
-
-//buildFindings creates the findings list if a scan has no stored findings. Kind of hard coded and jank
-function buildFindings(scanId, targets, options = {}) {
-  if (!Array.isArray(targets) || targets.length === 0) {
-    return [
-      {
-        id: `${scanId}-finding-1`,
-        position: 0,
-        deviceName: "No target provided",
-        itemDiscovered: "No targets provided",
-        ipAddress: "N/A",
-        services: "N/A",
-        protocolWarnings: "N/A",
-        remediationTips: "Provide at least one target and rerun the scan.",
-      },
-    ];
-  }
-
-  return targets.map((target, index) => fakeFindings(scanId, target, index, options));
-}
-// Wrap new submissions with IDs, timestamps, summaries, and generated findings.
-function createScanRecord(payload) {
-  const now = new Date();
-  const id = createId("scan");
+function createScanRecordFromContract(payload, contractPayload) {
+  const scanDetails = contractPayload?.scanDetailsResponse || {};
   const options = { ...payload.options };
+  const selectedTargets = Array.isArray(payload?.targets) ? payload.targets : [];
+  const allDevices = Array.isArray(scanDetails?.devices) ? scanDetails.devices : [];
+  const selectedDevices =
+    selectedTargets.length > 0
+      ? allDevices.filter((device) => selectedTargets.some((target) => ipMatchesTarget(device?.ip, target)))
+      : allDevices;
+
+  if (selectedTargets.length > 0) {
+    const missingTargets = selectedTargets.filter(
+      (target) => !allDevices.some((device) => ipMatchesTarget(device?.ip, target))
+    );
+    if (missingTargets.length > 0) {
+      console.warn(
+        "[scan-mismatch] Selected target(s) missing from vulnerability scan results:",
+        missingTargets
+      );
+    }
+
+    const selectedDeviceIps = selectedDevices
+      .map((device) => device?.ip)
+      .filter((ip) => typeof ip === "string" && ip.trim());
+    const extraDeviceIps = allDevices
+      .map((device) => device?.ip)
+      .filter((ip) => typeof ip === "string" && ip.trim() && !selectedDeviceIps.includes(ip));
+    if (extraDeviceIps.length > 0) {
+      console.info(
+        "[scan-mismatch] Vulnerability scan returned additional device(s) not selected in wizard:",
+        extraDeviceIps
+      );
+    }
+  }
+
+  const scanId = String(scanDetails?.scanId || createId("scan"));
+  const scannedAtDate = scanDetails?.scannedAt ? new Date(scanDetails.scannedAt) : new Date();
+  const submittedAtISO = Number.isNaN(scannedAtDate.getTime()) ? new Date().toISOString() : scannedAtDate.toISOString();
+  const submittedAt = new Date(submittedAtISO).toLocaleString();
+
   return {
     ...payload,
-    id,
-    status: "complete",
-    submittedAt: now.toLocaleString(),
-    submittedAtISO: now.toISOString(),
+    id: scanId,
+    name: payload?.name?.trim() || scanDetails?.scanName || "Static Scan",
+    status: typeof scanDetails?.status === "string" ? scanDetails.status.toLowerCase() : "complete",
+    submittedAt,
+    submittedAtISO,
     moduleSummary: formatModuleSummary(options),
-    findings: buildFindings(id, payload.targets, options),
+    findings: selectedDevices.map((device, index) => mapContractDeviceToFinding(scanId, device, index)),
   };
 }
 
@@ -373,7 +433,7 @@ export default function App() {
 
   const initialScansRef = useRef(null);
   if (initialScansRef.current === null) {
-    initialScansRef.current = loadStoredScans(initialSettings.retentionDays);
+    initialScansRef.current = loadStoredScans();
   }
   const initialScans = initialScansRef.current;
 
@@ -400,6 +460,10 @@ export default function App() {
   const [deletingScanId, setDeletingScanId] = useState(null);
   const [radarPings, setRadarPings] = useState([]);
   const [isRadarActive, setIsRadarActive] = useState(false);
+  const [runScanStatus, setRunScanStatus] = useState(RUN_SCAN_STATUS.IDLE);
+  const [runScanError, setRunScanError] = useState("");
+  const [pendingScanConfig, setPendingScanConfig] = useState(null);
+  const runScanRequestIdRef = useRef(0);
   const wizardBackdropPointerDownRef = useRef(false); // Prevents dismiss when dragging selections outside the modal.
   const driftDots = useMemo(() => (
     Array.from({ length: 54 }, (_, index) => {
@@ -424,12 +488,6 @@ export default function App() {
       };
     })
   ), []);
-
-
-  // On first render, apply the stored theme so the UI does not flash light/dark.
-  useEffect(() => {
-    applyTheme(settings.theme);
-  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -498,6 +556,43 @@ export default function App() {
     }
     return scans.find((scan) => scan.id === selectedScanId) || null;
   }, [scans, selectedScanId, unsavedScan]);
+  async function startRunScan() {
+    const requestId = runScanRequestIdRef.current + 1;
+    runScanRequestIdRef.current = requestId;
+    setRunScanStatus(RUN_SCAN_STATUS.RUNNING);
+    setRunScanError("");
+
+    try {
+      const response = await axios.post(
+        "http://localhost:3000/run-scan",
+        {},
+        { withCredentials: false }
+      );
+
+      if (requestId !== runScanRequestIdRef.current) return null;
+
+      const payload = response?.data;
+      if (!payload || typeof payload !== "object" || !payload.scanDetailsResponse) {
+        setRunScanStatus(RUN_SCAN_STATUS.ERROR);
+        setRunScanError("Scan completed but returned invalid scan data.");
+        return null;
+      }
+
+      setRunScanStatus(RUN_SCAN_STATUS.SUCCESS);
+      return payload;
+    } catch (err) {
+      if (requestId !== runScanRequestIdRef.current) return null;
+
+      const status = getApiErrorStatus(err);
+      const fallbackMessage =
+        status === 500
+          ? "Backend scan failed. Check backend logs and retry."
+          : "Unable to run scan. Make sure backend is running on port 3000.";
+      setRunScanStatus(RUN_SCAN_STATUS.ERROR);
+      setRunScanError(getApiErrorMessage(err, fallbackMessage));
+      return null;
+    }
+  }
 
   // Modal open/close helpers keep those booleans in place.
   async function openWizard(e) {
@@ -505,6 +600,11 @@ export default function App() {
     setShowSettings(false);
     setShowLogin(false);
     
+    runScanRequestIdRef.current += 1;
+    setRunScanStatus(RUN_SCAN_STATUS.IDLE);
+    setRunScanError("");
+    setPendingScanConfig(null);
+
     // Run the device discovery script (don't wait for it)
     console.log("Starting device discovery...");
     axios.post("http://localhost:3002/run-discovery", {}, { withCredentials: false })
@@ -570,6 +670,10 @@ export default function App() {
   }
 
   function goHome() {
+    runScanRequestIdRef.current += 1;
+    setRunScanStatus(RUN_SCAN_STATUS.IDLE);
+    setRunScanError("");
+    setPendingScanConfig(null);
     setView(VIEW_HOME);
     setSelectedDevice(null);
     setShowLogin(false);
@@ -874,17 +978,44 @@ export default function App() {
     setShowSettings(false);
   }
 
-  // Persist the new scan and take the user straight to the detail view.
-  async function handleCreateScan(payload) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const enriched = createScanRecord(payload);
+  async function runScanForConfig(scanConfig) {
+    if (!scanConfig) return false;
+    const contractPayload = await startRunScan();
+    if (!contractPayload) return false;
+
+    const enriched = createScanRecordFromContract(scanConfig, contractPayload);
     setUnsavedScan(enriched);
     setSelectedScanId(enriched.id);
     setSelectedDevice(null);
     setIsViewingFreshScan(true);
     setSaveFeedback(null);
+    setPendingScanConfig(null);
     setView(VIEW_RESULTS);
+    return true;
+  }
+
+  // Persist the new scan and take the user straight to the detail view.
+  async function handleCreateScan(payload) {
+    if (!payload) return;
+    setPendingScanConfig(payload);
     closeWizard();
+    setView(VIEW_SCANNING);
+    await runScanForConfig(payload);
+  }
+
+  async function retryPendingRunScan() {
+    if (!pendingScanConfig || runScanStatus === RUN_SCAN_STATUS.RUNNING) return;
+    setView(VIEW_SCANNING);
+    await runScanForConfig(pendingScanConfig);
+  }
+
+  function backToScanSetup() {
+    runScanRequestIdRef.current += 1;
+    setRunScanStatus(RUN_SCAN_STATUS.IDLE);
+    setRunScanError("");
+    setPendingScanConfig(null);
+    setView(VIEW_HOME);
+    setShowWizard(true);
   }
 
   function snapshotScan(scan) {
@@ -1049,7 +1180,7 @@ export default function App() {
         </nav>
       </header>
 
-        <main className={`main ${view === VIEW_HOME ? "main--home" : "main--fill"}`}>
+        <main className={`main ${view === VIEW_HOME ? "main--home" : view === VIEW_SCANNING ? "main--scanning" : "main--fill"}`}>
           {/* Home view redesigned to feature the start panel artwork flanking the primary call to action. */}
           {view === VIEW_HOME && (
           <section className="home-start-panel" aria-label="Start scan panel">
@@ -1073,7 +1204,7 @@ export default function App() {
                       <path className="start-radar__grid" d="M32 18 A14 14 0 0 1 46 32" />
                     </g>
                     <g className="start-radar__pings">
-                      {radarPings.map((ping, index) => (
+                      {radarPings.map((ping) => (
                         <circle
                           key={ping.id}
                           className="start-radar__ping"
@@ -1160,6 +1291,34 @@ export default function App() {
           </section>
         )}
 
+        {view === VIEW_SCANNING && (
+          <section className="scan-progress" aria-live="polite">
+            <div className="scan-progress__panel">
+              <span className="scan-progress__spinner" aria-hidden="true" />
+              <h1 className="scan-progress__title">
+                {runScanStatus === RUN_SCAN_STATUS.ERROR
+                  ? "Unable to match scan results"
+                  : "Matching devices to vulnerabilities"}
+              </h1>
+              <p className="scan-progress__message">
+                {runScanStatus === RUN_SCAN_STATUS.ERROR
+                  ? (runScanError || "Backend matching failed. Retry once the scan service is ready.")
+                  : "Preparing vulnerability findings for the devices you selected. This can take a minute."}
+              </p>
+              {runScanStatus === RUN_SCAN_STATUS.ERROR && (
+                <div className="scan-progress__actions">
+                  <button type="button" className="scan-progress__btn scan-progress__btn--primary" onClick={retryPendingRunScan}>
+                    Retry matching
+                  </button>
+                  <button type="button" className="scan-progress__btn scan-progress__btn--ghost" onClick={backToScanSetup}>
+                    Back to scan setup
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* Results view: show modules, findings, and related actions for the selected scan. */}
         {view === VIEW_RESULTS && (
           <div className="results-host">
@@ -1208,7 +1367,11 @@ export default function App() {
         >
           <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="modal-body">
-              <NewScanWizard onCreate={handleCreateScan} onClose={closeWizard} defaultOptions={settings.defaultOptions} />
+              <NewScanWizard
+                onCreate={handleCreateScan}
+                onClose={closeWizard}
+                defaultOptions={settings.defaultOptions}
+              />
             </div>
           </div>
         </div>

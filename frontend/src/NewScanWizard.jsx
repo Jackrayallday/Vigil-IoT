@@ -15,7 +15,11 @@ const DEFAULT_OPTIONS = {
   safeMode: true,
 };
 
-export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFAULT_OPTIONS }) {
+export default function NewScanWizard({
+  onCreate,
+  onClose,
+  defaultOptions = DEFAULT_OPTIONS,
+}) {
   const [scanName, setScanName] = useState("");
   const [showNamePlaceholder, setShowNamePlaceholder] = useState(true);
   const [manualTargetInput, setManualTargetInput] = useState("");
@@ -86,7 +90,7 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
       });
 
       setIndicatorState("corner"); 
-    } catch (err) {
+    } catch {
       setDiscoveryError("Error loading discovered targets."); 
       setIndicatorState("stalled");
     }
@@ -397,14 +401,16 @@ export default function NewScanWizard({ onCreate, onClose, defaultOptions = DEFA
           <button
             type="submit"
             disabled={submitting}
-            className={`nsw-btn ${isFormValid && !submitting ? "nsw-btnPrimary" : "nsw-btnDisabled"}`}
+            className={`nsw-btn ${
+              isFormValid && !submitting ? "nsw-btnPrimary" : "nsw-btnDisabled"
+            }`}
           >
             {submitting ? (
               <span className="nsw-loadingWrap">
-                <span className="nsw-spinner" aria-hidden="true" /> Creating...
+                <span className="nsw-spinner" aria-hidden="true" /> Starting scan...
               </span>
             ) : (
-              "Create Scan"
+              "Scan"
             )}
           </button>
         </div>
@@ -420,12 +426,6 @@ function Checkbox({ label, checked, onChange, disabled }) {
       <span>{label}</span>
     </label>
   );
-}
-
-function defaultScanName() {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  return `Scan ${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function tokenize(input) {
