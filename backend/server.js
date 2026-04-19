@@ -15,7 +15,7 @@ const {google} = require("googleapis");//for updated email-sending functionallit
 const crypto = require("crypto");//to generate the password reset token
 const fs = require("fs");//to read and modify files
 const path = require("path");//to define the path of a file
-const { spawn } = require("child_process"); // for vulnerability scanning
+const { spawn } = require("child_process"); // for vulnerability scanning- calling vulnerability_main
 require("dotenv").config();//to read variables from the .env file
 
 const app = express();//create the express object to represent the server app
@@ -139,28 +139,48 @@ app.post("/run-scan", (req, res) => {
         }
     );
     
-    let output = "";
+    //let output = "";
     let errorOutput = "";
     
-    python.stdout.on("data", (data) => {
-        output += data.toString();
-    });
+    //python.stdout.on("data", (data) => {
+    //    output += data.toString();
+    //});
     
     python.stderr.on("data", (data) => {
         errorOutput += data.toString();
     });
     
     python.on("close", (code) => {
-        if (code === 0) {
-            return res.json({
-                success: true,
-                output: output
-            });
-        } else {
+        if (code !== 0) {
             return res.status(500).json({
                 success: false,
                 message: "Scan failed.",
                 error: errorOutput
+            });
+        }    
+            
+        try {
+            const resultPath = path.join(__dirname, "../scan_result.json");
+            const data = fs.readFileSync(resultPath, "utf8");
+            
+            return res.json(JSON.parse(data));
+            //const raw = fs.readFileSync(
+            //    path.join(__dirname, "../scan_result.json"),
+            //    "utf-8"
+            //);
+            
+            //const scanData = JSON.parse(raw)
+            
+            //return res.json({
+            //    success: true,
+            //    output: scanData
+            //});
+            
+        } catch (err) {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to read scan results",
+                error: err.message
             });
         }
     });
