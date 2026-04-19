@@ -15,6 +15,7 @@ const {google} = require("googleapis");//for updated email-sending functionallit
 const crypto = require("crypto");//to generate the password reset token
 const fs = require("fs");//to read and modify files
 const path = require("path");//to define the path of a file
+const { spawn } = require("child_process"); // for vulnerability scanning
 require("dotenv").config();//to read variables from the .env file
 
 const app = express();//create the express object to represent the server app
@@ -127,6 +128,69 @@ app.use(session({//configure the session management
     },
     rolling: true,//reset the expiration countdown after every request
 }));
+
+// for vulnerability scanning
+app.post("/run-scan", (req, res) => {
+    const python = spawn(
+        "python3",
+        ["-m", "frontend.Vulnerability_Scanning.Vulnerability_main"],
+        {
+            cwd: path.join(__dirname, "..")
+        }
+    );
+    
+    let output = "";
+    let errorOutput = "";
+    
+    python.stdout.on("data", (data) => {
+        output += data.toString();
+    });
+    
+    python.stderr.on("data", (data) => {
+        errorOutput += data.toString();
+    });
+    
+    python.on("close", (code) => {
+        if (code === 0) {
+            return res.json({
+                success: true,
+                output: output
+            });
+        } else {
+            return res.status(500).json({
+                success: false,
+                message: "Scan failed.",
+                error: errorOutput
+            });
+        }
+    });
+});
+
+
+
+//app.post("/run-scan", (req, res) => {
+//    const scriptPath = path.join(
+//        __dirname,
+//        "../frontend/Vulnerability_Scanning/Vulnerability_main.py"
+//    );
+    
+//    exec(`python3 "${scriptPath}"`, (error, stdout, stderr) => {
+ //       if (error) {
+//            console.error("Scan failed:", error);
+//            return res.status(500).json({
+//                success: false,
+ //               message: "Scan failed",
+//                error: stderr
+//            });
+//        }
+    
+//        return res.json({
+//            success:true,
+//            output: stdout
+//        });
+//    });
+//});
+    
 
 app.post("/register", async (req, res) => {//if here, client submitted registration form
     const {email, password} = req.body;//extract entered credentials from request body
