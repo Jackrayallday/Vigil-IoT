@@ -290,45 +290,73 @@ function mapContractDeviceToFinding(scanId, device, index) {
 
 function mapDevicesToFindings(scanId, devices = [], targets = []) {
   if (!Array.isArray(devices) || devices.length === 0) return [];
-  return devices.map((device, index) => ({
-    id: `${scanId}-device-${index + 1}`,
-    position: index,
-    deviceName: device.device_name || device.ip_address || `Device ${index + 1}`,
-    itemDiscovered: device.device_name || device.ip_address || targets[index] || `Target ${index + 1}`,
-    ipAddress: device.ip_address || "N/A",
-    ip: device.ip_address || "N/A",
-    hostname: device.device_name || null,
-    vendor: device.vendor || null,
-    services: device.services || "N/A",
-    riskLevel: device.riskLevel || "UNKNOWN",
-    findingCount: Number.isFinite(Number(device.findingCount)) ? Number(device.findingCount) : 0,
-    status: device.status || "COMPLETE",
-    topExposure: device.protocol_warnings || "N/A",
-    protocolWarnings: device.protocol_warnings || "N/A",
-    remediationTips: device.remediation_tips || "Review configuration",
-    notes: device.notes || "",
-    findingsDetailed: Array.isArray(device.findingsDetailed) ? device.findingsDetailed : [],
-  }));
+  return devices.map((device, index) => {
+    const findingsDetailed = Array.isArray(device?.findingsDetailed)
+      ? device.findingsDetailed
+      : Array.isArray(device?.findings)
+      ? device.findings
+      : [];
+    const ipAddress = device?.ip || device?.ip_address || "N/A";
+    const hostname = device?.hostname || device?.device_name || null;
+    const itemDiscovered = hostname || ipAddress || targets[index] || `Target ${index + 1}`;
+    const riskSource = device?.riskLevel || device?.risk_level || getHighestSeverity(findingsDetailed);
+    const riskLevel = typeof riskSource === "string" ? riskSource.toUpperCase() : "UNKNOWN";
+    const findingCountValue = device?.findingCount ?? device?.finding_count;
+    const findingCount = Number.isFinite(Number(findingCountValue))
+      ? Number(findingCountValue)
+      : findingsDetailed.length;
+    const topExposure = device?.topExposure || device?.protocol_warnings || summarizeExposure(findingsDetailed);
+    const remediationTips =
+      device?.remediationTips || device?.remediation_tips || summarizeRemediation(findingsDetailed);
+
+    return {
+      id: device?.deviceId || device?.device_id || `${scanId}-device-${index + 1}`,
+      position: index,
+      deviceName: hostname || ipAddress || `Device ${index + 1}`,
+      itemDiscovered,
+      ipAddress,
+      ip: ipAddress,
+      hostname,
+      vendor: device?.vendor || null,
+      services: device?.services || summarizeServices(findingsDetailed),
+      riskLevel,
+      findingCount,
+      status: device?.status || "COMPLETE",
+      topExposure,
+      protocolWarnings: topExposure,
+      remediationTips,
+      notes: device?.notes || "",
+      findingsDetailed,
+    };
+  });
 }
 
 function mapReportToScan(report, devices = null) {
   if (!report) return null;
+  const submittedAtRaw = report.scannedAt || report.scanned_at;
+  const parsedSubmittedAt = submittedAtRaw ? new Date(submittedAtRaw) : new Date();
+  const submittedAtDate = Number.isNaN(parsedSubmittedAt.getTime()) ? new Date() : parsedSubmittedAt;
+  const deviceCount = Number(report.deviceCount ?? 0);
+  const findingCount = Number(report.totalFindingCount ?? 0);
+  const contractSummary =
+    Number.isFinite(deviceCount) && Number.isFinite(findingCount)
+      ? `Devices: ${deviceCount} | Findings: ${findingCount}`
+      : null;
   const targets = safeParseJsonArray(report.targets);
   const exclusions = safeParseJsonArray(report.exclusions);
-  const submittedAt = report.scanned_at ? new Date(report.scanned_at) : new Date();
-  const submittedAtISO = submittedAt.toISOString();
-  const submittedAtLabel = submittedAt.toLocaleString();
-  const scanId = String(report.report_id ?? createId("scan"));
+  const submittedAtISO = submittedAtDate.toISOString();
+  const submittedAtLabel = submittedAtDate.toLocaleString();
+  const scanId = String(report.scanId ?? report.scan_id ?? report.report_id ?? createId("scan"));
   const hasDevicePayload = Array.isArray(devices);
   const findings = hasDevicePayload ? mapDevicesToFindings(scanId, devices, targets) : null;
 
   return {
     id: scanId,
-    name: report.title || "Untitled scan",
-    status: "complete",
+    name: report.scanName || report.scan_name || report.title || "Untitled scan",
+    status: typeof report.status === "string" ? report.status.toLowerCase() : "complete",
     submittedAt: submittedAtLabel,
     submittedAtISO,
-    moduleSummary: report.detection_options || "Not specified",
+    moduleSummary: report.detection_options || contractSummary || "Not specified",
     targets,
     exclusions,
     findings,
@@ -707,7 +735,9 @@ export default function App() {
       );
 
       //if here, scan reports successfully retrieved
-      const reports = reportsRes?.data?.success ? reportsRes.data.reports || [] : [];
+      const reports = reportsRes?.data?.success
+        ? reportsRes.data.scans || reportsRes.data.reports || []
+        : [];
       const mapped = pruneScans(
         reports
           .map((report) => mapReportToScan(report))
@@ -765,7 +795,10 @@ export default function App() {
       );
 
       //if here, devices successfully retrieved
-      const devices = devicesRes?.data?.success ? devicesRes.data.devices || [] : [];
+      const scanDetailsPayload = devicesRes?.data?.scanDetails || devicesRes?.data?.scanDetailsResponse;
+      const devices = devicesRes?.data?.success
+        ? scanDetailsPayload?.devices || devicesRes.data.devices || []
+        : [];
       setScans((prev) =>
         prev.map((scan) =>
           scan.id === scanId
@@ -1046,15 +1079,47 @@ export default function App() {
     setSaveFeedback(null);
 
     try{
+      const devicesPayload = Array.isArray(scanData.findings)
+        ? scanData.findings.map((device) => {
+            const detailedFindings = Array.isArray(device?.findingsDetailed) ? device.findingsDetailed : [];
+            return {
+              ip: device?.ip || device?.ipAddress || null,
+              hostname: device?.hostname || device?.deviceName || null,
+              vendor: device?.vendor || null,
+              type: device?.type || null,
+              riskLevel:
+                typeof device?.riskLevel === "string"
+                  ? device.riskLevel.toUpperCase()
+                  : getHighestSeverity(detailedFindings),
+              status: typeof device?.status === "string" ? device.status.toUpperCase() : "COMPLETE",
+              findings: detailedFindings.map((finding) => {
+                const evidence = finding?.evidence || {};
+                const normalizedPort = Number(evidence?.port);
+                return {
+                  title: finding?.title || "Unnamed finding",
+                  severity: normalizeSeverity(finding?.severity),
+                  description: finding?.description || null,
+                  impact: finding?.impact || null,
+                  recommendation: finding?.recommendation || null,
+                  source: finding?.source || "service-map",
+                  protocol: evidence?.protocol || null,
+                  port: Number.isFinite(normalizedPort) ? normalizedPort : null,
+                  service: evidence?.service || null,
+                  state: evidence?.state || null,
+                  cveIds: Array.isArray(finding?.cveIds) ? finding.cveIds : [],
+                };
+              }),
+            };
+          })
+        : [];
+
       const payload = {
-        //user_id: actor.user_id,//KV: no longer needed (not used by backend)
-        title: scanData.name,
-        scanned_at: formatToMysqlDatetime(scanData.submittedAtISO || scanData.submittedAt) ||
-                    formatToMysqlDatetime(new Date().toISOString()),
-        targets: JSON.stringify(scanData.targets || []),
-        exclusions: JSON.stringify(scanData.exclusions || []),
-        detection_options: scanData.moduleSummary,
-        devices: Array.isArray(scanData.findings) ? scanData.findings : []//scanData.findings||[],
+        scanName: scanData.name,
+        scannedAt:
+          formatToMysqlDatetime(scanData.submittedAtISO || scanData.submittedAt) ||
+          formatToMysqlDatetime(new Date().toISOString()),
+        status: typeof scanData?.status === "string" ? scanData.status.toUpperCase() : "COMPLETE",
+        devices: devicesPayload,
       };
 
       const response = await axios.post(//Send request to /save-scan on server
@@ -1064,7 +1129,7 @@ export default function App() {
       );
 
       //if here, scan was successfully saved
-      const savedReportId = String(response?.data?.report_id || scanData.id);
+      const savedReportId = String(response?.data?.scan_id || response?.data?.report_id || scanData.id);
       const savedScan = {
         ...snapshotScan(scanData),
         id: savedReportId,
