@@ -18,6 +18,8 @@ import PasswordField from "./PasswordField";
 const VIEW_LOGIN = "login";
 const VIEW_REGISTER = "register";
 const VIEW_FORGOT = "forgot";
+const EMAIL_MAX_LENGTH = 254;
+const EMAIL_FORMAT_REGEX = /^[^\s@]+@[^\s@]+\.[A-Za-z][^\s@]*$/;
 
 export default function LoginModal({ onClose, onLoginSuccess }) {
   const backdropPointerDownRef = useRef(false); // Track if pointer press started on the backdrop.
@@ -65,11 +67,17 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
 
   async function handleSubmit(e){//function handleSubmit(e) { KV edit
     e.preventDefault();
+    const trimmedEmail = email.trim();
+
+    if (!EMAIL_FORMAT_REGEX.test(trimmedEmail)) {
+      setError("Please enter a valid email address (example@domain.com).");
+      return;
+    }
     
     try{
       const response = await axios.post(//Send request to /login on server
         "http://localhost:3000/login",
-        {email, password},
+        {email: trimmedEmail, password},
         {headers: {"Content-Type": "application/json"}}
       );
 
@@ -142,8 +150,11 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
                 name="email"
                 type="email"
                 autoComplete="email" 
+                pattern="^[^\s@]+@[^\s@]+\.[A-Za-z][^\s@]*$"
+                title="Please enter an email like name@example.com."
+                maxLength={EMAIL_MAX_LENGTH}
                 value={email} //Kv add
-                onChange={(e) => setEmail(e.target.value)} //KV add
+                onChange={(e) => setEmail(e.target.value.slice(0, EMAIL_MAX_LENGTH))} //KV add
                 required //KV add
               />
             </div>

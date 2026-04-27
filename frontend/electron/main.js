@@ -13,7 +13,7 @@ programmer: Richie Delgado
 Start fastAPI for device discovery script. 
 */
 
-import { app, BrowserWindow, screen } from 'electron'; // Main Electron modules import
+import { app, BrowserWindow, screen, shell } from 'electron'; // Main Electron modules import
 import { fileURLToPath } from 'node:url'; // Utility to convert file URL to path
 import path from 'node:path';
 import { spawn } from 'node:child_process'; // ADDED: to start FastAPI
@@ -24,6 +24,7 @@ const __dirname = path.dirname(__filename);
 const isDev = process.argv.includes('--dev');
 const devServerUrl = process.env.ELECTRON_START_URL || 'http://localhost:5173';
 const distPath = path.join(__dirname, '..', 'dist');
+const DEMO_INTRO_URL = 'https://jackrayallday.github.io/Vigil-IoT/';
 
 let fastAPIServer = null;
 
@@ -59,6 +60,16 @@ function startFastAPIServer() {
 // Function to create the main application window
 async function createWindow() {
   const { workArea } = screen.getPrimaryDisplay();
+
+  function isDemoIntroUrl(rawUrl) {
+    if (!rawUrl) return false;
+    try {
+      return new URL(rawUrl).href === DEMO_INTRO_URL;
+    } catch {
+      return false;
+    }
+  }
+
   const win = new BrowserWindow({
     x: workArea?.x ?? undefined,
     y: workArea?.y ?? undefined,
@@ -81,6 +92,22 @@ async function createWindow() {
     win.show();
     if (isDev) {
       win.webContents.openDevTools({ mode: 'detach' });
+    }
+  });
+
+  // Open only the demo/introduction URL in the user's default browser.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (isDemoIntroUrl(url)) {
+      shell.openExternal(url);
+      return { action: 'deny' };
+    }
+    return { action: 'allow' };
+  });
+
+  win.webContents.on('will-navigate', (event, url) => {
+    if (isDemoIntroUrl(url)) {
+      event.preventDefault();
+      shell.openExternal(url);
     }
   });
 

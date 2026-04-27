@@ -10,6 +10,8 @@ import PasswordField from "./PasswordField"; // Shared press-to-reveal password 
 
 const PASSWORD_COMPLEXITY_RULE =
   "Password must include uppercase, lowercase, a number, and a symbol.";
+const EMAIL_MAX_LENGTH = 254;
+const EMAIL_FORMAT_REGEX = /^[^\s@]+@[^\s@]+\.[A-Za-z][^\s@]*$/;
 
 function getPasswordComplexityError(password) {
   if (typeof password !== "string") {
@@ -54,6 +56,13 @@ export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister
 
   async function handleSubmit(e) {
     e.preventDefault();
+    const trimmedEmail = email.trim();
+
+    if (!EMAIL_FORMAT_REGEX.test(trimmedEmail)) {
+      setFormError("Please enter a valid email address (example@domain.com).");
+      setFormSuccess("");
+      return;
+    }
 
     if(password !== confirmPassword) {
       setFormError("Passwords don't match!");
@@ -71,7 +80,7 @@ export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister
     try{
       await axios.post(//send request to /register on server
         "http://localhost:3000/register",
-        {email, password},
+        {email: trimmedEmail, password},
         {headers: {"Content-Type": "application/json"}}
       );
 
@@ -101,9 +110,12 @@ export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister
           name="email"
           type="email"
           autoComplete="email"
+          pattern="^[^\s@]+@[^\s@]+\.[A-Za-z][^\s@]*$"
+          title="Please enter an email like name@example.com."
+          maxLength={EMAIL_MAX_LENGTH}
           value={email}
           onChange={(e) => {
-            setEmail(e.target.value);
+            setEmail(e.target.value.slice(0, EMAIL_MAX_LENGTH));
             setFormError("");
             setFormSuccess("");//KV add
           }}
