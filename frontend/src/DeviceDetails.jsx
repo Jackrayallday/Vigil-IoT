@@ -51,7 +51,7 @@ export default function DeviceDetails({ device, onBack, onPrint }) {
         } else {
           setEnrichedDevice(device);
         }
-      } catch (err) {
+      } catch {
         // If fetch fails, just use the original device data
         setEnrichedDevice(device);
       }
@@ -139,6 +139,10 @@ export default function DeviceDetails({ device, onBack, onPrint }) {
 
   // Display services
   const servicesDisplay = serviceList.length > 0 ? serviceList.join(', ') : 'None detected';
+  const detailedFindings = Array.isArray(dev.findingsDetailed) ? dev.findingsDetailed : [];
+  const riskLevel = dev.riskLevel || "UNKNOWN";
+  const findingCount = Number.isFinite(Number(dev.findingCount)) ? Number(dev.findingCount) : detailedFindings.length;
+  const statusLabel = dev.status || "COMPLETE";
 
   // Notes: compile helpful information
   const notesParts = [];
@@ -154,6 +158,12 @@ export default function DeviceDetails({ device, onBack, onPrint }) {
   }
   if (dev.discovered_via && dev.discovered_via.length > 0) {
     notesParts.push(`Discovered via: ${dev.discovered_via.join(', ')}`);
+  }
+  if (dev.riskLevel) {
+    notesParts.push(`Risk Level: ${dev.riskLevel}`);
+  }
+  if (Number.isFinite(Number(dev.findingCount))) {
+    notesParts.push(`Findings: ${Number(dev.findingCount)}`);
   }
   if (dev.notes) {
     notesParts.push(dev.notes);
@@ -206,8 +216,28 @@ export default function DeviceDetails({ device, onBack, onPrint }) {
           </div>
 
           <div className="device-field">
+            <h2 className="device-fieldLabel">Vendor</h2>
+            <p className="device-fieldValue">{dev.vendor || "Unknown"}</p>
+          </div>
+
+          <div className="device-field">
             <h2 className="device-fieldLabel">IP Address</h2>
             <p className="device-fieldValue">{ipAddress}</p>
+          </div>
+
+          <div className="device-field">
+            <h2 className="device-fieldLabel">Risk Level</h2>
+            <p className="device-fieldValue">{riskLevel}</p>
+          </div>
+
+          <div className="device-field">
+            <h2 className="device-fieldLabel">Finding Count</h2>
+            <p className="device-fieldValue">{findingCount}</p>
+          </div>
+
+          <div className="device-field">
+            <h2 className="device-fieldLabel">Status</h2>
+            <p className="device-fieldValue">{statusLabel}</p>
           </div>
 
           <div className="device-field">
@@ -215,6 +245,48 @@ export default function DeviceDetails({ device, onBack, onPrint }) {
             <p className="device-fieldValue">{notes}</p>
           </div>
         </div>
+
+        <section className="device-findings">
+          <h2 className="device-findingsTitle">Findings</h2>
+          {detailedFindings.length === 0 ? (
+            <p className="device-findingsEmpty">No detailed findings are available for this device.</p>
+          ) : (
+            <ul className="device-findingList">
+              {detailedFindings.map((finding, index) => {
+                const cveIds = Array.isArray(finding?.cveIds) ? finding.cveIds : [];
+                const evidence = finding?.evidence || {};
+                const severity = typeof finding?.severity === "string" ? finding.severity.toUpperCase() : "LOW";
+                return (
+                  <li key={finding?.findingId || `finding-${index}`} className="device-findingCard">
+                    <div className="device-findingHeader">
+                      <h3 className="device-findingTitle">{finding?.title || `Finding ${index + 1}`}</h3>
+                      <span className={`device-severityBadge device-severityBadge--${severity.toLowerCase()}`}>
+                        {severity}
+                      </span>
+                    </div>
+                    {cveIds.length > 0 && (
+                      <p className="device-findingMeta"><strong>CVE(s):</strong> {cveIds.join(", ")}</p>
+                    )}
+                    {finding?.description && (
+                      <p className="device-findingMeta"><strong>Description:</strong> {finding.description}</p>
+                    )}
+                    {finding?.impact && (
+                      <p className="device-findingMeta"><strong>Impact:</strong> {finding.impact}</p>
+                    )}
+                    {finding?.recommendation && (
+                      <p className="device-findingMeta"><strong>Recommendation:</strong> {finding.recommendation}</p>
+                    )}
+                    <p className="device-findingMeta">
+                      <strong>Evidence:</strong>{" "}
+                      {`${evidence?.service || "unknown"}:${evidence?.port ?? "?"}/${evidence?.protocol || "?"}`}
+                      {evidence?.state ? ` (${evidence.state})` : ""}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       </article>
     </section>
   );
