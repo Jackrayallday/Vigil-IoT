@@ -6,7 +6,7 @@ programmer: Jack Ray
 Component to display the results of a completed scan. Based on the mockup
 */
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./styles/results.css";
 
 
@@ -17,6 +17,55 @@ const SORT_CHOICES = [
   { value: "item-asc", label: "Item A-Z" },
   { value: "item-desc", label: "Item Z-A" },
 ];
+
+function formatDurationFromMs(totalMs) {
+  const safeMs = Math.max(0, Number(totalMs) || 0);
+  const totalSeconds = Math.floor(safeMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
+
+function getLongScanStatusLabel(session) {
+  if (!session) return "Not started";
+  if (session.active) return "Running";
+  if (session.stopReason === "timer") return "Timer complete";
+  return "Stopped";
+}
+
+function formatLongScanTimestamp(value) {
+  if (!value) return "N/A";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+  return parsed.toLocaleString();
+}
+
+function isStrictLongScanFinding(finding) {
+  const evidence = finding?.evidence;
+  if (!finding || typeof finding !== "object" || !evidence || typeof evidence !== "object") return false;
+  if (!finding.findingId || !finding.severity) return false;
+  if (!evidence.timestamp || !evidence.sourceIp || !evidence.destinationIp) return false;
+  if (evidence.packetSize === undefined || evidence.frequency === undefined || evidence.score === undefined) return false;
+  return true;
+}
+
+function normalizeLongScanRow(finding) {
+  const evidence = finding.evidence;
+  return {
+    findingId: finding.findingId,
+    type: finding.type || "ANOMALY",
+    title: finding.title || "Network Traffic Anomaly",
+    severity: finding.severity,
+    sourceIp: evidence.sourceIp,
+    destinationIp: evidence.destinationIp,
+    packetSize: evidence.packetSize,
+    packetFrequency: evidence.frequency,
+    score: evidence.score,
+    anomalyDetectedAt: formatLongScanTimestamp(evidence.timestamp),
+  };
+}
 
 export default function ScanResults({
   scan,
@@ -30,9 +79,22 @@ export default function ScanResults({
   saveFeedback = null,
   isLoadingItems = false,
   itemsError = null,
+  longScanSession = null,
+  onStopLongScan,
+  onResumeLongScan,
   onRetryLoadItems,
 }) {
   const [sortChoice, setSortChoice] = useState("input");
+  const isLongScan = scan?.scanMode === "long";
+  const [clockMs, setClockMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!isLongScan || !longScanSession?.active) return undefined;
+    const tickId = window.setInterval(() => {
+      setClockMs(Date.now());
+    }, 1000);
+    return () => window.clearInterval(tickId);
+  }, [isLongScan, longScanSession?.active]);
 
   // Sort entirely on the client so we can flip between input order and alphabetical views.
   function handleDeviceActivate(row) {
@@ -62,6 +124,14 @@ export default function ScanResults({
     return base;
   }, [scan, sortChoice]);
 
+  const longScanRows = useMemo(() => {
+    if (!isLongScan || !Array.isArray(longScanSession?.rows)) return [];
+    const normalizedRows = longScanSession.rows
+      .filter((row) => isStrictLongScanFinding(row))
+      .map((row) => normalizeLongScanRow(row));
+    return normalizedRows.reverse();
+  }, [isLongScan, longScanSession?.rows]);
+
   // No scan selected? Fall back to a empty state instead of rendering the table.
   if (!scan) {
     return (
@@ -82,7 +152,16 @@ export default function ScanResults({
   }
 
   // Subtitle shows when the scan ran plus how many targets were in scope.
-  const submissionInfo = `${scan.submittedAt} - ${scan.targets.length} target${scan.targets.length === 1 ? "" : "s"}`;
+  const targetList = Array.isArray(scan.targets) ? scan.targets : [];
+  const exclusions = Array.isArray(scan.exclusions) ? scan.exclusions : [];
+  const submissionInfo = `${scan.submittedAt} - ${targetList.length} target${targetList.length === 1 ? "" : "s"}`;
+  const longScanReferenceMs = longScanSession?.active
+    ? clockMs
+    : (longScanSession?.stoppedAtMs || longScanSession?.endAtMs || 0);
+  const longScanRemainingMs = longScanSession
+    ? Math.max(0, longScanSession.endAtMs - longScanReferenceMs)
+    : 0;
+  const longScanStatusLabel = getLongScanStatusLabel(longScanSession);
 
   return (
     <section className="results-shell" aria-labelledby="scan-results-heading">
@@ -116,12 +195,12 @@ export default function ScanResults({
           <dl className="results-summary" aria-label="Scan configuration summary">
             <div>
               <dt>Targets</dt>
-              <dd>{scan.targets.join(", ")}</dd>
+              <dd>{targetList.join(", ")}</dd>
             </div>
-            {scan.exclusions.length > 0 && (
+            {exclusions.length > 0 && (
               <div>
                 <dt>Exclusions</dt>
-                <dd>{scan.exclusions.join(", ")}</dd>
+                <dd>{exclusions.join(", ")}</dd>
               </div>
             )}
             <div>
@@ -132,16 +211,18 @@ export default function ScanResults({
         </div>
 
         <div className="results-controls">
-          <label className="results-sort">
-            <span className="results-sortLabel">Sort</span>
-            <select value={sortChoice} onChange={(e) => setSortChoice(e.target.value)}>
-              {SORT_CHOICES.map((choice) => (
-                <option key={choice.value} value={choice.value}>
-                  {choice.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          {!isLongScan && (
+            <label className="results-sort">
+              <span className="results-sortLabel">Sort</span>
+              <select value={sortChoice} onChange={(e) => setSortChoice(e.target.value)}>
+                {SORT_CHOICES.map((choice) => (
+                  <option key={choice.value} value={choice.value}>
+                    {choice.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <button
             type="button"
             className="results-pdfBtn"
@@ -149,6 +230,26 @@ export default function ScanResults({
           >
             Convert to PDF
           </button>
+          {isLongScan && (
+            <button
+              type="button"
+              className="results-stopBtn"
+              onClick={longScanSession?.active ? onStopLongScan : onResumeLongScan}
+              disabled={!longScanSession?.active && longScanRemainingMs <= 0}
+            >
+              {longScanSession?.active ? "Stop Scan" : "Resume Scan"}
+            </button>
+          )}
+          {isLongScan && (
+            <button
+              type="button"
+              className="results-saveBtn"
+              disabled
+              title="Coming soon"
+            >
+              Save Scan Report
+            </button>
+          )}
           {showSaveButton && (
             <button
               type="button"
@@ -171,7 +272,64 @@ export default function ScanResults({
         )}
       </header>
 
-      {isLoadingItems ? (
+      {isLongScan ? (
+        <>
+          <div className="results-longStatus">
+            <span className={`results-longBadge results-longBadge--${longScanSession?.active ? "running" : "stopped"}`}>
+              {longScanStatusLabel}
+            </span>
+            <span>Configured Duration: {formatDurationFromMs(longScanSession?.totalDurationMs || 0)}</span>
+            <span>Time Remaining: {formatDurationFromMs(longScanRemainingMs)}</span>
+            <span>Rows Streamed: {longScanRows.length}</span>
+          </div>
+          {longScanRows.length === 0 ? (
+            <p className="results-empty">Waiting for dynamic packet events...</p>
+          ) : (
+            <>
+              <div className="results-tableWrap">
+                <table className="results-table results-table--dynamic">
+                  <thead>
+                    <tr>
+                      <th scope="col" className="results-colIndex">#</th>
+                      <th scope="col">Finding ID</th>
+                      <th scope="col">Type</th>
+                      <th scope="col">Title</th>
+                      <th scope="col">Severity</th>
+                      <th scope="col">Source IP</th>
+                      <th scope="col">Destination IP</th>
+                      <th scope="col">Packet Size (bytes)</th>
+                      <th scope="col">Packet Freq (pkts/sec)</th>
+                      <th scope="col">Score</th>
+                      <th scope="col">Timestamp Anomaly Detected</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {longScanRows.map((row, idx) => (
+                      <tr key={row.findingId || `${scan?.id || "scan"}-dynamic-${idx}`}>
+                        <td className="results-colIndex" data-title="#">{idx + 1}</td>
+                        <td data-title="Finding ID">{row.findingId}</td>
+                        <td data-title="Type">{row.type}</td>
+                        <td data-title="Title">{row.title}</td>
+                        <td data-title="Severity">{row.severity}</td>
+                        <td data-title="Source IP">{row.sourceIp}</td>
+                        <td data-title="Destination IP">{row.destinationIp}</td>
+                        <td data-title="Packet Size (bytes)">{row.packetSize}</td>
+                        <td data-title="Packet Freq (pkts/sec)">{row.packetFrequency}</td>
+                        <td data-title="Score">{row.score}</td>
+                        <td data-title="Timestamp Anomaly Detected">{row.anomalyDetectedAt || "N/A"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <footer className="results-footer" aria-label="Dynamic scan summary">
+                <span>Live stream</span>
+                <span>Showing latest {longScanRows.length} event{longScanRows.length === 1 ? "" : "s"}</span>
+              </footer>
+            </>
+          )}
+        </>
+      ) : isLoadingItems ? (
         <p className="results-empty">Loading scan report items...</p>
       ) : itemsError ? (
         <div className="results-loadError">

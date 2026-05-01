@@ -1,6 +1,7 @@
 {
     "schemaVersion": "1.0.0",
     "scanDetailsResponse": {
+<<<<<<< HEAD
         "scanId": "scan_95884881",
         "scanName": "Static Scan",
         "scannedAt": "2026-05-01T01:41:51.918314+00:00",
@@ -11,13 +12,29 @@
                 "ip": "192.168.0.1",
                 "hostname": "TP-LINK/TP-LINK UPnP/1.1 MiniUPnPd/2.2.2",
                 "vendor": "TP-LINK/TP-LINK UPnP/1.1 MiniUPnPd/2.2.2",
+=======
+        "scanId": "scan_9996c5d3",
+        "scanName": "Static Scan",
+        "scannedAt": "2026-05-01T16:00:41.912667+00:00",
+        "status": "COMPLETE",
+        "devices": [
+            {
+                "deviceId": "0171b7de-d1d8-47a9-bbbf-47842c5fdd90",
+                "ip": "192.168.1.1",
+                "hostname": null,
+                "vendor": "Sagemcom Broadband SAS",
+>>>>>>> LongScanUIUpdate
                 "type": null,
                 "riskLevel": "HIGH",
                 "findingCount": 5,
                 "status": "COMPLETE",
                 "findings": [
                     {
+<<<<<<< HEAD
                         "findingId": "192.168.0.1-80-CVE-2021-41773",
+=======
+                        "findingId": "192.168.1.1-80-CVE-2021-41773",
+>>>>>>> LongScanUIUpdate
                         "title": "http vulnerability",
                         "severity": "HIGH",
                         "description": "http exposes CVE-2021-41773",
@@ -35,7 +52,11 @@
                         }
                     },
                     {
+<<<<<<< HEAD
                         "findingId": "192.168.0.1-80-CVE-2019-0211",
+=======
+                        "findingId": "192.168.1.1-80-CVE-2019-0211",
+>>>>>>> LongScanUIUpdate
                         "title": "http vulnerability",
                         "severity": "LOW",
                         "description": "http exposes CVE-2019-0211",
@@ -53,7 +74,11 @@
                         }
                     },
                     {
+<<<<<<< HEAD
                         "findingId": "192.168.0.1-443-CVE-2023-25690",
+=======
+                        "findingId": "192.168.1.1-443-CVE-2023-25690",
+>>>>>>> LongScanUIUpdate
                         "title": "https vulnerability",
                         "severity": "LOW",
                         "description": "https exposes CVE-2023-25690",
@@ -71,7 +96,11 @@
                         }
                     },
                     {
+<<<<<<< HEAD
                         "findingId": "192.168.0.1-53-CVE-2020-25684",
+=======
+                        "findingId": "192.168.1.1-53-CVE-2020-25684",
+>>>>>>> LongScanUIUpdate
                         "title": "domain vulnerability",
                         "severity": "LOW",
                         "description": "domain exposes CVE-2020-25684",
@@ -89,7 +118,11 @@
                         }
                     },
                     {
+<<<<<<< HEAD
                         "findingId": "192.168.0.1-1900-CVE-2020-12695",
+=======
+                        "findingId": "192.168.1.1-1900-CVE-2020-12695",
+>>>>>>> LongScanUIUpdate
                         "title": "upnp vulnerability",
                         "severity": "HIGH",
                         "description": "upnp exposes CVE-2020-12695",
@@ -109,6 +142,7 @@
                 ]
             },
             {
+<<<<<<< HEAD
                 "deviceId": "e8793183-6fb5-4939-88c3-ebe88b5bf6ec",
                 "ip": "192.168.0.34",
                 "hostname": null,
@@ -144,29 +178,93 @@
                             "protocol": "udp",
                             "port": 53,
                             "service": "domain",
+=======
+                "deviceId": "d53eaa56-0c7b-44a7-ad35-ebb28d697cc4",
+                "ip": "192.168.1.19",
+                "hostname": "EPSON208997.lan",
+                "vendor": "Seiko Epson Corporation",
+                "type": null,
+                "riskLevel": "HIGH",
+                "findingCount": 5,
+                "status": "COMPLETE",
+                "findings": [
+                    {
+                        "findingId": "192.168.1.19-80-CVE-2021-41773",
+                        "title": "http vulnerability",
+                        "severity": "HIGH",
+                        "description": "http exposes CVE-2021-41773",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Patch Apache HTTP Server immediately",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2021-41773"
+                        ],
+                        "evidence": {
+                            "protocol": "tcp",
+                            "port": 80,
+                            "service": "http",
                             "state": "unknown"
                         }
                     },
                     {
+                        "findingId": "192.168.1.19-80-CVE-2019-0211",
+                        "title": "http vulnerability",
+                        "severity": "LOW",
+                        "description": "http exposes CVE-2019-0211",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update Apache and restrict privilege escalation",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2019-0211"
+                        ],
+                        "evidence": {
+                            "protocol": "tcp",
+                            "port": 80,
+                            "service": "http",
+>>>>>>> LongScanUIUpdate
+                            "state": "unknown"
+                        }
+                    },
+                    {
+<<<<<<< HEAD
                         "findingId": "192.168.0.193-123-CVE-2019-6446",
                         "title": "ntp vulnerability",
                         "severity": "MEDIUM",
                         "description": "ntp exposes CVE-2019-6446",
+=======
+                        "findingId": "192.168.1.19-443-CVE-2023-25690",
+                        "title": "https vulnerability",
+                        "severity": "LOW",
+                        "description": "https exposes CVE-2023-25690",
+>>>>>>> LongScanUIUpdate
                         "impact": "Potential unauthorized access, service disruption, or data exposure.",
                         "recommendation": "Update service to latest vendor version",
                         "source": "service-map",
                         "cveIds": [
+<<<<<<< HEAD
                             "CVE-2019-6446"
                         ],
                         "evidence": {
                             "protocol": "udp",
                             "port": 123,
                             "service": "ntp",
+=======
+                            "CVE-2023-25690"
+                        ],
+                        "evidence": {
+                            "protocol": "tcp",
+                            "port": 443,
+                            "service": "https",
+>>>>>>> LongScanUIUpdate
                             "state": "unknown"
                         }
                     },
                     {
+<<<<<<< HEAD
                         "findingId": "192.168.0.193-161-CVE-2022-44793",
+=======
+                        "findingId": "192.168.1.19-161-CVE-2022-44793",
+>>>>>>> LongScanUIUpdate
                         "title": "snmp vulnerability",
                         "severity": "MEDIUM",
                         "description": "snmp exposes CVE-2022-44793",
@@ -184,6 +282,7 @@
                         }
                     },
                     {
+<<<<<<< HEAD
                         "findingId": "192.168.0.193-1900-CVE-2020-12695",
                         "title": "upnp vulnerability",
                         "severity": "HIGH",
@@ -203,6 +302,9 @@
                     },
                     {
                         "findingId": "192.168.0.193-5353-CVE-2015-7989",
+=======
+                        "findingId": "192.168.1.19-5353-CVE-2015-7989",
+>>>>>>> LongScanUIUpdate
                         "title": "zeroconf vulnerability",
                         "severity": "LOW",
                         "description": "zeroconf exposes CVE-2015-7989",
@@ -218,6 +320,7 @@
                             "service": "zeroconf",
                             "state": "unknown"
                         }
+<<<<<<< HEAD
                     },
                     {
                         "findingId": "192.168.0.193-5683-CVE-2020-17088",
@@ -254,10 +357,13 @@
                             "service": "bacnet",
                             "state": "unknown"
                         }
+=======
+>>>>>>> LongScanUIUpdate
                     }
                 ]
             },
             {
+<<<<<<< HEAD
                 "deviceId": "d4189d48-480a-4dcb-b873-d2f8962789dc",
                 "ip": "192.168.0.101",
                 "hostname": null,
@@ -316,6 +422,19 @@
                     },
                     {
                         "findingId": "192.168.0.235-1900-CVE-2020-12695",
+=======
+                "deviceId": "bd975cce-d6dc-4edd-ae9d-096566101b84",
+                "ip": "192.168.1.140",
+                "hostname": "JacksPC.lan",
+                "vendor": "EliteGroup Computer Systems Co., LTD",
+                "type": null,
+                "riskLevel": "HIGH",
+                "findingCount": 2,
+                "status": "COMPLETE",
+                "findings": [
+                    {
+                        "findingId": "192.168.1.140-1900-CVE-2020-12695",
+>>>>>>> LongScanUIUpdate
                         "title": "upnp vulnerability",
                         "severity": "HIGH",
                         "description": "upnp exposes CVE-2020-12695",
@@ -333,7 +452,11 @@
                         }
                     },
                     {
+<<<<<<< HEAD
                         "findingId": "192.168.0.235-5353-CVE-2015-7989",
+=======
+                        "findingId": "192.168.1.140-5353-CVE-2015-7989",
+>>>>>>> LongScanUIUpdate
                         "title": "zeroconf vulnerability",
                         "severity": "LOW",
                         "description": "zeroconf exposes CVE-2015-7989",
@@ -353,6 +476,7 @@
                 ]
             },
             {
+<<<<<<< HEAD
                 "deviceId": "d698dfd9-4516-4310-80b2-3ec7220bc915",
                 "ip": "192.168.0.149",
                 "hostname": null,
@@ -561,13 +685,23 @@
                 "ip": "192.168.0.184",
                 "hostname": null,
                 "vendor": null,
+=======
+                "deviceId": "86a8e14d-4716-4b40-9c7b-497a6ba6b222",
+                "ip": "192.168.1.90",
+                "hostname": "500-64dba0f2f56c.lan",
+                "vendor": "Select Comfort",
+>>>>>>> LongScanUIUpdate
                 "type": null,
                 "riskLevel": "MEDIUM",
                 "findingCount": 1,
                 "status": "COMPLETE",
                 "findings": [
                     {
+<<<<<<< HEAD
                         "findingId": "192.168.0.184-123-CVE-2019-6446",
+=======
+                        "findingId": "192.168.1.90-123-CVE-2019-6446",
+>>>>>>> LongScanUIUpdate
                         "title": "ntp vulnerability",
                         "severity": "MEDIUM",
                         "description": "ntp exposes CVE-2019-6446",
@@ -587,9 +721,15 @@
                 ]
             },
             {
+<<<<<<< HEAD
                 "deviceId": "d00e58b8-bd3c-45fa-8381-9c4566e3b043",
                 "ip": "192.168.0.78",
                 "hostname": null,
+=======
+                "deviceId": "025c3d7c-1415-4d68-9671-518c2dc45e63",
+                "ip": "192.168.1.78",
+                "hostname": "Jack-s-Galaxy-Note10.lan",
+>>>>>>> LongScanUIUpdate
                 "vendor": null,
                 "type": null,
                 "riskLevel": "LOW",
@@ -597,7 +737,11 @@
                 "status": "COMPLETE",
                 "findings": [
                     {
+<<<<<<< HEAD
                         "findingId": "192.168.0.78-5353-CVE-2015-7989",
+=======
+                        "findingId": "192.168.1.78-5353-CVE-2015-7989",
+>>>>>>> LongScanUIUpdate
                         "title": "zeroconf vulnerability",
                         "severity": "LOW",
                         "description": "zeroconf exposes CVE-2015-7989",
@@ -617,6 +761,7 @@
                 ]
             },
             {
+<<<<<<< HEAD
                 "deviceId": "22416cab-e628-4f93-805f-8d16e9cc5e79",
                 "ip": "192.168.0.236",
                 "hostname": null,
@@ -646,6 +791,19 @@
                     },
                     {
                         "findingId": "192.168.0.236-1900-CVE-2020-12695",
+=======
+                "deviceId": "a7f84c24-fa06-42fb-a8d2-3563fe9fd0d1",
+                "ip": "192.168.1.143",
+                "hostname": "TCL-RokuTV-310.lan",
+                "vendor": "Hui Zhou Gaoshengda Technology Co.,LTD",
+                "type": null,
+                "riskLevel": "HIGH",
+                "findingCount": 2,
+                "status": "COMPLETE",
+                "findings": [
+                    {
+                        "findingId": "192.168.1.143-1900-CVE-2020-12695",
+>>>>>>> LongScanUIUpdate
                         "title": "upnp vulnerability",
                         "severity": "HIGH",
                         "description": "upnp exposes CVE-2020-12695",
@@ -663,7 +821,11 @@
                         }
                     },
                     {
+<<<<<<< HEAD
                         "findingId": "192.168.0.236-5353-CVE-2015-7989",
+=======
+                        "findingId": "192.168.1.143-5353-CVE-2015-7989",
+>>>>>>> LongScanUIUpdate
                         "title": "zeroconf vulnerability",
                         "severity": "LOW",
                         "description": "zeroconf exposes CVE-2015-7989",
@@ -681,6 +843,68 @@
                         }
                     }
                 ]
+<<<<<<< HEAD
+=======
+            },
+            {
+                "deviceId": "a0215fc3-a318-4496-9caa-708241d6a178",
+                "ip": "192.168.1.202",
+                "hostname": "EntertamentRoom.lan",
+                "vendor": "Apple, Inc.",
+                "type": null,
+                "riskLevel": "HIGH",
+                "findingCount": 2,
+                "status": "COMPLETE",
+                "findings": [
+                    {
+                        "findingId": "192.168.1.202-1900-CVE-2020-12695",
+                        "title": "upnp vulnerability",
+                        "severity": "HIGH",
+                        "description": "upnp exposes CVE-2020-12695",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2020-12695"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 1900,
+                            "service": "upnp",
+                            "state": "unknown"
+                        }
+                    },
+                    {
+                        "findingId": "192.168.1.202-5353-CVE-2015-7989",
+                        "title": "zeroconf vulnerability",
+                        "severity": "LOW",
+                        "description": "zeroconf exposes CVE-2015-7989",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2015-7989"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 5353,
+                            "service": "zeroconf",
+                            "state": "unknown"
+                        }
+                    }
+                ]
+            },
+            {
+                "deviceId": "9ba9e300-f632-4ca9-973d-a9e123b22879",
+                "ip": "b'\\xc0\\xa8\\x01\\x13'",
+                "hostname": "EPSON ET-2850 Series",
+                "vendor": null,
+                "type": null,
+                "riskLevel": "LOW",
+                "findingCount": 0,
+                "status": "COMPLETE",
+                "findings": []
+>>>>>>> LongScanUIUpdate
             }
         ]
     }
