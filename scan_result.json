@@ -1,0 +1,430 @@
+{
+    "schemaVersion": "1.0.0",
+    "scanDetailsResponse": {
+        "scanId": "scan_9996c5d3",
+        "scanName": "Static Scan",
+        "scannedAt": "2026-05-01T16:00:41.912667+00:00",
+        "status": "COMPLETE",
+        "devices": [
+            {
+                "deviceId": "0171b7de-d1d8-47a9-bbbf-47842c5fdd90",
+                "ip": "192.168.1.1",
+                "hostname": null,
+                "vendor": "Sagemcom Broadband SAS",
+                "type": null,
+                "riskLevel": "HIGH",
+                "findingCount": 5,
+                "status": "COMPLETE",
+                "findings": [
+                    {
+                        "findingId": "192.168.1.1-80-CVE-2021-41773",
+                        "title": "http vulnerability",
+                        "severity": "HIGH",
+                        "description": "http exposes CVE-2021-41773",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Patch Apache HTTP Server immediately",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2021-41773"
+                        ],
+                        "evidence": {
+                            "protocol": "tcp",
+                            "port": 80,
+                            "service": "http",
+                            "state": "unknown"
+                        }
+                    },
+                    {
+                        "findingId": "192.168.1.1-80-CVE-2019-0211",
+                        "title": "http vulnerability",
+                        "severity": "LOW",
+                        "description": "http exposes CVE-2019-0211",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update Apache and restrict privilege escalation",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2019-0211"
+                        ],
+                        "evidence": {
+                            "protocol": "tcp",
+                            "port": 80,
+                            "service": "http",
+                            "state": "unknown"
+                        }
+                    },
+                    {
+                        "findingId": "192.168.1.1-443-CVE-2023-25690",
+                        "title": "https vulnerability",
+                        "severity": "LOW",
+                        "description": "https exposes CVE-2023-25690",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2023-25690"
+                        ],
+                        "evidence": {
+                            "protocol": "tcp",
+                            "port": 443,
+                            "service": "https",
+                            "state": "unknown"
+                        }
+                    },
+                    {
+                        "findingId": "192.168.1.1-53-CVE-2020-25684",
+                        "title": "domain vulnerability",
+                        "severity": "LOW",
+                        "description": "domain exposes CVE-2020-25684",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2020-25684"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 53,
+                            "service": "domain",
+                            "state": "unknown"
+                        }
+                    },
+                    {
+                        "findingId": "192.168.1.1-1900-CVE-2020-12695",
+                        "title": "upnp vulnerability",
+                        "severity": "HIGH",
+                        "description": "upnp exposes CVE-2020-12695",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2020-12695"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 1900,
+                            "service": "upnp",
+                            "state": "unknown"
+                        }
+                    }
+                ]
+            },
+            {
+                "deviceId": "d53eaa56-0c7b-44a7-ad35-ebb28d697cc4",
+                "ip": "192.168.1.19",
+                "hostname": "EPSON208997.lan",
+                "vendor": "Seiko Epson Corporation",
+                "type": null,
+                "riskLevel": "HIGH",
+                "findingCount": 5,
+                "status": "COMPLETE",
+                "findings": [
+                    {
+                        "findingId": "192.168.1.19-80-CVE-2021-41773",
+                        "title": "http vulnerability",
+                        "severity": "HIGH",
+                        "description": "http exposes CVE-2021-41773",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Patch Apache HTTP Server immediately",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2021-41773"
+                        ],
+                        "evidence": {
+                            "protocol": "tcp",
+                            "port": 80,
+                            "service": "http",
+                            "state": "unknown"
+                        }
+                    },
+                    {
+                        "findingId": "192.168.1.19-80-CVE-2019-0211",
+                        "title": "http vulnerability",
+                        "severity": "LOW",
+                        "description": "http exposes CVE-2019-0211",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update Apache and restrict privilege escalation",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2019-0211"
+                        ],
+                        "evidence": {
+                            "protocol": "tcp",
+                            "port": 80,
+                            "service": "http",
+                            "state": "unknown"
+                        }
+                    },
+                    {
+                        "findingId": "192.168.1.19-443-CVE-2023-25690",
+                        "title": "https vulnerability",
+                        "severity": "LOW",
+                        "description": "https exposes CVE-2023-25690",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2023-25690"
+                        ],
+                        "evidence": {
+                            "protocol": "tcp",
+                            "port": 443,
+                            "service": "https",
+                            "state": "unknown"
+                        }
+                    },
+                    {
+                        "findingId": "192.168.1.19-161-CVE-2022-44793",
+                        "title": "snmp vulnerability",
+                        "severity": "MEDIUM",
+                        "description": "snmp exposes CVE-2022-44793",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Disable or secure SNMP with authentication",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2022-44793"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 161,
+                            "service": "snmp",
+                            "state": "unknown"
+                        }
+                    },
+                    {
+                        "findingId": "192.168.1.19-5353-CVE-2015-7989",
+                        "title": "zeroconf vulnerability",
+                        "severity": "LOW",
+                        "description": "zeroconf exposes CVE-2015-7989",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2015-7989"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 5353,
+                            "service": "zeroconf",
+                            "state": "unknown"
+                        }
+                    }
+                ]
+            },
+            {
+                "deviceId": "bd975cce-d6dc-4edd-ae9d-096566101b84",
+                "ip": "192.168.1.140",
+                "hostname": "JacksPC.lan",
+                "vendor": "EliteGroup Computer Systems Co., LTD",
+                "type": null,
+                "riskLevel": "HIGH",
+                "findingCount": 2,
+                "status": "COMPLETE",
+                "findings": [
+                    {
+                        "findingId": "192.168.1.140-1900-CVE-2020-12695",
+                        "title": "upnp vulnerability",
+                        "severity": "HIGH",
+                        "description": "upnp exposes CVE-2020-12695",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2020-12695"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 1900,
+                            "service": "upnp",
+                            "state": "unknown"
+                        }
+                    },
+                    {
+                        "findingId": "192.168.1.140-5353-CVE-2015-7989",
+                        "title": "zeroconf vulnerability",
+                        "severity": "LOW",
+                        "description": "zeroconf exposes CVE-2015-7989",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2015-7989"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 5353,
+                            "service": "zeroconf",
+                            "state": "unknown"
+                        }
+                    }
+                ]
+            },
+            {
+                "deviceId": "86a8e14d-4716-4b40-9c7b-497a6ba6b222",
+                "ip": "192.168.1.90",
+                "hostname": "500-64dba0f2f56c.lan",
+                "vendor": "Select Comfort",
+                "type": null,
+                "riskLevel": "MEDIUM",
+                "findingCount": 1,
+                "status": "COMPLETE",
+                "findings": [
+                    {
+                        "findingId": "192.168.1.90-123-CVE-2019-6446",
+                        "title": "ntp vulnerability",
+                        "severity": "MEDIUM",
+                        "description": "ntp exposes CVE-2019-6446",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2019-6446"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 123,
+                            "service": "ntp",
+                            "state": "unknown"
+                        }
+                    }
+                ]
+            },
+            {
+                "deviceId": "025c3d7c-1415-4d68-9671-518c2dc45e63",
+                "ip": "192.168.1.78",
+                "hostname": "Jack-s-Galaxy-Note10.lan",
+                "vendor": null,
+                "type": null,
+                "riskLevel": "LOW",
+                "findingCount": 1,
+                "status": "COMPLETE",
+                "findings": [
+                    {
+                        "findingId": "192.168.1.78-5353-CVE-2015-7989",
+                        "title": "zeroconf vulnerability",
+                        "severity": "LOW",
+                        "description": "zeroconf exposes CVE-2015-7989",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2015-7989"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 5353,
+                            "service": "zeroconf",
+                            "state": "unknown"
+                        }
+                    }
+                ]
+            },
+            {
+                "deviceId": "a7f84c24-fa06-42fb-a8d2-3563fe9fd0d1",
+                "ip": "192.168.1.143",
+                "hostname": "TCL-RokuTV-310.lan",
+                "vendor": "Hui Zhou Gaoshengda Technology Co.,LTD",
+                "type": null,
+                "riskLevel": "HIGH",
+                "findingCount": 2,
+                "status": "COMPLETE",
+                "findings": [
+                    {
+                        "findingId": "192.168.1.143-1900-CVE-2020-12695",
+                        "title": "upnp vulnerability",
+                        "severity": "HIGH",
+                        "description": "upnp exposes CVE-2020-12695",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2020-12695"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 1900,
+                            "service": "upnp",
+                            "state": "unknown"
+                        }
+                    },
+                    {
+                        "findingId": "192.168.1.143-5353-CVE-2015-7989",
+                        "title": "zeroconf vulnerability",
+                        "severity": "LOW",
+                        "description": "zeroconf exposes CVE-2015-7989",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2015-7989"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 5353,
+                            "service": "zeroconf",
+                            "state": "unknown"
+                        }
+                    }
+                ]
+            },
+            {
+                "deviceId": "a0215fc3-a318-4496-9caa-708241d6a178",
+                "ip": "192.168.1.202",
+                "hostname": "EntertamentRoom.lan",
+                "vendor": "Apple, Inc.",
+                "type": null,
+                "riskLevel": "HIGH",
+                "findingCount": 2,
+                "status": "COMPLETE",
+                "findings": [
+                    {
+                        "findingId": "192.168.1.202-1900-CVE-2020-12695",
+                        "title": "upnp vulnerability",
+                        "severity": "HIGH",
+                        "description": "upnp exposes CVE-2020-12695",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2020-12695"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 1900,
+                            "service": "upnp",
+                            "state": "unknown"
+                        }
+                    },
+                    {
+                        "findingId": "192.168.1.202-5353-CVE-2015-7989",
+                        "title": "zeroconf vulnerability",
+                        "severity": "LOW",
+                        "description": "zeroconf exposes CVE-2015-7989",
+                        "impact": "Potential unauthorized access, service disruption, or data exposure.",
+                        "recommendation": "Update service to latest vendor version",
+                        "source": "service-map",
+                        "cveIds": [
+                            "CVE-2015-7989"
+                        ],
+                        "evidence": {
+                            "protocol": "udp",
+                            "port": 5353,
+                            "service": "zeroconf",
+                            "state": "unknown"
+                        }
+                    }
+                ]
+            },
+            {
+                "deviceId": "9ba9e300-f632-4ca9-973d-a9e123b22879",
+                "ip": "b'\\xc0\\xa8\\x01\\x13'",
+                "hostname": "EPSON ET-2850 Series",
+                "vendor": null,
+                "type": null,
+                "riskLevel": "LOW",
+                "findingCount": 0,
+                "status": "COMPLETE",
+                "findings": []
+            }
+        ]
+    }
+}

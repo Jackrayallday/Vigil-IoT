@@ -5,18 +5,17 @@ programmer: Jack Ray (Modified by Kevin to call corresponding backend route)
 Password reset request form shown inside the auth modal.
 */
 import React, { useState } from "react";
-//import { getApiErrorMessage, getApiResponseMessage } from "./apiErrors";//KV: no longer needed
-import axios from "axios"; //KV add
+import axios from "axios";
 
 const EMAIL_MAX_LENGTH = 254;
 const EMAIL_FORMAT_REGEX = /^[^\s@]+@[^\s@]+\.[A-Za-z][^\s@]*$/;
 
-export default function ForgotPasswordForm({ onBack/*, onRequestReset*/ }) {//KV edit
+export default function ForgotPasswordForm({ onBack }) {
   const [email, setEmail] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  async function handleSubmit(event) {//KV edit: added "async"
+  async function handleSubmit(event) {
     event.preventDefault();
     setStatusMessage("");
     setErrorMessage("");
