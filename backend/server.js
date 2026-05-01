@@ -15,6 +15,7 @@ const {google} = require("googleapis");//for updated email-sending functionallit
 const crypto = require("crypto");//to generate the password reset token
 const fs = require("fs");//to read and modify files
 const path = require("path");//to define the path of a file
+const https = require('https');//for HTTPS implementation//////////////////////////////////////////
 const { spawn } = require("child_process");//run python scanner
 require("dotenv").config();//to read variables from the .env file
 
@@ -41,6 +42,13 @@ oauth2Client.setCredentials({//set the refresh token of this client
 
 const gmail = google.gmail({version: "v1", auth: oauth2Client});//create the Gmail API client
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+const options = {
+    key: process.env.SSL_KEY.replace(/\\n/g, '\n'),
+    cert: fs.readFileSync("./localhost.crt")
+};
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 (async () => {
     const bootstrap = await mysql.createConnection({//temporary MySQL connection used to init db
         host: process.env.DB_HOST,
@@ -61,7 +69,7 @@ const gmail = google.gmail({version: "v1", auth: oauth2Client});//create the Gma
             resetTokenExpiry BIGINT
         )`);
 
-        ///////////////////////////////////////////////////////////////////////////////////////////
+        //create the scan_reports table if it doesn't exist yet
         await bootstrap.query(`CREATE TABLE IF NOT EXISTS scan_reports (
             scan_id INT AUTO_INCREMENT PRIMARY KEY,
             scan_name VARCHAR(100) NOT NULL,
@@ -71,6 +79,7 @@ const gmail = google.gmail({version: "v1", auth: oauth2Client});//create the Gma
             FOREIGN KEY (owner_id) REFERENCES users(user_id) ON DELETE CASCADE
         );`);
 
+        //create the devices table if it doesn't exist yet
         await bootstrap.query(`CREATE TABLE IF NOT EXISTS devices (
             device_id INT AUTO_INCREMENT PRIMARY KEY,
             scan_id INT NOT NULL,
@@ -84,6 +93,7 @@ const gmail = google.gmail({version: "v1", auth: oauth2Client});//create the Gma
             FOREIGN KEY (scan_id) REFERENCES scan_reports(scan_id) ON DELETE CASCADE
         );`);
 
+        //create the findings (vulnerabilities) table if it doesn't exist yet
         await bootstrap.query(`CREATE TABLE IF NOT EXISTS findings (
             finding_id INT AUTO_INCREMENT PRIMARY KEY,
             device_id INT NOT NULL,
@@ -100,36 +110,6 @@ const gmail = google.gmail({version: "v1", auth: oauth2Client});//create the Gma
             cve_ids TEXT,  -- comma-separated list of CVEs
             FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
         );`);
-        ///////////////////////////////////////////////////////////////////////////////////////////
-        
-        /*//create the scan_reports table if it doesn't exist yet
-        await bootstrap.query(`CREATE TABLE IF NOT EXISTS scan_reports (
-            report_id INT AUTO_INCREMENT PRIMARY KEY,
-            title VARCHAR(100) NOT NULL,
-            scanned_at DATETIME NOT NULL,
-            targets TEXT NOT NULL,
-            exclusions TEXT,
-            detection_options TEXT,
-            owner_id INT NOT NULL,
-            FOREIGN KEY (owner_id)
-                REFERENCES users(user_id)
-                ON DELETE CASCADE
-        )`);
-
-        //create the devices table if it doesn't exist yet
-        await bootstrap.query(`CREATE TABLE IF NOT EXISTS devices (
-            device_id INT AUTO_INCREMENT PRIMARY KEY,
-            device_name VARCHAR(100),
-            protocol_warnings TEXT,
-            services TEXT,
-            ip_address VARCHAR(45),
-            notes TEXT,
-            remediation_tips TEXT,
-            associated_report INT NOT NULL,
-            FOREIGN KEY (associated_report)
-                REFERENCES scan_reports(report_id)
-                ON DELETE CASCADE
-        )`);*/
     }
     catch(err){//if here, error in MySQL database initialization
         console.error("Database initialization failed: ", err);//log the error to the console
@@ -164,8 +144,8 @@ app.use(session({//configure the session management
     cookie: {//configure the cookie that will be stored on the client
         maxAge: 3600000,//3600000 ms = 1 hour max age of the session (it expires after this limit)
         httpOnly: true,//prevent Javascript from reading, writing, or deleting the cookie
-        sameSite: "lax",//send the cookie only on same-site requests
-        secure: false,//send the cookie over HTTP for now, not HTTPS
+        sameSite: "none",//"lax",//send the cookie only on same-site requests///////////////////////
+        secure: true,//false,//send the cookie over HTTP for now, not HTTPS////////////////////////
     },
     rolling: true,//reset the expiration countdown after every request
 }));
@@ -1028,11 +1008,23 @@ app.post("/reset-password", async (req, res) => {//if here, user wants to reset 
     }
 });
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
 (async () => {
+    try {
+        https.createServer(options, app).listen(443, () => {
+            console.log('HTTPS server running on https://localhost');
+        });
+    } 
+    catch (err) {
+        console.error("Failed to start server: ", err);
+    }
+})();
+///////////////////////////////////////////////////////////////////////////////////////////////////
+/*(async () => {
     try{
         app.listen(3000, () => console.log("Server running on port 3000"));//start server: prt 3000
     } 
     catch (err){//if here, error server startup
         console.error("Failed to start server: ", err);//log the error to the console
     }
-})();
+})();*/

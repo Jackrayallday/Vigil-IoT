@@ -523,7 +523,7 @@ export default function App() {
     async function hydrateSession() {
       try {
         const res = await axios.get(
-          "http://localhost:3000/check_login",
+          "https://localhost:443/check_login",
           {withCredentials: true}
         );
         if (!isActive) return;
@@ -593,7 +593,7 @@ export default function App() {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/run-scan",
+        "https://localhost:443/run-scan",
         {},
         { withCredentials: false }
       );
@@ -735,7 +735,7 @@ export default function App() {
 
     try{
       const reportsRes = await axios.get(//send request to /scan-reports on the server
-        "http://localhost:3000/scan-reports",
+        "https://localhost:443/scan-reports",
         {withCredentials: true}
       );
 
@@ -795,7 +795,7 @@ export default function App() {
 
     try{
       const devicesRes = await axios.get(//send request to /scan_reports/id/devices on server
-        `http://localhost:3000/scan-reports/${scanId}/devices`,
+        `https://localhost:443/scan-reports/${scanId}/devices`,
         {withCredentials: true}
       );
 
@@ -862,7 +862,7 @@ export default function App() {
   async function handleLogout(){
     try{
       await axios.post(//Send request to /logout on server
-        "http://localhost:3000/logout",
+        "https://localhost:443/logout",
         {},
         {
           withCredentials: true,
@@ -950,7 +950,7 @@ export default function App() {
     setDeletingScanId(scanId);
     setHistoryFeedback(null);
     try{
-      await axios.delete(`http://localhost:3000/delete-scan/${scanId}`);//send req to /delete-scan
+      await axios.delete(`https://localhost:443/delete-scan/${scanId}`);//send req to /delete-scan
 
       //if here, deletion was successful
       setScans((prev) => {
@@ -1153,7 +1153,7 @@ export default function App() {
       };
 
       const response = await axios.post(//Send request to /save-scan on server
-        "http://localhost:3000/save-scan",
+        "https://localhost:443/save-scan",
         payload,
         {withCredentials: true}
       );

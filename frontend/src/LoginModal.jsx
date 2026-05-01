@@ -76,7 +76,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
     
     try{
       const response = await axios.post(//Send request to /login on server
-        "http://localhost:3000/login",
+        "https://localhost:443/login",
         {email: trimmedEmail, password},
         {headers: {"Content-Type": "application/json"}}
       );
