@@ -110,6 +110,49 @@ const options = {
             cve_ids TEXT,  -- comma-separated list of CVEs
             FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
         );`);
+
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        //create the dynamic anomaly scan session table if it doesn't exist yet
+        await bootstrap.query(`CREATE TABLE IF NOT EXISTS dynamic_scan_sessions (
+            dynamic_scan_id VARCHAR(100) PRIMARY KEY,
+            device_id VARCHAR(100),
+            ip VARCHAR(45),
+            hostname VARCHAR(100),
+            vendor VARCHAR(100),
+            type VARCHAR(100),
+            risk_level ENUM('LOW','MEDIUM','HIGH','CRITICAL') DEFAULT 'LOW',
+            finding_count INT DEFAULT 0,
+            started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            finished_at DATETIME NULL
+        );`);
+
+        //create thedynamic anomaly findings table if it doesn't exist yet
+        await bootstrap.query(`
+            CREATE TABLE IF NOT EXISTS dynamic_scan_findings (
+                finding_id VARCHAR(200) PRIMARY KEY,
+                dynamic_scan_id VARCHAR(100) NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                severity ENUM('LOW','MEDIUM','HIGH','CRITICAL') NOT NULL,
+                description TEXT,
+                impact TEXT,
+                recommendation TEXT,
+                source ENUM('ml') DEFAULT 'ml',
+
+                -- evidence fields
+                evidence_timestamp BIGINT,
+                source_ip VARCHAR(45),
+                destination_ip VARCHAR(45),
+                packet_size INT,
+                frequency INT,
+                score FLOAT,
+
+                FOREIGN KEY (dynamic_scan_id)
+                    REFERENCES dynamic_scan_sessions(dynamic_scan_id)
+                    ON DELETE CASCADE
+            );
+        `);
+        ///////////////////////////////////////////////////////////////////////////////////////////
+
     }
     catch(err){//if here, error in MySQL database initialization
         console.error("Database initialization failed: ", err);//log the error to the console
@@ -558,6 +601,266 @@ app.post("/save-scan", async (req, res) => {
             message: "Server error in saving report!"});
     }
 });*/
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+app.post("/save-dynamic-scan", async (req, res) => {
+    // get user ID from session
+    const user_id = req.session?.user?.user_id ?? null;
+
+    if (!user_id)
+        return res.status(401).json({
+            success: false,
+            message: "You must be logged in to save scan reports!"
+        });
+
+    // extract the dynamic scan payload
+    const {
+        schemaVersion,
+        deviceDetailsResponse
+    } = req.body;
+
+    if (!deviceDetailsResponse)
+        return res.status(400).json({
+            success: false,
+            message: "Missing dynamic scan data!"
+        });
+
+    // extract scan-level fields
+    const {
+        scanId,
+        deviceId,
+        ip,
+        hostname,
+        vendor,
+        type,
+        riskLevel,
+        findingCount,
+        findings
+    } = deviceDetailsResponse;
+
+    if (!scanId || !findings)
+        return res.status(400).json({
+            success: false,
+            message: "Missing required scan fields!"
+        });
+
+    try {
+        // 1️⃣ Insert the dynamic scan session
+        await pool.query(
+            `INSERT INTO dynamic_scan_sessions (
+                dynamic_scan_id,
+                device_id,
+                ip,
+                hostname,
+                vendor,
+                type,
+                risk_level,
+                finding_count
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                scanId,
+                deviceId || null,
+                ip || null,
+                hostname || null,
+                vendor || null,
+                type || null,
+                riskLevel || "LOW",
+                findingCount || 0
+            ]
+        );
+
+        // 2️⃣ Insert each finding
+        if (Array.isArray(findings) && findings.length > 0) {
+            for (const f of findings) {
+                const evidence = f.evidence || {};
+
+                await pool.query(
+                    `INSERT INTO dynamic_scan_findings (
+                        finding_id,
+                        dynamic_scan_id,
+                        title,
+                        severity,
+                        description,
+                        impact,
+                        recommendation,
+                        source,
+                        evidence_timestamp,
+                        source_ip,
+                        destination_ip,
+                        packet_size,
+                        frequency,
+                        score
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        f.findingId,
+                        scanId,
+                        f.title || "Untitled Finding",
+                        f.severity || "LOW",
+                        f.description || null,
+                        f.impact || null,
+                        f.recommendation || null,
+                        f.source || "ml",
+
+                        evidence.timestamp || null,
+                        evidence.sourceIp || null,
+                        evidence.destinationIp || null,
+                        evidence.packetSize || null,
+                        evidence.frequency || null,
+                        evidence.score || null
+                    ]
+                );
+            }
+        }
+
+        // 3️⃣ Return success (your required format)
+        return res.status(201).json({
+            success: true,
+            report_id: scanId
+        });
+    }
+    catch (err) {
+        console.error("Server error in saving report!: ", err);
+        return res.status(500).send({
+            success: false,
+            message: "Server error in saving report!"
+        });
+    }
+});
+
+app.get("/dynamic-scans", async (req, res) => {
+    // get the logged-in user's ID
+    const user_id = req.session?.user?.user_id ?? null;
+
+    if (!user_id)
+        return res.status(401).json({
+            success: false,
+            message: "You must be logged in to view your scan reports!"
+        });
+
+    try {
+        // retrieve all dynamic scan sessions (no findings)
+        const [reports] = await pool.query(`
+            SELECT 
+                dynamic_scan_id AS scanId,
+                device_id AS deviceId,
+                ip,
+                hostname,
+                vendor,
+                type,
+                risk_level AS riskLevel,
+                finding_count AS findingCount,
+                started_at AS startedAt,
+                finished_at AS finishedAt
+            FROM dynamic_scan_sessions
+            ORDER BY started_at DESC
+        `);
+
+        // retrieval successful
+        return res.json({
+            success: true,
+            reports
+        });
+    }
+    catch (err) {
+        console.error("Server error in getting scan reports!: ", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error in getting scan reports!"
+        });
+    }
+});
+
+app.get("/dynamic-scans/:scan_id/findings", async (req, res) => {
+    const user_id = req.session?.user?.user_id ?? null;
+    const scan_id = req.params.scan_id; // dynamic_scan_id
+
+    if (!user_id) {
+        return res.status(401).json({
+            success: false,
+            message: "You must be logged in to view your scanned devices!"
+        });
+    }
+
+    try {
+        // retrieve all findings for this dynamic scan
+        const [findings] = await pool.query(`
+            SELECT
+                finding_id AS findingId,
+                dynamic_scan_id AS scanId,
+                title,
+                severity,
+                description,
+                impact,
+                recommendation,
+                source,
+                evidence_timestamp AS timestamp,
+                source_ip AS sourceIp,
+                destination_ip AS destinationIp,
+                packet_size AS packetSize,
+                frequency,
+                score
+            FROM dynamic_scan_findings
+            WHERE dynamic_scan_id = ?
+            ORDER BY evidence_timestamp ASC
+        `, [scan_id]);
+
+        if (findings.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Report not found or belongs to someone else!"
+            });
+        }
+
+        // retrieval successful
+        return res.json({
+            success: true,
+            findings
+        });
+    }
+    catch (err) {
+        console.error("Server error retrieving devices!: ", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error in retrieving devices!"
+        });
+    }
+});
+
+app.delete("/dynamic-scan/:id", async (req, res) => { // if here, dynamic scan deletion requested
+    const user_id = req.session?.user?.user_id ?? null; // get the logged-in user's ID
+    const scanId = req.params.id; // dynamic_scan_id from URL
+
+    if (!user_id) // if here, user not logged in
+        return res.status(401).json({
+            success: false,
+            message: "You must be logged in to delete scan reports!"
+        });
+
+    try {
+        // delete the dynamic scan session (findings auto-delete via CASCADE)
+        const [result] = await pool.query(
+            "DELETE FROM dynamic_scan_sessions WHERE dynamic_scan_id = ?",
+            [scanId]
+        );
+
+        if (result.affectedRows === 0) // if here, scan not found
+            return res.status(404).json({
+                success: false,
+                message: "Scan not found or belongs to someone else!"
+            });
+
+        // if here, deletion succeeded
+        return res.json({ success: true });
+    }
+    catch (err) { // if here, error caught in deletion
+        console.error("Server error in deleting report!: ", err);
+        return res.status(500).json({
+            success: false,
+            message: "Server error in deleting report!"
+        });
+    }
+});
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 //Jack added
 // Updated the existing delete route to use the new schema key (scan_id) instead of legacy report_id.
