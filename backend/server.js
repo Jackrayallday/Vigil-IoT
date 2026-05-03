@@ -15,7 +15,7 @@ const {google} = require("googleapis");//for updated email-sending functionallit
 const crypto = require("crypto");//to generate the password reset token
 const fs = require("fs");//to read and modify files
 const path = require("path");//to define the path of a file
-const https = require('https');//for HTTPS implementation//////////////////////////////////////////
+const https = require("https");//for HTTPS implementation
 const { spawn } = require("child_process");//run python scanner
 require("dotenv").config();//to read variables from the .env file
 
@@ -36,18 +36,14 @@ const oauth2Client = new google.auth.OAuth2(//define the OAuth client that will 
     process.env.GOOGLE_REDIRECT_URI
 );
 
-oauth2Client.setCredentials({//set the refresh token of this client
-    refresh_token: process.env.GOOGLE_REFRESH_TOKEN
-});
+oauth2Client.setCredentials({refresh_token: process.env.GOOGLE_REFRESH_TOKEN});//set refresh token
 
 const gmail = google.gmail({version: "v1", auth: oauth2Client});//create the Gmail API client
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-const options = {
+const options = {//set the SSL key and certificate for HTTPS implementation
     key: process.env.SSL_KEY.replace(/\\n/g, '\n'),
     cert: fs.readFileSync("./localhost.crt")
 };
-///////////////////////////////////////////////////////////////////////////////////////////////////
 
 (async () => {
     const bootstrap = await mysql.createConnection({//temporary MySQL connection used to init db
@@ -111,7 +107,6 @@ const options = {
             FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
         );`);
 
-        ///////////////////////////////////////////////////////////////////////////////////////////
         //create the dynamic anomaly scan session table if it doesn't exist yet
         await bootstrap.query(`CREATE TABLE IF NOT EXISTS dynamic_scan_sessions (
             dynamic_scan_id VARCHAR(100) PRIMARY KEY,
@@ -151,7 +146,6 @@ const options = {
                     ON DELETE CASCADE
             );
         `);
-        ///////////////////////////////////////////////////////////////////////////////////////////
 
     }
     catch(err){//if here, error in MySQL database initialization
@@ -187,8 +181,8 @@ app.use(session({//configure the session management
     cookie: {//configure the cookie that will be stored on the client
         maxAge: 3600000,//3600000 ms = 1 hour max age of the session (it expires after this limit)
         httpOnly: true,//prevent Javascript from reading, writing, or deleting the cookie
-        sameSite: "none",//"lax",//send the cookie only on same-site requests///////////////////////
-        secure: true,//false,//send the cookie over HTTP for now, not HTTPS////////////////////////
+        sameSite: "none",//allow the cookie to be sent over non- same-site requests
+        secure: true,//send the cookie over HTTPs
     },
     rolling: true,//reset the expiration countdown after every request
 }));
@@ -359,37 +353,25 @@ app.get("/check_login", (req, res) => {//if here, client requested login status
         res.json({loggedIn: false});//return false  
 });
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-app.post("/save-scan", async (req, res) => {
-    const user_id = req.session?.user?.user_id ?? null;
+app.post("/save-scan", async (req, res) => {//if here, client requested to save scan report
+    const user_id = req.session?.user?.user_id ?? null;//get user ID from session
 
-    if (!user_id) {
-        return res.status(401).json({
+    if(!user_id)//if here, user not logged in
+        return res.status(401).json({//indicate report-saving failure in response
             success: false,
             message: "You must be logged in to save scan reports!"
         });
-    }
 
-    const {
-        scanName,
-        scannedAt,
-        status,
-        devices
-    } = req.body;
+    const {scanName, scannedAt, status, devices} = req.body;//extract scan data from request body
 
-    if (!scanName || !scannedAt || !status) {
-        return res.status(400).json({
+    if(!scanName || !scannedAt || !status)//if here, required fields missing
+        return res.status(400).json({//indicate scan saving failure in response
             success: false,
             message: "Missing required fields!"
         });
-    }
 
-    const connection = await pool.getConnection();
-    try {
-        await connection.beginTransaction();
-
-        // Insert scan report
-        const [scanResult] = await connection.query(
+    try{
+        const [scanResult] = await pool.query(//insert scan report into database
             `INSERT INTO scan_reports (
                 scan_name,
                 scanned_at,
@@ -399,12 +381,11 @@ app.post("/save-scan", async (req, res) => {
             [scanName, scannedAt, status, user_id]
         );
 
-        const scan_id = scanResult.insertId;
+        const scan_id = scanResult.insertId;//get id of the previously inserted report
 
-        // Insert devices
-        if (Array.isArray(devices) && devices.length > 0) {
-            for (const device of devices) {
-                const {
+        if(Array.isArray(devices) && devices.length > 0){//if here, devices provided
+            for(const device of devices){//iterate through the devices array
+                const {//get the device data
                     ip,
                     hostname,
                     vendor,
@@ -414,7 +395,7 @@ app.post("/save-scan", async (req, res) => {
                     findings
                 } = device;
 
-                const [deviceResult] = await connection.query(
+                const [deviceResult] = await pool.query(//insert device into database
                     `INSERT INTO devices (
                         scan_id,
                         ip,
@@ -437,12 +418,11 @@ app.post("/save-scan", async (req, res) => {
                     ]
                 );
 
-                const device_id = deviceResult.insertId;
+                const device_id = deviceResult.insertId;//get the ID of previously inserted device
 
-                // Insert findings for this device
-                if (Array.isArray(findings) && findings.length > 0) {
-                    for (const f of findings) {
-                        const {
+                if(Array.isArray(findings) && findings.length > 0){//if here, findings provided
+                    for(const f of findings){//iterate through the array of findings
+                        const {//get the finding data
                             title,
                             severity,
                             description,
@@ -456,7 +436,7 @@ app.post("/save-scan", async (req, res) => {
                             cveIds
                         } = f;
 
-                        await connection.query(
+                        await pool.query(//insert finding info into database
                             `INSERT INTO findings (
                                 device_id,
                                 title,
@@ -491,26 +471,22 @@ app.post("/save-scan", async (req, res) => {
             }
         }
 
-        await connection.commit();
-
-        return res.status(201).json({
+        return res.status(201).json({//if here, scan report successfully saved
             success: true,
             scan_id
         });
 
-    } catch (err) {
-        await connection.rollback();
-        console.error("Error saving scan:", err);
-        return res.status(500).json({
+    }
+    catch(err){//if here, error caught while trying to save scan
+        console.error("Server error in saving report!: ", err);
+        return res.status(500).json({//indicate failure in saving report
             success: false,
-            message: "Server error while saving scan!"
+            message: "Server error in saving report!"
         });
-    } finally {
-        connection.release();
     }
 });
-///////////////////////////////////////////////////////////////////////////////////////////////////
-/*app.post("/save-scan", async (req, res) => {//if here, client requested to save scan report
+
+app.post("/save-dynamic-scan", async (req, res) => {//if here, client requested save dynamic scan
     const user_id = req.session?.user?.user_id ?? null;//get user ID from session
 
     if(!user_id)//if here, user not logged in
@@ -519,114 +495,15 @@ app.post("/save-scan", async (req, res) => {
             message: "You must be logged in to save scan reports!"
         });
 
-    const {//get the scan report info from request body
-        title,
-        scanned_at,
-        targets,
-        exclusions,
-        detection_options,
-        devices
-    } = req.body;
-            
-    if(!title || !scanned_at || !targets)//if here, required fields missing
-		return res.status(400).json({//indicate scan saving failure in response
-            success: false, 
-            message: "Missing required fields!"
-        });
-    
-    try{
-        const [reportResult] = await pool.query(//insert scan report into database
-            `INSERT INTO scan_reports (
-                owner_id,
-                title,
-                scanned_at,
-                targets,
-                exclusions,
-                detection_options
-            ) VALUES (?, ?, ?, ?, ?, ?)`, [
-                user_id,
-                title,
-                scanned_at,
-                targets,
-                exclusions || null,
-                detection_options || null
-            ]
-        );
+    const {schemaVersion, deviceDetailsResponse} = req.body;//extract scan data from request body
 
-        const report_id = reportResult.insertId;//get id of the previously inserted report
-
-        if(Array.isArray(devices) && devices.length > 0){//if here, devices provided
-            for(const device of devices){//iterate through the devices array
-                const {//get the device data
-                    deviceName,
-                    ipAddress,
-                    services,
-                    protocolWarnings,
-                    notes,
-                    remediationTips
-                } = device;
-
-                await pool.query(//insert device into database
-                    `INSERT INTO devices  (
-                        associated_report,
-                        device_name,
-                        ip_address,
-                        services,
-                        protocol_warnings,
-                        notes,
-                        remediation_tips
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?)`, [
-                        report_id,
-                        deviceName || null,
-                        ipAddress || null,
-                        services || null,
-                        protocolWarnings || null,
-                        notes || null,
-                        remediationTips || null
-                    ]
-                );
-            }
-        }
-		        
-        //if here, scan report successfully saved
-        return res.status(201).json({//indicate success in response
-            success: true,
-            report_id
-        });
-    }
-	catch (err){//if here, error caught while trying to save scan
-        console.error("Server error in saving report!: ", err);//log the error
-        res.status(500).send({//indicate failure in saving report
-            success: false,
-            message: "Server error in saving report!"});
-    }
-});*/
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-app.post("/save-dynamic-scan", async (req, res) => {
-    // get user ID from session
-    const user_id = req.session?.user?.user_id ?? null;
-
-    if (!user_id)
-        return res.status(401).json({
-            success: false,
-            message: "You must be logged in to save scan reports!"
-        });
-
-    // extract the dynamic scan payload
-    const {
-        schemaVersion,
-        deviceDetailsResponse
-    } = req.body;
-
-    if (!deviceDetailsResponse)
-        return res.status(400).json({
+    if(!deviceDetailsResponse)//if here, required fields missing
+        return res.status(400).json({//indicate scan saving failure in response
             success: false,
             message: "Missing dynamic scan data!"
         });
 
-    // extract scan-level fields
-    const {
+    const {//extract data from device details response
         scanId,
         deviceId,
         ip,
@@ -638,15 +515,14 @@ app.post("/save-dynamic-scan", async (req, res) => {
         findings
     } = deviceDetailsResponse;
 
-    if (!scanId || !findings)
-        return res.status(400).json({
+    if(!scanId || !findings)//if here, missing required fields
+        return res.status(400).json({//indicate scan saving failure in response
             success: false,
-            message: "Missing required scan fields!"
+            message: "Missing required fields!"
         });
 
-    try {
-        // 1️⃣ Insert the dynamic scan session
-        await pool.query(
+    try{
+        await pool.query(//insert dynamic scan data into database
             `INSERT INTO dynamic_scan_sessions (
                 dynamic_scan_id,
                 device_id,
@@ -656,8 +532,7 @@ app.post("/save-dynamic-scan", async (req, res) => {
                 type,
                 risk_level,
                 finding_count
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [
                 scanId,
                 deviceId || null,
                 ip || null,
@@ -669,12 +544,11 @@ app.post("/save-dynamic-scan", async (req, res) => {
             ]
         );
 
-        // 2️⃣ Insert each finding
-        if (Array.isArray(findings) && findings.length > 0) {
-            for (const f of findings) {
-                const evidence = f.evidence || {};
+        if(Array.isArray(findings) && findings.length > 0){//if here, findings provided
+            for(const f of findings){//iterate through the findings array
+                const evidence = f.evidence || {};//extract the finding evidence
 
-                await pool.query(
+                await pool.query(//insert the finding into the database
                     `INSERT INTO dynamic_scan_findings (
                         finding_id,
                         dynamic_scan_id,
@@ -712,13 +586,12 @@ app.post("/save-dynamic-scan", async (req, res) => {
             }
         }
 
-        // 3️⃣ Return success (your required format)
-        return res.status(201).json({
+        return res.status(201).json({//if here, save successful
             success: true,
             report_id: scanId
         });
     }
-    catch (err) {
+    catch(err){//if here, error in saving report
         console.error("Server error in saving report!: ", err);
         return res.status(500).send({
             success: false,
@@ -726,141 +599,6 @@ app.post("/save-dynamic-scan", async (req, res) => {
         });
     }
 });
-
-app.get("/dynamic-scans", async (req, res) => {
-    // get the logged-in user's ID
-    const user_id = req.session?.user?.user_id ?? null;
-
-    if (!user_id)
-        return res.status(401).json({
-            success: false,
-            message: "You must be logged in to view your scan reports!"
-        });
-
-    try {
-        // retrieve all dynamic scan sessions (no findings)
-        const [reports] = await pool.query(`
-            SELECT 
-                dynamic_scan_id AS scanId,
-                device_id AS deviceId,
-                ip,
-                hostname,
-                vendor,
-                type,
-                risk_level AS riskLevel,
-                finding_count AS findingCount,
-                started_at AS startedAt,
-                finished_at AS finishedAt
-            FROM dynamic_scan_sessions
-            ORDER BY started_at DESC
-        `);
-
-        // retrieval successful
-        return res.json({
-            success: true,
-            reports
-        });
-    }
-    catch (err) {
-        console.error("Server error in getting scan reports!: ", err);
-        return res.status(500).json({
-            success: false,
-            message: "Server error in getting scan reports!"
-        });
-    }
-});
-
-app.get("/dynamic-scans/:scan_id/findings", async (req, res) => {
-    const user_id = req.session?.user?.user_id ?? null;
-    const scan_id = req.params.scan_id; // dynamic_scan_id
-
-    if (!user_id) {
-        return res.status(401).json({
-            success: false,
-            message: "You must be logged in to view your scanned devices!"
-        });
-    }
-
-    try {
-        // retrieve all findings for this dynamic scan
-        const [findings] = await pool.query(`
-            SELECT
-                finding_id AS findingId,
-                dynamic_scan_id AS scanId,
-                title,
-                severity,
-                description,
-                impact,
-                recommendation,
-                source,
-                evidence_timestamp AS timestamp,
-                source_ip AS sourceIp,
-                destination_ip AS destinationIp,
-                packet_size AS packetSize,
-                frequency,
-                score
-            FROM dynamic_scan_findings
-            WHERE dynamic_scan_id = ?
-            ORDER BY evidence_timestamp ASC
-        `, [scan_id]);
-
-        if (findings.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Report not found or belongs to someone else!"
-            });
-        }
-
-        // retrieval successful
-        return res.json({
-            success: true,
-            findings
-        });
-    }
-    catch (err) {
-        console.error("Server error retrieving devices!: ", err);
-        return res.status(500).json({
-            success: false,
-            message: "Server error in retrieving devices!"
-        });
-    }
-});
-
-app.delete("/dynamic-scan/:id", async (req, res) => { // if here, dynamic scan deletion requested
-    const user_id = req.session?.user?.user_id ?? null; // get the logged-in user's ID
-    const scanId = req.params.id; // dynamic_scan_id from URL
-
-    if (!user_id) // if here, user not logged in
-        return res.status(401).json({
-            success: false,
-            message: "You must be logged in to delete scan reports!"
-        });
-
-    try {
-        // delete the dynamic scan session (findings auto-delete via CASCADE)
-        const [result] = await pool.query(
-            "DELETE FROM dynamic_scan_sessions WHERE dynamic_scan_id = ?",
-            [scanId]
-        );
-
-        if (result.affectedRows === 0) // if here, scan not found
-            return res.status(404).json({
-                success: false,
-                message: "Scan not found or belongs to someone else!"
-            });
-
-        // if here, deletion succeeded
-        return res.json({ success: true });
-    }
-    catch (err) { // if here, error caught in deletion
-        console.error("Server error in deleting report!: ", err);
-        return res.status(500).json({
-            success: false,
-            message: "Server error in deleting report!"
-        });
-    }
-});
-///////////////////////////////////////////////////////////////////////////////////////////////////
 
 //Jack added
 // Updated the existing delete route to use the new schema key (scan_id) instead of legacy report_id.
@@ -896,20 +634,52 @@ app.delete("/delete-scan/:id", async (req, res) =>{//if here, report deletion re
             message: "Server error in deleting report!"
         });
     }
-});
-//Jack added end
-///////////////////////////////////////////////////////////////////////////////////////////////////
-app.get("/scan-reports", async (req, res) => {
-    const user_id = req.session?.user?.user_id ?? null;
+});//Jack added end
 
-    if (!user_id) {
-        return res.status(401).json({
+app.delete("/dynamic-scan/:id", async (req, res) => {// if here, dynamic scan deletion requested
+    const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
+    const scanId = req.params.id; //dynamic_scan_id from URL
+
+    if(!user_id)//if here, user not logged in
+        return res.status(401).json({//indicate failure in saving
+            success: false,
+            message: "You must be logged in to delete scan reports!"
+        });
+
+    try{
+        const [result] = await pool.query(//delete the dynamic scan
+            "DELETE FROM dynamic_scan_sessions WHERE dynamic_scan_id = ?",
+            [scanId]
+        );
+
+        if(result.affectedRows === 0)//if here, scan not found
+            return res.status(404).json({
+                success: false,
+                message: "Scan not found or belongs to someone else!"
+            });
+
+        return res.json({success: true});//if here, deletion successful
+    }
+    catch(err){ // if here, error caught in deletion
+        console.error("Server error in deleting report!: ", err);
+        return res.status(500).json({//indicate failure
+            success: false,
+            message: "Server error in deleting report!"
+        });
+    }
+});
+
+app.get("/scan-reports", async (req, res) => {//if here, client requested scan reports list
+    const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
+
+    if(!user_id)//if here, user not logged in
+        return res.status(401).json({//indicate retrieval failure in response
             success: false,
             message: "You must be logged in to view your scan reports!"
         });
-    }
 
-    try {
+    try{
+        //get scan reports from database
         const [rows] = await pool.query(`
             SELECT 
                 sr.scan_id,
@@ -930,7 +700,7 @@ app.get("/scan-reports", async (req, res) => {
             ORDER BY sr.scanned_at DESC
         `, [user_id]);
 
-        const scans = rows.map(row => ({
+        const scans = rows.map(row => ({//extract data from response
             scanId: row.scan_id,
             scanName: row.scan_name,
             scannedAt: row.scanned_at,
@@ -945,76 +715,81 @@ app.get("/scan-reports", async (req, res) => {
             }
         }));
 
-        return res.json({
+        return res.json({//if here, retrieval successful
             success: true,
             scans
         });
-
-    } catch (err) {
+    }
+    catch(err){//if here, error in getting scan reports
         console.error("Server error in getting scan reports!: ", err);
-        return res.status(500).json({
+        return res.status(500).json({//indicate failure
             success: false,
             message: "Server error in getting scan reports!"
         });
     }
 });
-///////////////////////////////////////////////////////////////////////////////////////////////////
-/*app.get("/scan-reports", async (req, res) => {//if here, client requested scan reports list
-    const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
+
+app.get("/dynamic-scans", async (req, res) => {//if here, client requested dynamic scans list
+    const user_id = req.session?.user?.user_id ?? null;//get the user's ID
 
     if(!user_id)//if here, user not logged in
-        return res.status(401).json({//indicate retrieval failure in response
+        return res.status(401).json({
             success: false,
             message: "You must be logged in to view your scan reports!"
         });
 
     try{
-        const [reports] = await pool.query(//get the scan reports from the database
-            `SELECT report_id, title, scanned_at, targets, exclusions, detection_options
-            FROM scan_reports
-            WHERE owner_id = ?
-            ORDER BY scanned_at DESC`,
-            [user_id]
-        );
-                
-        //if here, retrieval successful
-        return res.json({//indicate retrieval success in resposne
+        //retrieve dynamic scan reports
+        const [reports] = await pool.query(`
+            SELECT 
+                dynamic_scan_id AS scanId,
+                device_id AS deviceId,
+                ip,
+                hostname,
+                vendor,
+                type,
+                risk_level AS riskLevel,
+                finding_count AS findingCount,
+                started_at AS startedAt,
+                finished_at AS finishedAt
+            FROM dynamic_scan_sessions
+            ORDER BY started_at DESC
+        `);
+
+        return res.json({//if here, retrieval successful
             success: true,
             reports
         });
     }
-    catch(err){//if here, retrieval error was caught
-        console.error("Server error in getting scan reports!: ", err);//log the error
-        return res.status(500).json({//indicate retrieval failure in response
+    catch(err){//if here, error in getting dynamic scans
+        console.error("Server error in getting scan reports!: ", err);
+        return res.status(500).json({//indicate failure
             success: false,
             message: "Server error in getting scan reports!"
         });
     }
-});*/
+});
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-app.get("/scan-reports/:scan_id/devices", async (req, res) => {
-    const user_id = req.session?.user?.user_id ?? null;
-    const scan_id = req.params.scan_id;
+app.get("/scan-reports/:scan_id/devices", async (req, res) => {//if here, devices list requested
+    const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
+    const scan_id = req.params.scan_id;//get the report id from the URL
 
-    if (!user_id) {
-        return res.status(401).json({
+    if(!user_id)//if here, user not logged in
+        return res.status(401).json({//indicate failure
             success: false,
             message: "You must be logged in to view your scanned devices!"
         });
-    }
 
-    try {
-        // Verify the scan belongs to the logged-in user
-        const [scanRows] = await pool.query(
+    try{
+        const [scanRows] = await pool.query(//verify reports belong to logged-in user
             `SELECT scan_id, scan_name, scanned_at, status
              FROM scan_reports
              WHERE scan_id = ? AND owner_id = ?`,
             [scan_id, user_id]
         );
 
-        if (scanRows.length === 0) {
-            return res.status(404).json({
+        if(scanRows.length === 0){//if here, no report found or it belongs to someone else
+            return res.status(404).json({//indicate failure
                 success: false,
                 message: "Scan not found or belongs to someone else!"
             });
@@ -1022,8 +797,7 @@ app.get("/scan-reports/:scan_id/devices", async (req, res) => {
 
         const scan = scanRows[0];
 
-        // Retrieve devices for this scan
-        const [deviceRows] = await pool.query(
+        const [deviceRows] = await pool.query(//retrieve devices for this scan
             `SELECT 
                 d.device_id,
                 d.ip,
@@ -1109,8 +883,8 @@ app.get("/scan-reports/:scan_id/devices", async (req, res) => {
         }));
         //Jack added end
 
-        return res.json({
-            success: true,
+        return res.json({//if here, retrieval successful
+            success: true,//indicate success
             scanDetails: {
                 scanId: scan.scan_id,
                 scanName: scan.scan_name,
@@ -1120,56 +894,68 @@ app.get("/scan-reports/:scan_id/devices", async (req, res) => {
             }
         });
 
-    } catch (err) {
+    }
+    catch(err){//if here, retrieval failed
         console.error("Server error retrieving devices!: ", err);
-        return res.status(500).json({
+        return res.status(500).json({//indicate failure
             success: false,
             message: "Server error in retrieving devices!"
         });
     }
 });
-///////////////////////////////////////////////////////////////////////////////////////////////////
-/*app.get("/scan-reports/:report_id/devices", async (req, res) =>{//if here, devices request
-    const user_id = req.session?.user?.user_id ?? null;//get the logged-in user's ID
-    const report_id = req.params.report_id;//get the report id from the URL
+
+app.get("/dynamic-scans/:scan_id/findings", async (req, res) => {//if here, findings requested
+    const user_id = req.session?.user?.user_id ?? null;//get user ID
+    const scan_id = req.params.scan_id; //get scan ID
 
     if(!user_id)//if here, user not logged in
-        return res.status(401).json({//indicate retrieval failure in response
+        return res.status(401).json({//indicate failure
             success: false,
             message: "You must be logged in to view your scanned devices!"
         });
 
     try{
-        const [devices] = await pool.query(//get devices from report of the logged-in user
-            `SELECT d.device_id, d.device_name, d.ip_address, d.services,
-                d.protocol_warnings, d.notes, d.remediation_tips
-            FROM devices d
-            JOIN scan_reports r ON r.report_id = d.associated_report
-            WHERE d.associated_report = ? AND r.owner_id = ?
-            ORDER BY d.device_id ASC`,
-            [report_id, user_id]
-        );
+        //retrieve all findings for this dynamic scan
+        const [findings] = await pool.query(`
+            SELECT
+                finding_id AS findingId,
+                dynamic_scan_id AS scanId,
+                title,
+                severity,
+                description,
+                impact,
+                recommendation,
+                source,
+                evidence_timestamp AS timestamp,
+                source_ip AS sourceIp,
+                destination_ip AS destinationIp,
+                packet_size AS packetSize,
+                frequency,
+                score
+            FROM dynamic_scan_findings
+            WHERE dynamic_scan_id = ?
+            ORDER BY evidence_timestamp ASC
+        `, [scan_id]);
 
-        if(devices.length === 0)//if here, no report found or it belongs to someone else
-            return res.status(404).json({//indicate retrieval failure in response
+        if (findings.length === 0)//if here, report not found for logged-in user
+            return res.status(404).json({//indicate failure
                 success: false,
                 message: "Report not found or belongs to someone else!"
             });
-                
-        //if here, devices successfullt retrieved
-        return res.json({//indicate retrieval success in response
+
+        return res.json({//if here retrieval successful
             success: true,
-            devices
+            findings
         });
-    } 
-    catch(err){//if here, error caught in retrieving devices
-        console.error("Server error retrieving devices!: ", err);//log the error
-        res.status(500).json({//indicate retrieval failure in response
+    }
+    catch(err){//if here, retrieval error
+        console.error("Server error retrieving devices!: ", err);
+        return res.status(500).json({//indicate failure
             success: false,
             message: "Server error in retrieving devices!"
         });
     }
-});*/
+});
 
 app.get("/", (req, res) => {//if here, client requested the website home page
     try{
@@ -1311,7 +1097,6 @@ app.post("/reset-password", async (req, res) => {//if here, user wants to reset 
     }
 });
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
 (async () => {
     try {
         https.createServer(options, app).listen(443, () => {
@@ -1322,12 +1107,3 @@ app.post("/reset-password", async (req, res) => {//if here, user wants to reset 
         console.error("Failed to start server: ", err);
     }
 })();
-///////////////////////////////////////////////////////////////////////////////////////////////////
-/*(async () => {
-    try{
-        app.listen(3000, () => console.log("Server running on port 3000"));//start server: prt 3000
-    } 
-    catch (err){//if here, error server startup
-        console.error("Failed to start server: ", err);//log the error to the console
-    }
-})();*/
