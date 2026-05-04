@@ -32,7 +32,7 @@ export default function ForgotPasswordForm({ onBack }) {
 
     try{
       await axios.post(//send request to /send-email on server
-        "http://localhost:3000/send-email",
+        "https://localhost:443/send-email",
         {email: trimmedEmail},
         {headers: {"Content-Type": "application/json"}}
       );

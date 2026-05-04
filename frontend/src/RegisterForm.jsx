@@ -79,7 +79,7 @@ export default function RegisterForm({ onBack }) {//KV edit: removed "onRegister
 
     try{
       await axios.post(//send request to /register on server
-        "http://localhost:3000/register",
+        "https://localhost:443/register",
         {email: trimmedEmail, password},
         {headers: {"Content-Type": "application/json"}}
       );
