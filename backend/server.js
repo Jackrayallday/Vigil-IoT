@@ -44,6 +44,7 @@ const options = {//set the SSL key and certificate for HTTPS implementation
     key: process.env.SSL_KEY.replace(/\\n/g, '\n'),
     cert: fs.readFileSync("./localhost.crt")
 };
+let anomalyScanProcess = null;//tracks long anomaly scan pipeline process
 
 (async () => {
     const bootstrap = await mysql.createConnection({//temporary MySQL connection used to init db
@@ -245,6 +246,87 @@ app.post("/run-scan", (req, res) => {
     });
 });
 //Jack added end
+
+// Starts long anomaly scan pipeline for a caller-provided duration (seconds).
+app.post("/run-anomaly-scan", (req, res) => {
+    if(anomalyScanProcess)
+        return res.status(409).json({
+            success: false,
+            message: "An anomaly scan is already running."
+        });
+
+    const requestedSeconds = Number.parseInt(req.body?.durationSeconds, 10);
+    if(!Number.isInteger(requestedSeconds) || requestedSeconds <= 0)
+        return res.status(400).json({
+            success: false,
+            message: "durationSeconds must be a positive integer."
+        });
+
+    const durationSeconds = Math.min(requestedSeconds, 86400);//cap at 24 hours
+    const pythonCommand = process.env.PYTHON_BIN || (process.platform === "win32" ? "python" : "python3");
+    const projectRoot = path.join(__dirname, "..");
+    const scriptPath = path.join(projectRoot, "frontend", "Vulnerability_Scanning", "run_anomaly_pipeline.py");
+    const resultPath = path.join(projectRoot, "anomaly_scan_result.json");
+
+    try{
+        if(fs.existsSync(resultPath)) fs.unlinkSync(resultPath);
+    }
+    catch(unlinkErr){
+        console.warn("Failed to clear previous anomaly scan output: ", unlinkErr.message);
+    }
+
+    const scanner = spawn(
+        pythonCommand,
+        [scriptPath, "--duration", String(durationSeconds)],
+        { cwd: projectRoot }
+    );
+
+    anomalyScanProcess = scanner;
+    let errorOutput = "";
+
+    scanner.stderr.on("data", (data) => {
+        errorOutput += data.toString();
+    });
+
+    scanner.on("error", (err) => {
+        console.error("Failed to start anomaly scan pipeline: ", err);
+        anomalyScanProcess = null;
+    });
+
+    scanner.on("close", (code) => {
+        if(code !== 0){
+            console.error("Anomaly scan pipeline exited with code ", code, errorOutput);
+        }
+        anomalyScanProcess = null;
+    });
+
+    return res.status(202).json({
+        success: true,
+        durationSeconds
+    });
+});
+
+// Returns latest anomaly scan output produced by run_anomaly_pipeline.py.
+app.get("/anomaly-scan-result", (req, res) => {
+    const projectRoot = path.join(__dirname, "..");
+    const resultPath = path.join(projectRoot, "anomaly_scan_result.json");
+
+    try{
+        const raw = fs.readFileSync(resultPath, "utf8");
+        const parsed = JSON.parse(raw);
+        return res.json(parsed);
+    }
+    catch(err){
+        const status = err.code === "ENOENT" ? 404 : 500;
+        return res.status(status).json({
+            success: false,
+            message: err.code === "ENOENT"
+                ? "anomaly_scan_result.json not found yet."
+                : "Failed to read anomaly scan results.",
+            error: err.message
+        });
+    }
+});
 
 app.post("/register", async (req, res) => {//if here, client submitted registration form
     const {email, password} = req.body;//extract entered credentials from request body

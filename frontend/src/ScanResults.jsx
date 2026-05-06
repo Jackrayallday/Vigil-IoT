@@ -31,6 +31,7 @@ function formatDurationFromMs(totalMs) {
 function getLongScanStatusLabel(session) {
   if (!session) return "Not started";
   if (session.active) return "Running";
+  if (session.pendingResults) return "Finalizing";
   if (session.stopReason === "timer") return "Timer complete";
   return "Stopped";
 }
@@ -81,7 +82,6 @@ export default function ScanResults({
   itemsError = null,
   longScanSession = null,
   onStopLongScan,
-  onResumeLongScan,
   onRetryLoadItems,
 }) {
   const [sortChoice, setSortChoice] = useState("input");
@@ -234,10 +234,10 @@ export default function ScanResults({
             <button
               type="button"
               className="results-stopBtn"
-              onClick={longScanSession?.active ? onStopLongScan : onResumeLongScan}
-              disabled={!longScanSession?.active && longScanRemainingMs <= 0}
+              onClick={onStopLongScan}
+              disabled={!longScanSession?.active}
             >
-              {longScanSession?.active ? "Stop Scan" : "Resume Scan"}
+              {longScanSession?.active ? "Stop Scan" : "Stopped"}
             </button>
           )}
           {isLongScan && (
@@ -282,6 +282,9 @@ export default function ScanResults({
             <span>Time Remaining: {formatDurationFromMs(longScanRemainingMs)}</span>
             <span>Rows Streamed: {longScanRows.length}</span>
           </div>
+          {longScanSession?.lastSyncError && (
+            <p className="results-empty">{longScanSession.lastSyncError}</p>
+          )}
           {longScanRows.length === 0 ? (
             <p className="results-empty">Waiting for dynamic packet events...</p>
           ) : (
@@ -292,8 +295,6 @@ export default function ScanResults({
                     <tr>
                       <th scope="col" className="results-colIndex">#</th>
                       <th scope="col">Finding ID</th>
-                      <th scope="col">Type</th>
-                      <th scope="col">Title</th>
                       <th scope="col">Severity</th>
                       <th scope="col">Source IP</th>
                       <th scope="col">Destination IP</th>
@@ -308,8 +309,6 @@ export default function ScanResults({
                       <tr key={row.findingId || `${scan?.id || "scan"}-dynamic-${idx}`}>
                         <td className="results-colIndex" data-title="#">{idx + 1}</td>
                         <td data-title="Finding ID">{row.findingId}</td>
-                        <td data-title="Type">{row.type}</td>
-                        <td data-title="Title">{row.title}</td>
                         <td data-title="Severity">{row.severity}</td>
                         <td data-title="Source IP">{row.sourceIp}</td>
                         <td data-title="Destination IP">{row.destinationIp}</td>

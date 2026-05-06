@@ -73,18 +73,10 @@ const DEFAULT_LONG_SCAN_TIMER = {
   seconds: "0",
 };
 
-const LONG_SCAN_STREAM_INTERVAL_MS = 30000;
+const LONG_SCAN_POLL_INTERVAL_MS = 3000;
+const LONG_SCAN_START_ENDPOINT = "https://localhost:443/run-anomaly-scan";
+const LONG_SCAN_RESULT_ENDPOINT = "https://localhost:443/anomaly-scan-result";
 const LONG_SCAN_MAX_ROWS = 2500;
-const MOCK_DYNAMIC_IP_POOL = [
-  "192.168.1.9",
-  "192.168.1.18",
-  "192.168.1.44",
-  "192.168.1.105",
-  "192.168.1.122",
-  "10.0.0.14",
-  "10.0.0.37",
-  "172.16.0.21",
-];
 
 const SEVERITY_RANK = {
   CRITICAL: 4,
@@ -209,39 +201,22 @@ function formatDurationFromMs(totalMs) {
   return `${days}d ${hours}h ${minutes}m ${seconds}s`;
 }
 
-function createMockDynamicScanRow(now = Date.now()) {
-  const packetSize = 64 + Math.floor(Math.random() * (1518 - 64 + 1));
-  const packetFrequency = Number((8 + Math.random() * 240).toFixed(2));
-  const fallbackLastOctet = 2 + Math.floor(Math.random() * 250);
-  const sourceIp =
-    MOCK_DYNAMIC_IP_POOL[Math.floor(Math.random() * MOCK_DYNAMIC_IP_POOL.length)] ||
-    `192.168.1.${fallbackLastOctet}`;
-  const destinationIp =
-    MOCK_DYNAMIC_IP_POOL[Math.floor(Math.random() * MOCK_DYNAMIC_IP_POOL.length)] ||
-    "192.168.1.1";
-  const timestamp = new Date(now).toISOString();
-  const score = Number((-0.35 + Math.random() * 0.4).toFixed(4));
-  const severity = score < -0.2 ? "CRITICAL" : score < -0.1 ? "HIGH" : score < -0.05 ? "MEDIUM" : "LOW";
-  const findingId = `${sourceIp}-${timestamp}`;
+function parseLongScanContractPayload(payload) {
+  const scanDetails = payload?.scanDetailsResponse;
+  const findings = Array.isArray(scanDetails?.findings) ? scanDetails.findings : [];
+  const rows = findings.slice(-LONG_SCAN_MAX_ROWS);
+  const summary = scanDetails && typeof scanDetails === "object"
+    ? {
+        ip: scanDetails.ip || "unknown",
+        hostname: scanDetails.hostname || null,
+        riskLevel: scanDetails.riskLevel || "LOW",
+        findingCount: Number.isFinite(Number(scanDetails.findingCount))
+          ? Number(scanDetails.findingCount)
+          : rows.length,
+      }
+    : null;
 
-  return {
-    findingId,
-    type: "ANOMALY",
-    title: "Network Traffic Anomaly",
-    severity,
-    description: `${severity} anomaly detected in packet stream.`,
-    impact: "Potential malicious or abnormal network traffic pattern.",
-    recommendation: "Inspect source and destination traffic pair and isolate if needed.",
-    source: "ml",
-    evidence: {
-      timestamp,
-      sourceIp,
-      destinationIp,
-      packetSize,
-      frequency: packetFrequency,
-      score,
-    },
-  };
+  return { rows, summary };
 }
 
 function isValidIpv4(ip) {
@@ -669,37 +644,61 @@ export default function App() {
   }, [view, isRadarActive]);
 
   useEffect(() => {
-    if (!longScanSession?.active) return undefined;
+    if (!longScanSession?.scanId || !longScanSession?.pendingResults) return undefined;
 
-    const intervalId = window.setInterval(() => {
-      setLongScanSession((current) => {
-        if (!current || !current.active) return current;
-        const now = Date.now();
-        const nextRows = [...current.rows, createMockDynamicScanRow(now)];
-        const trimmedRows =
-          nextRows.length > LONG_SCAN_MAX_ROWS
-            ? nextRows.slice(nextRows.length - LONG_SCAN_MAX_ROWS)
-            : nextRows;
-
-        if (now >= current.endAtMs) {
+    let cancelled = false;
+    const syncResults = async () => {
+      try {
+        const response = await axios.get(
+          LONG_SCAN_RESULT_ENDPOINT,
+          { withCredentials: false }
+        );
+        if (cancelled) return;
+        const { rows, summary } = parseLongScanContractPayload(response?.data);
+        setLongScanSession((current) => {
+          if (!current || current.scanId !== longScanSession.scanId) return current;
           return {
             ...current,
-            active: false,
-            rows: trimmedRows,
-            stopReason: "timer",
-            stoppedAtMs: now,
+            rows,
+            summary,
+            pendingResults: false,
+            lastSyncError: null,
+            lastSyncedAtMs: Date.now(),
           };
-        }
+        });
+      } catch (err) {
+        if (cancelled) return;
+        const status = getApiErrorStatus(err);
+        const fallbackMessage =
+          status === 404
+            ? "Waiting for anomaly scan output file..."
+            : "Unable to load anomaly scan output.";
+        setLongScanSession((current) => {
+          if (!current || current.scanId !== longScanSession.scanId) return current;
+          return {
+            ...current,
+            lastSyncError: getApiErrorMessage(err, fallbackMessage),
+          };
+        });
+      }
+    };
 
-        return {
-          ...current,
-          rows: trimmedRows,
-        };
-      });
-    }, LONG_SCAN_STREAM_INTERVAL_MS);
+    syncResults();
+    const intervalId = window.setInterval(syncResults, LONG_SCAN_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [longScanSession?.scanId, longScanSession?.pendingResults]);
 
-    return () => window.clearInterval(intervalId);
-  }, [longScanSession?.active]);
+  useEffect(() => {
+    if (!longScanSession?.active || !longScanSession?.endAtMs) return undefined;
+    const remainingMs = Math.max(0, longScanSession.endAtMs - Date.now());
+    const timeoutId = window.setTimeout(() => {
+      stopLongScan("timer");
+    }, remainingMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [longScanSession?.active, longScanSession?.endAtMs]);
 
   useEffect(() => {
     if (!longScanSession?.scanId) return;
@@ -760,6 +759,14 @@ export default function App() {
     }
   }
 
+  async function startLongAnomalyPipeline(durationSeconds) {
+    return axios.post(
+      LONG_SCAN_START_ENDPOINT,
+      { durationSeconds },
+      { withCredentials: false }
+    );
+  }
+
   function stopLongScan(reason = "manual") {
     setLongScanSession((current) => {
       if (!current || !current.active) return current;
@@ -768,24 +775,6 @@ export default function App() {
         active: false,
         stopReason: reason,
         stoppedAtMs: Date.now(),
-      };
-    });
-  }
-
-  function resumeLongScan() {
-    setLongScanSession((current) => {
-      if (!current || current.active) return current;
-      const pausedAtMs = current.stoppedAtMs || Date.now();
-      const remainingMs = Math.max(0, current.endAtMs - pausedAtMs);
-      if (remainingMs <= 0) return current;
-      const nowMs = Date.now();
-      return {
-        ...current,
-        active: true,
-        startedAtMs: nowMs,
-        endAtMs: nowMs + remainingMs,
-        stopReason: null,
-        stoppedAtMs: null,
       };
     });
   }
@@ -855,10 +844,21 @@ export default function App() {
     setLongScanTimerInput((prev) => ({ ...prev, [field]: sanitized }));
   }
 
-  function handleStartLongScan() {
+  async function handleStartLongScan() {
     const parsed = parseLongScanTimer(longScanTimerInput);
     if (!parsed.totalMs) {
       setLongScanTimerError("Enter a duration greater than zero.");
+      return;
+    }
+    const durationSeconds = Math.max(1, Math.floor(parsed.totalMs / 1000));
+    try {
+      await startLongAnomalyPipeline(durationSeconds);
+    } catch (err) {
+      const fallbackMessage =
+        getApiErrorStatus(err) === 409
+          ? "A long scan is already running. Wait for it to finish."
+          : "Failed to start long anomaly scan.";
+      setLongScanTimerError(getApiErrorMessage(err, fallbackMessage));
       return;
     }
 
@@ -897,9 +897,13 @@ export default function App() {
       startedAtMs: nowMs,
       endAtMs: nowMs + parsed.totalMs,
       totalDurationMs: parsed.totalMs,
-      rows: [createMockDynamicScanRow(nowMs)],
+      rows: [],
+      summary: null,
+      pendingResults: true,
       stopReason: null,
       stoppedAtMs: null,
+      lastSyncError: null,
+      lastSyncedAtMs: null,
     });
   }
 
@@ -1693,7 +1697,6 @@ export default function App() {
               itemsError={selectedScanItemsError}
               longScanSession={selectedLongScanSession}
               onStopLongScan={() => stopLongScan("manual")}
-              onResumeLongScan={resumeLongScan}
               onRetryLoadItems={() => {
                 if (selectedScan?.id) {
                   loadScanDetails(selectedScan.id, user);
