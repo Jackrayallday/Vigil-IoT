@@ -35,7 +35,8 @@
             <p class="eyebrow">CSUN Senior Design Project Website</p>
             <h1>Vigil IoT</h1>
             <p> 
-                Vigil IoT is a security platform for matching IoT device vulnerabilities to NIST database codes.   
+                <!--KV: edited this sentence-->
+                Vigil IoT is a security platform that identifies IoT devices, checks them against known vulnerability data, and detects abnormal network behavior through dynamic anomaly analysis.   
             </p>
           </div>
           <aside class="hero-actions" aria-label="Project links">
@@ -49,8 +50,9 @@
         <section class="panel" id="introduction">
           <h2>Project Introduction</h2>
           <p>
-              The purpose of Vigil IoT is to help users understand their device-level security risks across their local network.
-              The system discovers reachable devices, identifies exposed services, and presents findings in a readable report format.
+              <!--KV: edited this paragraph-->
+              The purpose of Vigil IoT is to help users understand their device‑level security risks across their local network.
+              The system discovers reachable devices, identifies exposed services, detects abnormal traffic patterns through anomaly analysis, and presents all findings in a clear, readable report format.
           </p>
           <div class="feature-grid">
             <article>
@@ -65,8 +67,12 @@
               <h3>Major Feature 3: Vulnerability Matching</h3>
               <p>Maps observed behaviors to known vulnerability categories for triage.</p>
             </article>
+            <article><!--KV add-->
+              <h3>Major Feature 4: Anomaly Detection</h3>
+              <p>Analyzes live network traffic to identify abnormal patterns that may indicate compromised devices or emerging security threats.</p>
+            </article><!--end KV add-->
             <article>
-              <h3>Major Feature 4: Report Management</h3>
+              <h3>Major Feature 5: Report Management</h3><!--KV: changed Major feature number to 5-->
               <p>Stores and retrieves scan results for future review and follow-up.</p>
             </article>
           </div>
@@ -75,29 +81,51 @@
         <section class="panel split-panel" id="stack">
           <div>
             <h2>Technologies Used</h2>
-            <ul class="link-list">
-              <li><a href="https://react.dev/" target="_blank" rel="noopener noreferrer">React</a></li>
-              <li><a href="https://vite.dev/" target="_blank" rel="noopener noreferrer">Vite</a></li>
-              <li><a href="https://www.electronjs.org/" target="_blank" rel="noopener noreferrer">Electron</a></li>
-              <li><a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">Node.js</a></li>
-              <li><a href="https://expressjs.com/" target="_blank" rel="noopener noreferrer">Express</a></li>
-              <li><a href="https://www.mysql.com/" target="_blank" rel="noopener noreferrer">MySQL</a></li>
-              <li><a href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener noreferrer">FastAPI</a></li>
-              <li><a href="https://www.docker.com/" target="_blank" rel="noopener noreferrer">Docker</a></li>
-            </ul>
+            <div style="display: flex; gap: 40px;"><!--KV add: display this list in 3 columns-->
+              <ul class="link-list"><!--KV: column 1 (frontend technologies)-->
+                <li><a href="https://react.dev/" target="_blank" rel="noopener noreferrer">React</a></li>
+                <li><a href="https://vite.dev/" target="_blank" rel="noopener noreferrer">Vite</a></li>
+                <li><a href="https://www.electronjs.org/" target="_blank" rel="noopener noreferrer">Electron</a></li>
+                <li><a href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener noreferrer">FastAPI</a></li>
+              </ul>
+              <ul class="link-list"><!--KV: column 2 (backend technologies)-->
+                <li><a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">Node.js</a></li>
+                <li><a href="https://expressjs.com/" target="_blank" rel="noopener noreferrer">Express</a></li>
+                <li><a href="https://www.mysql.com/" target="_blank" rel="noopener noreferrer">MySQL</a></li>
+                <li><a href="https://www.docker.com/" target="_blank" rel="noopener noreferrer">Docker</a></li>
+                <li><a href="https://developers.google.com/identity/protocols/oauth2" target="_blank" rel="noopener noreferrer">Google OAuth2</a></li>
+              </ul>
+              <ul class="link-list"><!--KV: column 3 (device discovery protocols)-->
+                <li><a href="https://datatracker.ietf.org/doc/html/rfc826" target="_blank" rel="noopener noreferrer">ARP</a></li>
+                <li><a href="https://datatracker.ietf.org/doc/html/draft-cai-ssdp-v1-03" target="_blank" rel="noopener noreferrer">SSDP</a></li>
+                <li><a href="https://datatracker.ietf.org/doc/html/rfc6762" target="_blank" rel="noopener noreferrer">mDNS</a></li>
+                <li><a href="https://nmap.org/" target="_blank" rel="noopener noreferrer">Nmap</a></li>
+                <li><a href="https://scapy.net/" target="_blank" rel="noopener noreferrer">Scapy</a></li>
+              </ul>
+              <ul class="link-list"><!--KV: column 4 (vulnerability matching / anomaly detection technologies)-->
+                <li><a href="https://www.python.org/" target="_blank" rel="noopener noreferrer">Python</a></li>
+                <li><a href="https://www.metasploit.com/" target="_blank" rel="noopener noreferrer">Metasploit</a></li>
+                <li><a href="https://www.raspberrypi.com/software/" target="_blank" rel="noopener noreferrer">Raspberry Pi</a></li>
+                <li><a href="https://pandas.pydata.org/" target="_blank" rel="noopener noreferrer">Pandas</a></li>
+                <li><a href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html" target="_blank" rel="noopener noreferrer">Scikit‑learn</a></li>
+              </ul>
+            </div><!--KV add-->
           </div>
           <div>
             <h2>Skills Used</h2>
             <ul class="tag-list">
               <li>Full-Stack Web Development</li>
-              <li>Secure Software Design</li>
               <li>Device Discovery Engineering</li>
               <li>Network Scanning Workflow Design</li>
               <li>Vulnerability Triaging</li>
+              <li>Network Traffic Analysis</li> <!--KV add-->
+              <li>Isolation Forest ML integration</li><!--KV add-->
               <li>UI/UX Prototyping</li>
-              <li>Database Modeling</li>
               <li>API Integration</li>
-              <li>Google OAuth2 / Gmail API</li>
+              <li>Secure Software Design</li>
+              <li>RESTful Architecture Design</li><!--KV add-->
+              <li>Database Modeling</li><!--KV add-->
+              <li>Session‑Based Authentication</li><!--KV add-->
             </ul>
           </div>
         </section>
@@ -148,7 +176,7 @@
             <article class="team-card">
               <img src="assets/images/team/Afnan.jpg" alt="Portrait for Afnan Khan">
               <h3>Afnan Khan</h3>
-              <p class="role">Vulnerability Matching</p>
+              <p class="role">Device Discovery</p>
               <p>Improved the backend device discovery system, reduced duplicate devices using IP and MAC matching, and tested scans for accuracy and stability.</p>
               <p class="team-links">
                 <a href="https://github.com/example-afnan" target="_blank" rel="noopener noreferrer">GitHub</a>
@@ -174,6 +202,10 @@
                 <img src="assets/images/screenshots/ScanItemInfoSS.png" alt="Vigil IoT item information view">
                 <figcaption>Item information</figcaption>
               </figure>
+              <figure class="screenshot-slide" data-slide><!--KV add: Anomaly detection screenshot-->
+                <img src="assets/images/screenshots/AnomalyDetectionSS.png" alt="Vigil IoT Aonmaly Detection view">
+                <figcaption>Anomaly Detection</figcaption>
+              </figure><!--end KV add-->
             </div>
             <div class="screenshot-controls">
               <button type="button" class="carousel-btn" data-carousel-prev aria-label="Show previous screenshot">
@@ -200,8 +232,8 @@
         </section>
 
         <section class="panel" id="demo">
-          <h2>Project Demo Video</h2>
-          <div class="video-wrap">
+          <h2>Project Demo Video</h2> <!--KV: removed "(3-5 minutes)" text-->
+          <div class="video-wrap"> <!--KV: added Jack's updated demo link below-->
             <iframe
               src="https://www.youtube.com/embed/Wr_F7jg4Sl8?si=yp4-w9TRYEocqXDY"
               title="Vigil IoT demo video"
