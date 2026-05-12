@@ -102,11 +102,8 @@ export default function NewScanWizard({
 
     const controller = new AbortController();
     let pollTimer = null;
-    //let attempts = 0;
-    //const maxAttempts = 60; // Try for up to 30 seconds
 
     async function pollForResults() {
-      //attempts++;
       try {
         const res = await fetch("http://localhost:3002/discovery.json", { signal: controller.signal });
 

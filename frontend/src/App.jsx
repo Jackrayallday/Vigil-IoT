@@ -61,6 +61,23 @@ const RUN_SCAN_STATUS = {
   ERROR: "error",
 };
 
+const SCAN_MODE = {
+  STANDARD: "standard",
+  LONG: "long",
+};
+
+const DEFAULT_LONG_SCAN_TIMER = {
+  days: "0",
+  hours: "0",
+  minutes: "30",
+  seconds: "0",
+};
+
+const LONG_SCAN_POLL_INTERVAL_MS = 3000;
+const LONG_SCAN_START_ENDPOINT = "https://localhost:443/run-anomaly-scan";
+const LONG_SCAN_RESULT_ENDPOINT = "https://localhost:443/anomaly-scan-result";
+const LONG_SCAN_MAX_ROWS = 2500;
+
 const SEVERITY_RANK = {
   CRITICAL: 4,
   HIGH: 3,
@@ -157,6 +174,49 @@ function createId(prefix) {
   }
   const random = Math.floor(Math.random() * 10_000);
   return `${prefix}-${Date.now()}-${random}`;
+}
+
+function parseLongScanTimer(rawTimer) {
+  const days = Math.max(0, Number.parseInt(rawTimer?.days ?? "0", 10) || 0);
+  const hours = Math.min(23, Math.max(0, Number.parseInt(rawTimer?.hours ?? "0", 10) || 0));
+  const minutes = Math.min(59, Math.max(0, Number.parseInt(rawTimer?.minutes ?? "0", 10) || 0));
+  const seconds = Math.min(59, Math.max(0, Number.parseInt(rawTimer?.seconds ?? "0", 10) || 0));
+  const totalSeconds = (((days * 24) + hours) * 60 + minutes) * 60 + seconds;
+  return {
+    days,
+    hours,
+    minutes,
+    seconds,
+    totalMs: totalSeconds * 1000,
+  };
+}
+
+function formatDurationFromMs(totalMs) {
+  const safeMs = Math.max(0, Number(totalMs) || 0);
+  const totalSeconds = Math.floor(safeMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
+
+function parseLongScanContractPayload(payload) {
+  const scanDetails = payload?.scanDetailsResponse;
+  const findings = Array.isArray(scanDetails?.findings) ? scanDetails.findings : [];
+  const rows = findings.slice(-LONG_SCAN_MAX_ROWS);
+  const summary = scanDetails && typeof scanDetails === "object"
+    ? {
+        ip: scanDetails.ip || "unknown",
+        hostname: scanDetails.hostname || null,
+        riskLevel: scanDetails.riskLevel || "LOW",
+        findingCount: Number.isFinite(Number(scanDetails.findingCount))
+          ? Number(scanDetails.findingCount)
+          : rows.length,
+      }
+    : null;
+
+  return { rows, summary };
 }
 
 function isValidIpv4(ip) {
@@ -467,6 +527,8 @@ export default function App() {
 
   // --- UI state toggles ---
   const [showWizard, setShowWizard] = useState(false);
+  const [showScanModePrompt, setShowScanModePrompt] = useState(false);
+  const [showLongScanSetup, setShowLongScanSetup] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -491,6 +553,9 @@ export default function App() {
   const [runScanStatus, setRunScanStatus] = useState(RUN_SCAN_STATUS.IDLE);
   const [runScanError, setRunScanError] = useState("");
   const [pendingScanConfig, setPendingScanConfig] = useState(null);
+  const [longScanTimerInput, setLongScanTimerInput] = useState(DEFAULT_LONG_SCAN_TIMER);
+  const [longScanTimerError, setLongScanTimerError] = useState("");
+  const [longScanSession, setLongScanSession] = useState(null);
   const runScanRequestIdRef = useRef(0);
   const [showUnsavedClosePrompt, setShowUnsavedClosePrompt] = useState(false);
   const wizardBackdropPointerDownRef = useRef(false); // Prevents dismiss when dragging selections outside the modal.
@@ -523,7 +588,7 @@ export default function App() {
     async function hydrateSession() {
       try {
         const res = await axios.get(
-          "http://localhost:3000/check_login",
+          "https://localhost:443/check_login",
           {withCredentials: true}
         );
         if (!isActive) return;
@@ -578,6 +643,77 @@ export default function App() {
     return () => window.clearInterval(intervalId);
   }, [view, isRadarActive]);
 
+  useEffect(() => {
+    if (!longScanSession?.scanId || !longScanSession?.pendingResults) return undefined;
+
+    let cancelled = false;
+    const syncResults = async () => {
+      try {
+        const response = await axios.get(
+          LONG_SCAN_RESULT_ENDPOINT,
+          { withCredentials: false }
+        );
+        if (cancelled) return;
+        const { rows, summary } = parseLongScanContractPayload(response?.data);
+        setLongScanSession((current) => {
+          if (!current || current.scanId !== longScanSession.scanId) return current;
+          return {
+            ...current,
+            rows,
+            summary,
+            pendingResults: false,
+            lastSyncError: null,
+            lastSyncedAtMs: Date.now(),
+          };
+        });
+      } catch (err) {
+        if (cancelled) return;
+        const status = getApiErrorStatus(err);
+        const fallbackMessage =
+          status === 404
+            ? "Waiting for anomaly scan output file..."
+            : "Unable to load anomaly scan output.";
+        setLongScanSession((current) => {
+          if (!current || current.scanId !== longScanSession.scanId) return current;
+          return {
+            ...current,
+            lastSyncError: getApiErrorMessage(err, fallbackMessage),
+          };
+        });
+      }
+    };
+
+    syncResults();
+    const intervalId = window.setInterval(syncResults, LONG_SCAN_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [longScanSession?.scanId, longScanSession?.pendingResults]);
+
+  useEffect(() => {
+    if (!longScanSession?.active || !longScanSession?.endAtMs) return undefined;
+    const remainingMs = Math.max(0, longScanSession.endAtMs - Date.now());
+    const timeoutId = window.setTimeout(() => {
+      stopLongScan("timer");
+    }, remainingMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [longScanSession?.active, longScanSession?.endAtMs]);
+
+  useEffect(() => {
+    if (!longScanSession?.scanId) return;
+    setUnsavedScan((current) => {
+      if (!current || current.id !== longScanSession.scanId || current.scanMode !== SCAN_MODE.LONG) {
+        return current;
+      }
+      const nextStatus = longScanSession.active
+        ? "running"
+        : (longScanSession.stopReason === "manual" ? "paused" : "complete");
+      if (current.status === nextStatus) return current;
+      return { ...current, status: nextStatus };
+    });
+  }, [longScanSession?.active, longScanSession?.scanId]);
+
   // Handy pointer to whichever scan is selected in the history/results views.
   const selectedScan = useMemo(() => {
     if (unsavedScan && selectedScanId === unsavedScan.id) {
@@ -593,7 +729,7 @@ export default function App() {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/run-scan",
+        "https://localhost:443/run-scan",
         {},
         { withCredentials: false }
       );
@@ -623,12 +759,38 @@ export default function App() {
     }
   }
 
+  async function startLongAnomalyPipeline(durationSeconds) {
+    return axios.post(
+      LONG_SCAN_START_ENDPOINT,
+      { durationSeconds },
+      { withCredentials: false }
+    );
+  }
+
+  function stopLongScan(reason = "manual") {
+    setLongScanSession((current) => {
+      if (!current || !current.active) return current;
+      return {
+        ...current,
+        active: false,
+        stopReason: reason,
+        stoppedAtMs: Date.now(),
+      };
+    });
+  }
+
   // Modal open/close helpers keep those booleans in place.
-  async function openWizard(e) {
+  function openScanModePrompt(e) {
     e.preventDefault();
     setShowSettings(false);
     setShowLogin(false);
-    
+    setShowWizard(false);
+    setShowLongScanSetup(false);
+
+    setShowScanModePrompt(true);
+  }
+
+  function openStandardWizard() {
     runScanRequestIdRef.current += 1;
     setRunScanStatus(RUN_SCAN_STATUS.IDLE);
     setRunScanError("");
@@ -656,10 +818,101 @@ export default function App() {
     setShowWizard(true);
   }
 
+  function handleSelectStandardScan() {
+    setShowScanModePrompt(false);
+    openStandardWizard();
+  }
+
+  function handleSelectLongScan() {
+    setShowScanModePrompt(false);
+    setLongScanTimerError("");
+    setShowLongScanSetup(true);
+  }
+
+  function closeScanModePrompt() {
+    setShowScanModePrompt(false);
+  }
+
+  function closeLongScanSetup() {
+    setShowLongScanSetup(false);
+    setLongScanTimerError("");
+  }
+
+  function handleLongScanTimerInput(field, value) {
+    if (!["days", "hours", "minutes", "seconds"].includes(field)) return;
+    const sanitized = String(value).replace(/[^\d]/g, "");
+    setLongScanTimerInput((prev) => ({ ...prev, [field]: sanitized }));
+  }
+
+  async function handleStartLongScan() {
+    const parsed = parseLongScanTimer(longScanTimerInput);
+    if (!parsed.totalMs) {
+      setLongScanTimerError("Enter a duration greater than zero.");
+      return;
+    }
+    const durationSeconds = Math.max(1, Math.floor(parsed.totalMs / 1000));
+    try {
+      await startLongAnomalyPipeline(durationSeconds);
+    } catch (err) {
+      const fallbackMessage =
+        getApiErrorStatus(err) === 409
+          ? "A long scan is already running. Wait for it to finish."
+          : "Failed to start long anomaly scan.";
+      setLongScanTimerError(getApiErrorMessage(err, fallbackMessage));
+      return;
+    }
+
+    stopLongScan("manual");
+    const nowMs = Date.now();
+    const scanId = createId("scan");
+    const submittedAtISO = new Date(nowMs).toISOString();
+    const newLongScan = {
+      id: scanId,
+      name: "Long Dynamic Scan",
+      scanMode: SCAN_MODE.LONG,
+      status: "running",
+      submittedAt: new Date(nowMs).toLocaleString(),
+      submittedAtISO,
+      targets: ["Live packet stream"],
+      exclusions: [],
+      moduleSummary: `Dynamic monitoring (${formatDurationFromMs(parsed.totalMs)})`,
+      findings: [],
+      detailsLoaded: true,
+      detailsLoading: false,
+      detailsError: null,
+    };
+
+    setUnsavedScan(newLongScan);
+    setSelectedScanId(newLongScan.id);
+    setSelectedDevice(null);
+    setIsViewingFreshScan(true);
+    setSaveFeedback(null);
+    setView(VIEW_RESULTS);
+    setShowLongScanSetup(false);
+    setLongScanTimerError("");
+
+    setLongScanSession({
+      scanId,
+      active: true,
+      startedAtMs: nowMs,
+      endAtMs: nowMs + parsed.totalMs,
+      totalDurationMs: parsed.totalMs,
+      rows: [],
+      summary: null,
+      pendingResults: true,
+      stopReason: null,
+      stoppedAtMs: null,
+      lastSyncError: null,
+      lastSyncedAtMs: null,
+    });
+  }
+
   function openLogin(e) {
     if(e) e.preventDefault();
     setShowSettings(false);
     setShowWizard(false);
+    setShowScanModePrompt(false);
+    setShowLongScanSetup(false);
     setShowLogin(true);
   }
 
@@ -667,6 +920,8 @@ export default function App() {
     e.preventDefault();
     setShowLogin(false);
     setShowWizard(false);
+    setShowScanModePrompt(false);
+    setShowLongScanSetup(false);
     setShowSettings(true);
   }
 
@@ -711,6 +966,8 @@ export default function App() {
     setSelectedDevice(null);
     setShowLogin(false);
     setShowSettings(false);
+    setShowScanModePrompt(false);
+    setShowLongScanSetup(false);
     setIsViewingFreshScan(false);
     setSaveFeedback(null);
   }
@@ -735,7 +992,7 @@ export default function App() {
 
     try{
       const reportsRes = await axios.get(//send request to /scan-reports on the server
-        "http://localhost:3000/scan-reports",
+        "https://localhost:443/scan-reports",
         {withCredentials: true}
       );
 
@@ -795,7 +1052,7 @@ export default function App() {
 
     try{
       const devicesRes = await axios.get(//send request to /scan_reports/id/devices on server
-        `http://localhost:3000/scan-reports/${scanId}/devices`,
+        `https://localhost:443/scan-reports/${scanId}/devices`,
         {withCredentials: true}
       );
 
@@ -862,7 +1119,7 @@ export default function App() {
   async function handleLogout(){
     try{
       await axios.post(//Send request to /logout on server
-        "http://localhost:3000/logout",
+        "https://localhost:443/logout",
         {},
         {
           withCredentials: true,
@@ -872,12 +1129,6 @@ export default function App() {
     }
     catch(err){//if here, logout failed
       console.error("Logout failed!: ", err);//log the error
-
-      //uncomment and edit when you find a way to print logout failure message in UI
-      /*if(err.response)//Axios attaches backend response here for 400/500 errors
-        //print(err.response.data?.message || "Registration failed!");
-      else//if here, no response at all (network error, server down, CORS, timeout)
-	      //print("Unable to connect to server!");*/
     } 
     finally{//execute this no matter what
       setUser(null);
@@ -893,7 +1144,7 @@ export default function App() {
     } else if (action.type === LOGIN_ACTIONS.SAVE_SCAN) {
       const scanToPersist = action.scan || selectedScan;
       if (scanToPersist) {
-        persistScanReport(scanToPersist/*, actor*/);//actor no longer needed
+        persistScanReport(scanToPersist);
       }
     }
   }
@@ -922,6 +1173,11 @@ export default function App() {
       unsavedScan.id === selectedScanId
     );
 
+    if (isViewingUnsavedScan && unsavedScan?.scanMode === SCAN_MODE.LONG) {
+      goHome();
+      return;
+    }
+
     if (isViewingUnsavedScan) {
       setShowUnsavedClosePrompt(true);
       return;
@@ -932,6 +1188,9 @@ export default function App() {
 
   function handleConfirmCloseWithoutSaving() {
     const unsavedId = unsavedScan?.id ?? null;
+    if (unsavedScan?.scanMode === SCAN_MODE.LONG) {
+      stopLongScan("manual");
+    }
     setShowUnsavedClosePrompt(false);
     if (unsavedId && selectedScanId === unsavedId) {
       setSelectedScanId(null);
@@ -950,7 +1209,7 @@ export default function App() {
     setDeletingScanId(scanId);
     setHistoryFeedback(null);
     try{
-      await axios.delete(`http://localhost:3000/delete-scan/${scanId}`);//send req to /delete-scan
+      await axios.delete(`https://localhost:443/delete-scan/${scanId}`);//send req to /delete-scan
 
       //if here, deletion was successful
       setScans((prev) => {
@@ -987,6 +1246,7 @@ export default function App() {
   // Navigation helpers wire the buttons to their views.
   function handleSelectDevice(device) {
     if (!device) return;
+    if (selectedScan?.scanMode === SCAN_MODE.LONG) return;
     const enriched = {
       ...device,
       scanId: device.scanId || (selectedScan?.id ?? null),
@@ -1046,7 +1306,10 @@ export default function App() {
     const contractPayload = await startRunScan();
     if (!contractPayload) return false;
 
-    const enriched = createScanRecordFromContract(scanConfig, contractPayload);
+    const enriched = {
+      ...createScanRecordFromContract(scanConfig, contractPayload),
+      scanMode: SCAN_MODE.STANDARD,
+    };
     setUnsavedScan(enriched);
     setSelectedScanId(enriched.id);
     setSelectedDevice(null);
@@ -1060,6 +1323,7 @@ export default function App() {
   // Persist the new scan and take the user straight to the detail view.
   async function handleCreateScan(payload) {
     if (!payload) return;
+    stopLongScan("manual");
     setPendingScanConfig(payload);
     closeWizard();
     setView(VIEW_SCANNING);
@@ -1099,12 +1363,8 @@ export default function App() {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   }
 
-  async function persistScanReport(scanData/*, actor = user*/) {//KV: actor no longer needed
+  async function persistScanReport(scanData) {
     if(!scanData) return;
-    /*if (!actor?.user_id) {
-      setSaveFeedback({ type: "error", message: "Log in to save scan reports." });
-      return;
-    }*/
     setIsSavingScan(true);
     setSaveFeedback(null);
 
@@ -1153,7 +1413,7 @@ export default function App() {
       };
 
       const response = await axios.post(//Send request to /save-scan on server
-        "http://localhost:3000/save-scan",
+        "https://localhost:443/save-scan",
         payload,
         {withCredentials: true}
       );
@@ -1179,7 +1439,6 @@ export default function App() {
       setSelectedScanId(savedScan.id);
       setHasLoadedHistory(false);
       setSaveFeedback({type: "success", message: "Scan report saved."});
-      //setIsViewingFreshScan(false);//KV: removed to fix UI bug
     }
     catch(err){//if here, saving failed
       console.error("Save scan error!: ", err);//log the error
@@ -1210,15 +1469,22 @@ export default function App() {
       openLogin();
       return;
     }
-    persistScanReport(selectedScan/*, user*/);//user no longer needed
+    persistScanReport(selectedScan);
   }
 
   const hasScans = scans.length > 0;
+  const isLongScanSelected = selectedScan?.scanMode === SCAN_MODE.LONG;
+  const selectedLongScanSession =
+    isLongScanSelected && longScanSession?.scanId === selectedScan?.id
+      ? longScanSession
+      : null;
+  const longScanDurationPreview = formatDurationFromMs(parseLongScanTimer(longScanTimerInput).totalMs);
   
-  //KV add: fix bug that prevents "save scan" buttom from disappearing
   const showSaveButton = 
     unsavedScan?.id === selectedScanId &&
-    view === VIEW_RESULTS && !isSavingScan;
+    view === VIEW_RESULTS &&
+    !isSavingScan &&
+    !isLongScanSelected;
 
   const selectedScanItemsLoading =
     Boolean(selectedScan) &&
@@ -1284,7 +1550,7 @@ export default function App() {
                 href="/scan/new"
                 className="start-circle home-start-panel__start"
                 aria-label="Start Scan"
-                onClick={openWizard}
+                onClick={openScanModePrompt}
                 onMouseEnter={() => setIsRadarActive(true)}
                 onMouseLeave={() => setIsRadarActive(false)}
                 onFocus={() => setIsRadarActive(true)}
@@ -1423,12 +1689,14 @@ export default function App() {
               onSelectScan={handleSelectScan}
               onSelectDevice={handleSelectDevice}
               onBackToHome={handleResultsBackClick}
-              showSaveButton={showSaveButton}//{isViewingFreshScan}//KV edit: fix non-disappearing "save scan" button
+              showSaveButton={showSaveButton}
               onSaveScan={handleSaveScanClick}
               isSavingScan={isSavingScan}
               saveFeedback={saveFeedback}
               isLoadingItems={selectedScanItemsLoading}
               itemsError={selectedScanItemsError}
+              longScanSession={selectedLongScanSession}
+              onStopLongScan={() => stopLongScan("manual")}
               onRetryLoadItems={() => {
                 if (selectedScan?.id) {
                   loadScanDetails(selectedScan.id, user);
@@ -1450,6 +1718,129 @@ export default function App() {
       </main>
 
       {/* Modals live at the bottom so they overlay the main content when toggled on. */}
+      {showScanModePrompt && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="scan-mode-title"
+          className="modal-backdrop"
+          onClick={closeScanModePrompt}
+        >
+          <div className="modal-sheet scan-mode-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="scan-mode-body">
+              <h2 id="scan-mode-title" className="scan-mode-title">Choose Scan Type</h2>
+              <p className="scan-mode-copy">
+                Run a standard vulnerability scan or start a long-running dynamic stream.
+              </p>
+              <div className="scan-mode-actions">
+                <button
+                  type="button"
+                  className="scan-mode-btn scan-mode-btn--primary"
+                  onClick={handleSelectStandardScan}
+                >
+                  Standard Scan
+                </button>
+                <button
+                  type="button"
+                  className="scan-mode-btn scan-mode-btn--secondary"
+                  onClick={handleSelectLongScan}
+                >
+                  Long Dynamic Scan
+                </button>
+              </div>
+              <button
+                type="button"
+                className="scan-mode-cancel"
+                onClick={closeScanModePrompt}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLongScanSetup && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="long-scan-title"
+          className="modal-backdrop"
+          onClick={closeLongScanSetup}
+        >
+          <div className="modal-sheet scan-mode-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="scan-mode-body">
+              <h2 id="long-scan-title" className="scan-mode-title">Long Dynamic Scan Timer</h2>
+              <p className="scan-mode-copy">
+                Set how long to stream packet anomalies. The scan auto-stops at this duration.
+              </p>
+              <div className="long-scan-grid">
+                <label className="long-scan-field">
+                  <span>Days</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={longScanTimerInput.days}
+                    onChange={(e) => handleLongScanTimerInput("days", e.target.value)}
+                    aria-label="Long scan days"
+                  />
+                </label>
+                <label className="long-scan-field">
+                  <span>Hours</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={longScanTimerInput.hours}
+                    onChange={(e) => handleLongScanTimerInput("hours", e.target.value)}
+                    aria-label="Long scan hours"
+                  />
+                </label>
+                <label className="long-scan-field">
+                  <span>Minutes</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={longScanTimerInput.minutes}
+                    onChange={(e) => handleLongScanTimerInput("minutes", e.target.value)}
+                    aria-label="Long scan minutes"
+                  />
+                </label>
+                <label className="long-scan-field">
+                  <span>Seconds</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={longScanTimerInput.seconds}
+                    onChange={(e) => handleLongScanTimerInput("seconds", e.target.value)}
+                    aria-label="Long scan seconds"
+                  />
+                </label>
+              </div>
+              <p className="long-scan-preview">Duration: {longScanDurationPreview}</p>
+              {longScanTimerError && (
+                <p className="long-scan-error">{longScanTimerError}</p>
+              )}
+              <div className="scan-mode-actions">
+                <button
+                  type="button"
+                  className="scan-mode-btn scan-mode-btn--secondary"
+                  onClick={closeLongScanSetup}
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  className="scan-mode-btn scan-mode-btn--primary"
+                  onClick={handleStartLongScan}
+                >
+                  Start Long Scan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showWizard && (
         <div
           role="dialog"

@@ -90,19 +90,24 @@ This is how to set up Vigil IoT locally.
 3. **Add your environment variables**
    - Locate the file backend/.env
    - Inside this file, replace all placeholder text with your own real environment variables
-
-4. **Install backend dependencies and run the server program.**
+4. **Install the SSL certificate for HTTPS Implementation**
+   - In File Explorer, navigae to the project's backend directory and double-click localhost.crt
+   - Choose Local Machine → click Next.
+   - Select Place all certificates in the following store → click Browse.
+   - Choose Trusted Root Certification Authorities → click OK → Next → Finish.
+   - When prompted, confirm the installation.
+5. **Install backend dependencies and run the server program.**
    ```bash
    cd backend
    npm install
    node server.js
    ```
-5. **In another terminal instance, install networking dependencies needed for device discovery.**
+6. **In another terminal instance, install networking dependencies needed for device discovery.**
    ```bash
    cd deviceDiscovery
    pip install scapy zeroconf psutil ifaddr requests netaddr fastapi uvicorn[standard]
    ```
-6. **Install frontend dependencies and run the client program.**
+7. **Install frontend dependencies and run the client program.**
    ```bash
    cd frontend
    npm install

@@ -110,3 +110,119 @@ programmer: Jack Ray
   filter: brightness(1.05);
   outline: none;
 }
+
+.scan-mode-sheet {
+  width: min(34rem, 100%);
+}
+
+.scan-mode-body {
+  padding: 1.35rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.scan-mode-title {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.scan-mode-copy {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.45;
+  font-size: 0.94rem;
+}
+
+.scan-mode-actions {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.scan-mode-btn {
+  border-radius: 0.7rem;
+  border: 1px solid transparent;
+  min-height: 2.55rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.93rem;
+  line-height: 1;
+}
+
+.scan-mode-btn--primary {
+  border-color: rgba(111, 209, 255, 0.6);
+  background: linear-gradient(135deg, rgba(61, 151, 195, 0.95), rgba(38, 109, 148, 0.95));
+  color: #ffffff;
+}
+
+.scan-mode-btn--secondary {
+  border-color: var(--surface-border-strong);
+  background: rgba(10, 20, 32, 0.8);
+  color: var(--ink);
+}
+
+.scan-mode-btn:hover,
+.scan-mode-btn:focus-visible {
+  filter: brightness(1.05);
+  outline: none;
+}
+
+.scan-mode-cancel {
+  justify-self: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.long-scan-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.long-scan-field {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.long-scan-field input {
+  min-height: 2.35rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--surface-border-strong);
+  background: rgba(10, 20, 32, 0.8);
+  color: var(--ink);
+  padding: 0.45rem 0.6rem;
+}
+
+.long-scan-field input:focus-visible {
+  border-color: rgba(111, 209, 255, 0.6);
+  outline: none;
+}
+
+.long-scan-preview {
+  margin: 0;
+  color: var(--text-subtle);
+  font-size: 0.88rem;
+}
+
+.long-scan-error {
+  margin: 0;
+  color: #fca5a5;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 36rem) {
+  .scan-mode-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .long-scan-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

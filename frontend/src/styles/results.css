@@ -117,13 +117,37 @@ programmer: Jack Ray
   cursor: pointer;
 }
 
+.results-stopBtn {
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-radius: 0.7rem;
+  background: linear-gradient(135deg, rgba(162, 56, 56, 0.92), rgba(124, 40, 40, 0.92));
+  color: #fff3f3;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-sm);
+  line-height: 1;
+  font-weight: 700;
+  min-height: 2.5rem;
+  cursor: pointer;
+}
+
 .results-saveBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
+.results-stopBtn:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
 .results-saveBtn:not(:disabled):hover,
 .results-saveBtn:not(:disabled):focus-visible {
+  filter: brightness(1.05);
+  outline: none;
+}
+
+.results-stopBtn:not(:disabled):hover,
+.results-stopBtn:not(:disabled):focus-visible {
   filter: brightness(1.05);
   outline: none;
 }
@@ -193,6 +217,42 @@ programmer: Jack Ray
   padding: var(--space-3);
 }
 
+.results-longStatus {
+  border: 1px solid var(--surface-border);
+  border-radius: 0.85rem;
+  background: var(--surface-2);
+  padding: var(--space-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  align-items: center;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.results-longBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.results-longBadge--running {
+  color: #bbf7d0;
+  background: rgba(20, 83, 45, 0.4);
+  border: 1px solid rgba(74, 222, 128, 0.45);
+}
+
+.results-longBadge--stopped {
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.5);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+}
+
 .results-tableWrap {
   border: 1px solid var(--surface-border);
   border-radius: 0.85rem;
@@ -204,6 +264,10 @@ programmer: Jack Ray
   width: 100%;
   border-collapse: collapse;
   min-width: 64rem;
+}
+
+.results-table--dynamic {
+  min-width: 52rem;
 }
 
 .results-table thead {
